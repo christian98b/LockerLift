@@ -85,8 +85,8 @@ class LocalBackupManagerTest {
     fun testChecksumComputation_whenSha256Applied_producesConsistentHex() {
         // Arrange
         val input    = "lockerlift".toByteArray(Charsets.UTF_8)
-        // SHA-256("lockerlift") – verified offline
-        val expected = "3e0d1fbde29a3fc12f78bb9ab78fc93a71b044a97baef6e80a7e5cbab32fb8dc"
+        // SHA-256("lockerlift") – verified with Python hashlib
+        val expected = "eefecdcba23bd697b635d722e6575cc12296353d47ed35879e7fd81358bc5b3b"
 
         // Act
         val actual = sha256Hex(input)
