@@ -83,6 +83,8 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
   - `EntityMappingTest.kt`: Tests für bidirektionale Mappings zwischen Domain-Modellen und Room-Entities sowie Type-Converters.
 - [x] **Agent Skills (`.agents/skills/`)**
   - `git-commit-guidelines`: Skill zur Durchsetzung von Conventional Commits, Scope-Validierung und automatischem Testing-Mandat.
+  - `unit-testing-guidelines`: Leitfaden zur Erstellung automatisierter Unit-Tests (AAA-Pattern, Mappers, Serializers, Room, Invarianten).
+  - `feature-implementation-workflow`: End-to-End Workflow zur Implementierung neuer Features und User Stories (Requirements, Invarianten, Tests, UI, Tracking, Commit).
 
 ---
 
