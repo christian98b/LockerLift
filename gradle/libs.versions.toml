@@ -39,7 +39,7 @@ androidx-wear-compose-material = { group = "androidx.wear.compose", name = "comp
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeWear" }
 androidx-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeWear" }
 horologist-composables = { group = "com.google.android.horologist", name = "horologist-composables", version.ref = "horologist" }
-horologist-layout = { group = "com.google.android.horologist", name = "horologist-layout-compose", version.ref = "horologist" }
+horologist-layout = { group = "com.google.android.horologist", name = "horologist-compose-layout", version.ref = "horologist" }
 
 # Room
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
