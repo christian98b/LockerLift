@@ -270,7 +270,7 @@ Das Repository stattet Coding-Assistenten (und Entwickler) mit vordefinierten Sk
 |---|---|
 | [**GitHub Issues & User Stories**](https://github.com/christian98b/LockerLift/issues) | Vollständiger Anforderungskatalog (Epics 1 bis 6, US 1.1–US 6.2) als interaktive Issues. |
 | [**`ARCHITECTURE.md`**](file:///C:/Users/Chris/code/LockerLift/ARCHITECTURE.md) | Detailliertes technisches Systemdesign, ERDs, Sequenzdiagramme und Wear OS Invarianten. |
-| [**`AGENT.md`**](file:///C:/Users/Chris/code/LockerLift/AGENT.md) / [**`agents.md`**](file:///C:/Users/Chris/code/LockerLift/agents.md) | Verbindliche Entwicklerrichtlinien, Invarianten und aktuelles Implementierungsprotokoll. |
+| [**`AGENTS.md`**](file:///C:/Users/Chris/code/LockerLift/AGENTS.md) | Verbindliche Entwicklerrichtlinien, Invarianten und aktuelles Implementierungsprotokoll. |
 
 ---
 

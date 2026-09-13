@@ -1,4 +1,4 @@
-# LockerLift – AI Agent & Developer Guidelines (`AGENT.md`)
+# LockerLift – AI Agent & Developer Guidelines (`AGENTS.md`)
 
 Dieses Dokument dient als verbindliches Handbuch und Fortschrittsprotokoll für Entwickler und KI-Assistenten (z. B. Antigravity, Claude, Copilot), die am Projekt **LockerLift** arbeiten. Es definiert Leitlinien, Architekturvorgaben, Testregeln und den aktuellen Implementierungsstand.
 
@@ -32,7 +32,7 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
 ## 3. Nachverfolgung von Implementierungen (Progress & Tracking)
 
 > [!NOTE]
-> **Pflicht für jeden Agenten:** Wenn neue Features implementiert, angepasst oder erweitert werden, **MUSS** dieser Abschnitt in `AGENT.md` (und `agents.md`) sofort aktualisiert werden. Dokumentiere:
+> **Pflicht für jeden Agenten:** Wenn neue Features implementiert, angepasst oder erweitert werden, **MUSS** dieser Abschnitt in `AGENTS.md` sofort aktualisiert werden. Dokumentiere:
 > * Welches Feature / welche User Story umgesetzt wurde.
 > * Welche Dateien erstellt oder modifiziert wurden.
 > * Welche Unit-Tests hinzugefügt wurden.
@@ -48,7 +48,7 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
   - `README.md` (Projektübersicht & Tech-Stack)
   - GitHub Issues #1–#15 (Epics 1–6 mit allen Akzeptanzkriterien, transferiert aus Spezifikation)
   - `ARCHITECTURE.md` (Systemdesign, ERD, Wearable Data Layer Protokolle, Health Connect)
-  - `AGENT.md` / `agents.md` (Entwickler- & Agent-Guidelines mit Testvorgaben & Changelog)
+  - `AGENTS.md` (Entwickler- & Agent-Guidelines mit Testvorgaben & Changelog)
 - [x] **Epic 1 & 2: Datenbasis & Modelle (`:core:model`, `:core:database`)**
   - Domain-Klassen: `Machine`, `WorkoutTemplate`, `TemplateMachineCrossRef`, `WorkoutSession`, `SessionMachineInstance`, `WorkoutSet`, `SyncQueueItem`, `SetType`, `SyncStatus`, `QueueStatus`.
   - Room Entities mit Cascade Delete, Indexen und Mappern (`MachineEntity`, `WorkoutTemplateEntity`, `TemplateMachineCrossRefEntity`, `WorkoutSessionEntity`, `SessionMachineInstanceEntity`, `WorkoutSetEntity`, `SyncQueueEntity`).
@@ -174,7 +174,7 @@ Alle Commits müssen dem **Conventional Commits**-Standard (v1.0.0) folgen. Dies
 * `feat`: Neues Feature für den Anwender (z. B. neuer Screen, Progressionslogik).
 * `fix`: Bugfix oder Korrektur eines unerwünschten Verhaltens.
 * `test`: Hinzufügen, Ergänzen oder Anpassen von Unit-Tests.
-* `docs`: Reine Dokumentationsänderungen (`README.md`, `USER_STORIES.md`, `AGENT.md`, etc.).
+* `docs`: Reine Dokumentationsänderungen (`README.md`, `AGENTS.md`, etc.).
 * `refactor`: Code-Umbauten, die weder Funktionalität hinzufügen noch Fehler beheben.
 * `chore`: Build-Konfiguration, Gradle-Updates, Versionsanpassungen, `.gitignore`.
 * `perf`: Performance-Optimierungen.
@@ -194,4 +194,3 @@ Alle Commits müssen dem **Conventional Commits**-Standard (v1.0.0) folgen. Dies
 3. **Längenbegrenzung:** Die Betreffzeile sollte maximal 72 Zeichen lang sein.
 4. **Atomic Commits:** Ein Commit behandelt genau ein in sich geschlossenes logisches Thema.
 5. **Tests mit Feature committen:** Wenn ein neues Feature (`feat(...)`) hinzugefügt wird, **müssen** die zugehörigen Unit-Tests im selben Commit enthalten sein.
-

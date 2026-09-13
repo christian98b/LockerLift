@@ -33,7 +33,7 @@ Every commit message MUST adhere to the **Conventional Commits** standard (v1.0.
 | `feat` | Adding a new feature or user-facing capability | `feat(wear): add rotary input for reps and weight` |
 | `fix` | Fixing a bug or unexpected behavior | `fix(sync): resolve channel timeout during session transfer` |
 | `test` | Adding, updating, or correcting unit tests | `test(database): add unit tests for WorkoutSessionDao` |
-| `docs` | Modifying documentation only (`README.md`, `AGENT.md`, etc.) | `docs: update sync protocol diagram in ARCHITECTURE.md` |
+| `docs` | Modifying documentation only (`README.md`, `AGENTS.md`, etc.) | `docs: update sync protocol diagram in ARCHITECTURE.md` |
 | `refactor`| Code restructuring without changing external behavior | `refactor(mobile): extract catalog form into sub-composable` |
 | `chore` | Build configurations, Gradle dependencies, `.gitignore` | `chore(deps): update AndroidX Health Connect to alpha10` |
 | `perf` | Performance optimizations | `perf(database): index session_machine_instances foreign keys` |
@@ -61,7 +61,7 @@ Every commit (except pure root documentation/chore commits) should specify one o
 3. **Subject Length:** Keep the first line strictly under 72 characters.
 4. **Atomic Commits:** Each commit must encapsulate a single logical change.
 5. **Strict Test Mandate (`feat` must include tests):** Whenever a new feature or logic is committed (`feat(...)`), the associated unit tests **MUST** be included in the exact same commit.
-6. **Progress Tracking in `AGENT.md`:** When completing user stories or features, ensure the implementation tracking checklist in `AGENT.md` and `agents.md` is updated.
+6. **Progress Tracking in `AGENTS.md`:** When completing user stories or features, ensure the implementation tracking checklist in `AGENTS.md` is updated.
 7. **Semantic Versioning Mapping:** Follow the [release-versioning-rules](../release-versioning-rules/SKILL.md) skill: `feat` triggers a MINOR release, `fix`/`perf`/`refactor` triggers a PATCH release, and breaking changes (`feat!:` or `BREAKING CHANGE:`) trigger a MAJOR release.
 
 
