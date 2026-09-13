@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:sync"))
     implementation(project(":core:healthconnect"))
+    implementation(libs.androidx.health.connect)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

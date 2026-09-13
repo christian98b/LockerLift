@@ -24,7 +24,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
 
-    implementation(libs.androidx.health.connect)
+    api(libs.androidx.health.connect)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
