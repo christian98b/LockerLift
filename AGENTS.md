@@ -162,6 +162,7 @@ flowchart TD
   - `v1.0.0`: Initial production release with full offline tracking, rotary controls, template management, sync protocol, Health Connect, and standalone APK binaries.
   - `v1.1.0`: Standalone Phone Workout Tracking, Bidirectional Session History Sync, SQLCipher AES-256 DB Encryption, Security & Privacy Hardening, and Clamped Validation.
   - `v1.2.0`: Local Storage Backup & Restore with SAF, GZip/JSON export, SHA-256 integrity verification, automated periodic backup worker, and settings UI.
+  - `v1.2.1`: Patch release fixing the SQLCipher 4.17.0 `UnsatisfiedLinkError` startup crash via explicit `System.loadLibrary("sqlcipher")` in the database builder (code 4).
 - [x] **US 7.2: Local Storage Backup & Restore (`:mobile`)**
   - `LocalBackupManager` (SAF-based export/restore, GZip + JSON via `SyncPayloadSerializer`, SHA-256 checksum, retention pruning).
   - `LocalBackupWorker` (`CoroutineWorker` / `PeriodicWorkRequest` for scheduled backups with configurable interval and keep-count).
