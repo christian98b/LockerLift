@@ -133,9 +133,12 @@ flowchart TD
   - `unit-testing-guidelines`: Guide for automated unit tests (AAA pattern, mappers, serializers, Room, invariants).
   - `feature-implementation-workflow`: End-to-end workflow for implementing new features and user stories.
   - `release-versioning-rules`: Rules and criteria for SemVer release bumps (Major vs. Minor vs. Patch) and Gradle version bumps.
+  - `release-creation-guide`: End-to-end operational guide for drafting, tagging, packaging, and publishing official releases via GitHub CLI.
   - `internationalization-guide`: Standards and procedures for adding new language locales and managing strings across mobile and wear.
   - `user-documentation-guide`: Guidelines and standards for writing structured, accessible, and user-centric documentation.
   - `issue-closing-and-commenting-guide`: Standards, quality gates, and structured Markdown templates for verifying, commenting on, and closing GitHub issues.
+- [x] **Official Releases**
+  - `v1.0.0`: Initial production release with full offline tracking, rotary controls, template management, sync protocol, Health Connect, and standalone APK binaries.
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 
