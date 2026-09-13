@@ -5,7 +5,7 @@ import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
-import com.lockerlift.wear.logic.ValidationResult
+import com.lockerlift.core.database.logic.ValidationResult
 import com.lockerlift.wear.logic.WearWorkoutLogic
 import org.junit.Assert.*
 import org.junit.Test
