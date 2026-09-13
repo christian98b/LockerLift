@@ -11,6 +11,8 @@
 [![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4.svg?style=for-the-badge&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 [![Health Connect](https://img.shields.io/badge/Health%20Connect-Integrated-00C853.svg?style=for-the-badge)](https://developer.android.com/health-and-fitness/guides/health-connect)
 [![Local-First](https://img.shields.io/badge/Database-Room%20%2F%20Offline--First-orange.svg?style=for-the-badge)](https://developer.android.com/training/data-storage/room)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/christian98b/LockerLift/build-and-test.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI%2FCD)](https://github.com/christian98b/LockerLift/actions)
+
 
 ---
 
@@ -258,6 +260,7 @@ Das Repository stattet Coding-Assistenten (und Entwickler) mit vordefinierten Sk
 * 🧭 [**`git-commit-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/git-commit-guidelines/SKILL.md): Verbindliche Formatvorgaben nach Conventional Commits (v1.0.0), Scopes und Test-Commit-Pflicht.
 * 🧪 [**`unit-testing-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/unit-testing-guidelines/SKILL.md): Standards zur Teststrukturierung (AAA-Pattern, Room In-Memory, Coroutine Testing).
 * 🚀 [**`feature-implementation-workflow`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/feature-implementation-workflow/SKILL.md): 8-Schritte-Workflow von der User Story über Architekturchecks und TDD bis zum atomaren Commit.
+* 📦 [**`release-versioning-rules`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/release-versioning-rules/SKILL.md): Kriterienkatalog für SemVer 2.0.0 (Major vs. Minor vs. Patch Releases) und Gradle-Bumps.
 
 ---
 

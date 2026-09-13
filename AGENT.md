@@ -85,6 +85,9 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
   - `git-commit-guidelines`: Skill zur Durchsetzung von Conventional Commits, Scope-Validierung und automatischem Testing-Mandat.
   - `unit-testing-guidelines`: Leitfaden zur Erstellung automatisierter Unit-Tests (AAA-Pattern, Mappers, Serializers, Room, Invarianten).
   - `feature-implementation-workflow`: End-to-End Workflow zur Implementierung neuer Features und User Stories (Requirements, Invarianten, Tests, UI, Tracking, Commit).
+  - `release-versioning-rules`: Regeln und Kriterien zur Einstufung von Releases in SemVer (Major vs. Minor vs. Patch) und Gradle-Version-Bumps.
+- [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
+  - Automatisierte GitHub Actions Pipeline mit `test`-Stage (Unit-Tests) und `build-apks`-Stage (Debug-APKs für Mobile & Wear OS zum Download).
 
 ---
 

@@ -62,6 +62,8 @@ Every commit (except pure root documentation/chore commits) should specify one o
 4. **Atomic Commits:** Each commit must encapsulate a single logical change.
 5. **Strict Test Mandate (`feat` must include tests):** Whenever a new feature or logic is committed (`feat(...)`), the associated unit tests **MUST** be included in the exact same commit.
 6. **Progress Tracking in `AGENT.md`:** When completing user stories or features, ensure the implementation tracking checklist in `AGENT.md` and `agents.md` is updated.
+7. **Semantic Versioning Mapping:** Follow the [release-versioning-rules](../release-versioning-rules/SKILL.md) skill: `feat` triggers a MINOR release, `fix`/`perf`/`refactor` triggers a PATCH release, and breaking changes (`feat!:` or `BREAKING CHANGE:`) trigger a MAJOR release.
+
 
 ---
 

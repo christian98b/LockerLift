@@ -32,8 +32,8 @@ Dieses Dokument ist identisch zu [AGENT.md](AGENT.md) und dient als Referenz und
 - [x] **Health Connect Client & Record Builder** (`:core:healthconnect`)
 - [x] **Mobile App UI & Listener Service** (`:mobile`)
 - [x] **Wear OS Standalone Tracking & Ongoing Activity Service** (`:wear`)
-- [x] **Unit Testing Suite** (`:core:model`, `:core:sync`, `:core:database`)
-- [x] **Agent Skills** (`git-commit-guidelines`, `unit-testing-guidelines`, `feature-implementation-workflow`)
+- [x] **Agent Skills** (`git-commit-guidelines`, `unit-testing-guidelines`, `feature-implementation-workflow`, `release-versioning-rules`)
+- [x] **GitHub Actions CI/CD Pipeline** (`.github/workflows/build-and-test.yml` mit Test- & APK-Build-Stage)
 
 ---
 
