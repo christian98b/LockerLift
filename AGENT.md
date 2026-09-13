@@ -81,6 +81,8 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
   - `DomainModelTest.kt`: Tests für Instanziierung, UUIDs, Defaults und JSON-Serialisierung.
   - `SyncPayloadSerializerTest.kt`: Tests für verlustfreie Enkodierung/Dekodierung komplexer Workout-Payloads.
   - `EntityMappingTest.kt`: Tests für bidirektionale Mappings zwischen Domain-Modellen und Room-Entities sowie Type-Converters.
+- [x] **Agent Skills (`.agents/skills/`)**
+  - `git-commit-guidelines`: Skill zur Durchsetzung von Conventional Commits, Scope-Validierung und automatischem Testing-Mandat.
 
 ---
 

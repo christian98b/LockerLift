@@ -33,6 +33,7 @@ Dieses Dokument ist identisch zu [AGENT.md](AGENT.md) und dient als Referenz und
 - [x] **Mobile App UI & Listener Service** (`:mobile`)
 - [x] **Wear OS Standalone Tracking & Ongoing Activity Service** (`:wear`)
 - [x] **Unit Testing Suite** (`:core:model`, `:core:sync`, `:core:database`)
+- [x] **Agent Skills** (`.agents/skills/git-commit-guidelines`)
 
 ---
 
