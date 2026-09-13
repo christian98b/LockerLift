@@ -80,10 +80,11 @@ flowchart TD
   - Root Gradle Configuration: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `.gitignore`.
   - Module Structure: `:core:model`, `:core:database`, `:core:sync`, `:core:healthconnect`, `:mobile`, `:wear`.
 - [x] **Documentation & Issue Tracking**
-  - `README.md` (Project overview & tech stack in English)
+  - `README.md` (Project overview, tech stack, and user guides index)
+  - `documentation/` (Official user documentation portal: getting started, locker scenario guide, wear OS tracking guide, mobile app guide, FAQ & troubleshooting)
   - GitHub Issues #1–#15 (Epics 1–6 with all acceptance criteria, transferred from specification)
   - `ARCHITECTURE.md` (System design, ERD, Wearable Data Layer protocols, Health Connect)
-  - `AGENTS.md` (Developer & agent guidelines with testing mandate & changelog)
+  - `AGENTS.md` (Developer & agent guidelines with multi-agent orchestration, testing mandate & changelog)
 - [x] **Internationalization (i18n)**
   - English (default) and German (`values-de/`) language support across `:mobile` and `:wear`.
   - All user-facing strings migrated to `res/values/strings.xml` and `res/values-de/strings.xml`.

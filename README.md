@@ -268,11 +268,25 @@ The repository equips coding assistants and human developers with structured gui
 
 ## 📖 Documentation & Resources
 
+### 📚 User Guides & Manuals
+Comprehensive user documentation is available in the [`documentation/`](documentation/README.md) directory:
+
+| Guide | Description |
+|---|---|
+| [**Documentation Portal**](documentation/README.md) | Central hub with navigation index and visual system architecture map. |
+| [**🚀 Getting Started & Installation**](documentation/getting-started.md) | Step-by-step setup, sideloading APKs, ADB wireless debugging, and initial cold-start. |
+| [**🔒 The Locker Scenario & Sync**](documentation/locker-scenario-guide.md) | Deep dive into offline tracking, the 5-phase Store-and-Forward lifecycle, and reconnect resilience. |
+| [**⌚ Wear OS Smartwatch Tracking Guide**](documentation/wear-os-user-guide.md) | Autonomous on-wrist tracking, rotary dial input, double progression cues, rest timer haptics, and template consolidation. |
+| [**📱 Mobile Smartphone App Guide**](documentation/mobile-user-guide.md) | Equipment catalog management, workout templates, session history analysis, Health Connect sync, and multi-language support. |
+| [**❓ FAQ & Troubleshooting**](documentation/faq-troubleshooting.md) | Frequently asked questions, sync diagnostics flowchart, battery optimizations, and known fixes. |
+
+### 🛠️ Developer & Technical References
+
 | Document | Description |
 |---|---|
 | [**GitHub Issues & User Stories**](https://github.com/christian98b/LockerLift/issues) | Complete specification (Epics 1 through 6, US 1.1–US 6.2) tracked as GitHub Issues. |
-| [**`ARCHITECTURE.md`**](file:///C:/Users/Chris/code/LockerLift/ARCHITECTURE.md) | Technical system architecture, ER diagrams, sequence diagrams, and Wear OS invariants. |
-| [**`AGENTS.md`**](file:///C:/Users/Chris/code/LockerLift/AGENTS.md) | Developer guidelines, invariant mandates, and active implementation progress log. |
+| [**`ARCHITECTURE.md`**](ARCHITECTURE.md) | Technical system architecture, ER diagrams, sequence diagrams, and Wear OS invariants. |
+| [**`AGENTS.md`**](AGENTS.md) | Developer guidelines, invariant mandates, multi-agent orchestration, and active implementation progress log. |
 
 ---
 
