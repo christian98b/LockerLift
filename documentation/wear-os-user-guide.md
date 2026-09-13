@@ -95,18 +95,77 @@ flowchart LR
 
 ---
 
-## 🔄 Ad-Hoc Exercises & Skipping
+### Historical Reference Data & Intelligent Prefilling
+Never wonder what weight you lifted last week:
+* **Automatic Performance Recall:** Whenever you select an exercise, LockerLift queries your local database and prominently displays your past performance at the top of the input dialog:
+  ```text
+  ┌───────────────────────────────────┐
+  │  📊 Last: 80 kg × 10, 80 kg × 9   │
+  └───────────────────────────────────┘
+  ```
+* **Auto-Prefill:** For your first set, LockerLift automatically pre-fills the weight and reps from your last completed workout, so you can immediately begin without scrolling from zero.
 
-Gyms get crowded. If a piece of equipment is occupied or broken, LockerLift adapts without breaking your workout:
+---
 
-### Adding an Exercise Mid-Workout (Cold-Start)
-1. On the **Active Workout Screen**, scroll to the bottom.
-2. Tap **+ Add Exercise**.
-3. A new station is created instantly with a default setup and added to your active routine.
+## ⏱️ Rest Timer & Haptic Alerts
 
-### Skipping an Exercise
-* If you cannot perform a scheduled station today, tap on the station card and choose **Skip**.
-* The station is marked as `Skipped` (dimmed) and excluded from Health Connect set counts, but preserved for your history.
+Recovery between heavy sets is critical for strength development:
+
+```mermaid
+flowchart LR
+    A["Tap 'Complete Set'"] --> B["Automatic 90s Rest Timer"]
+    B --> C["Haptic Vibration Sequence"]
+    B -.->|"Optional"| D["Tap 'Skip' to Lift Early"]
+    C --> E["Return to Station Overview"]
+    D --> E
+```
+
+### Rest Timer Features:
+1. **Automatic Activation:** Immediately upon tapping **Complete Set**, the rest countdown screen appears.
+2. **Multi-Pulse Haptic Vibration:** When the timer reaches `00:00`, your watch vibrates with a distinct multi-burst waveform. You don't need to look at your watch or listen for beeps over loud gym music.
+3. **Skip Button:** Feeling ready earlier? Tap **Skip** at any time to return directly to your exercise list.
+
+---
+
+## 🔄 In-Workout Station Management: Replace, Skip & Create
+
+Gyms get crowded. If a piece of equipment is occupied or broken, LockerLift adapts seamlessly:
+
+```mermaid
+flowchart TD
+    Card["Station Card on Watch"] --> Actions{"Choose Action"}
+    Actions -->|"Replace"| Picker["Choose from Catalog / Alternative"]
+    Actions -->|"Skip"| Dim["Mark Skipped (Bypass)"]
+    Actions -->|"Setup Note"| Note["Edit Seat/Pin Settings"]
+    Note --> Choice{"Save Target"}
+    Choice -->|"This Workout"| SessionOnly["Session Instance Only"]
+    Choice -->|"Save to Catalog"| CatalogUpdate["Permanently Updates Catalog"]
+```
+
+### 1. Replacing a Station (US 3.3)
+If a barbell bench or cable station is occupied:
+1. On the station card, tap **Replace**.
+2. Browse your synced catalog or create a replacement.
+3. The selected machine replaces the station in your active workout without altering the original template.
+
+### 2. Skipping & Resuming Stations (US 3.3)
+* Tap **Skip** on any station to bypass it. The card dims (`surfaceContainerLow`) and displays a **Skipped** badge.
+* If the machine becomes free later, tap **Resume** to reactivate and log your sets.
+
+### 3. Creating New Machines on the Watch (Cold-Start US 1.1 & US 3.2)
+Don't have a machine in your catalog yet?
+1. Tap **+ Add exercise** at the bottom of the workout screen.
+2. Tap **+ New Machine**.
+3. Choose or enter the name, select the weight increment (e.g., 2.5 kg), and tap save.
+4. Duplicate names are automatically detected and prevented locally. The new machine is appended to your workout and saved to your equipment catalog!
+
+### 4. Updating Setup Notes on the Fly (US 1.2)
+Changed your seat height or peg position?
+1. Tap **Setup Note** on the station card.
+2. Adjust your note using quick presets (e.g., *Seat 2*, *Pin 4*, *Peg 3*) or text input.
+3. Choose:
+   * **Workout Only:** Saves the note for today's workout.
+   * **Save to Catalog:** Updates your permanent machine catalog so you remember it next time!
 
 ---
 

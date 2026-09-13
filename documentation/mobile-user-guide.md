@@ -35,21 +35,40 @@ flowchart LR
 
 ---
 
+### Editing Equipment Details & Auto-Sync
+* Tap any machine in your catalog to edit its name, muscle group, custom settings note, or weight increment.
+* Whenever you save changes to a machine, LockerLift automatically synchronizes the updated catalog to your smartwatch via Google Play Services `DataClient` (`/equipment_catalog`).
+
+---
+
 ## 📑 Workout Template Management
 
-The **Templates** tab (`TemplateListScreen`) provides $n$-template programming capabilities. You can create as many training splits or single-day routines as your program requires.
+The **Templates** tab (`TemplateListScreen`) provides flexible, $n$-template programming capabilities. You can create as many training splits or single-day routines as your program requires.
 
-### Supported Routine Styles:
-* **Push / Pull / Legs (PPL)**
-* **Upper / Lower Split**
-* **Full Body Routines**
-* **Specialized Rehab or Arm Days**
+### Managing Exercises in a Template (US 2.1 & US 2.2)
+Tap on any template card to open the **Template Detail Editor**:
 
-### Creating a Template
-1. Navigate to the **Templates** tab.
-2. Tap the floating **+** button.
-3. Enter a **Name** (e.g., *Leg Day - Quad Focus*) and an optional **Description** (e.g., *Heavy squat progression followed by hack squat and leg extensions*).
-4. Tap **Create**.
+```mermaid
+flowchart TD
+    Card["Tap Template Card"] --> Editor["Template Detail Editor"]
+    Editor --> A["Move Up / Move Down (Reorder Exercises)"]
+    Editor --> B["Add Exercise (Catalog Picker)"]
+    Editor --> C["Remove Exercise (Leaves Catalog Intact)"]
+    Editor --> Save["Save Template"]
+    Save --> Sync["Automatic DataClient Sync to Watch"]
+```
+
+1. **Reordering Exercises (US 2.1, AK 2.1.3):**
+   * Use the **▲ (Move Up)** and **▼ (Move Down)** buttons on any exercise to change its execution sequence.
+   * Exercises will load on your watch in this exact order.
+2. **Assigning Exercises (US 2.2, AK 2.2.1):**
+   * Tap **+ Add Exercise** to open the catalog picker and assign any machine to the template.
+   * A single machine can be assigned to multiple templates (e.g. barbell bench in both *Push* and *Full Body*).
+3. **Removing Exercises (US 2.2, AK 2.2.2):**
+   * Tap **Remove** next to an exercise to detach it from the template.
+   * **Catalog & History Safety:** Removing an exercise from a template leaves the machine intact in your global catalog and never alters or deletes your past workout history.
+4. **Automatic Smartwatch Sync (US 5.2):**
+   * When you tap **Save**, the template and ordered machine associations are automatically transmitted to your Wear OS watch via `DataClient` (`/workout_templates`).
 
 ### Cold-Start Templates (Zero-Prep Plans)
 Don't have time to configure all exercises before heading to the gym?
@@ -92,7 +111,14 @@ LockerLift connects directly with Android's unified health database:
    * **Exercise Type:** `EXERCISE_TYPE_STRENGTH_TRAINING`
    * **Start & End Timestamps:** Exact workout duration
    * **Workout Title:** Template name or *"Free Workout (LockerLift)"*
-3. Compatible apps (such as **Google Fit**, **Samsung Health**, **Peloton**, or **MyFitnessPal**) immediately read the session from Health Connect without any manual export/import steps!
+3. **Telemetry Integration (US 6.1, AK 6.1.3):**
+   * **Calories Burned (`TotalCaloriesBurnedRecord`):** Total active calories recorded during the session are linked to the exercise record.
+   * **Heart Rate (`HeartRateRecord`):** Heart rate samples logged during the workout are attached as time-series metrics.
+4. **Granular Privacy & Silent Fallback (US 6.2):**
+   * LockerLift checks granted permissions (`HealthConnectClient.permissionController.getGrantedPermissions()`) before each write.
+   * If telemetry permissions are denied, the exercise session is still exported without heart rate or calories.
+   * If all Health Connect permissions are denied, the export gracefully falls back without any errors or interruptions to normal app use.
+5. Compatible apps (such as **Google Fit**, **Samsung Health**, **Peloton**, or **MyFitnessPal**) immediately read the session from Health Connect without any manual export/import steps!
 
 ---
 
