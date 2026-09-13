@@ -136,6 +136,7 @@ flowchart TD
   - `release-creation-guide`: End-to-end operational guide for drafting, tagging, packaging, and publishing official releases via GitHub CLI.
   - `internationalization-guide`: Standards and procedures for adding new language locales and managing strings across mobile and wear.
   - `user-documentation-guide`: Guidelines and standards for writing structured, accessible, and user-centric documentation.
+  - `issue-creation-guide`: Standards, templates, and best practices for authoring and filing high-quality GitHub issues.
   - `issue-closing-and-commenting-guide`: Standards, quality gates, and structured Markdown templates for verifying, commenting on, and closing GitHub issues.
 - [x] **Official Releases**
   - `v1.0.0`: Initial production release with full offline tracking, rotary controls, template management, sync protocol, Health Connect, and standalone APK binaries.

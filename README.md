@@ -264,6 +264,7 @@ The repository equips coding assistants and human developers with structured gui
 * 🚀 [**`release-creation-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/release-creation-guide/SKILL.md): End-to-end operational guide for drafting, tagging, packaging, and publishing official releases via GitHub CLI.
 * 🌐 [**`internationalization-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/internationalization-guide/SKILL.md): Step-by-step instructions for adding new language locales, string extraction, and formatting rules.
 * ✍️ [**`user-documentation-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/user-documentation-guide/SKILL.md): Standards and visual design principles for creating structured, beautiful, and user-centric documentation.
+* 📋 [**`issue-creation-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/issue-creation-guide/SKILL.md): Standards, required templates, label taxonomies, and CLI workflows for filing well-structured issues.
 * 🏷️ [**`issue-closing-and-commenting-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/issue-closing-and-commenting-guide/SKILL.md): Standards, quality gates, and structured Markdown templates for verifying, commenting on, and closing GitHub issues.
 
 ---
