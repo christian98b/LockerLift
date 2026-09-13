@@ -90,6 +90,7 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
   - `unit-testing-guidelines`: Guide for automated unit tests (AAA pattern, mappers, serializers, Room, invariants).
   - `feature-implementation-workflow`: End-to-end workflow for implementing new features and user stories.
   - `release-versioning-rules`: Rules and criteria for SemVer release bumps (Major vs. Minor vs. Patch) and Gradle version bumps.
+  - `internationalization-guide`: Standards and procedures for adding new language locales and managing strings across mobile and wear.
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 

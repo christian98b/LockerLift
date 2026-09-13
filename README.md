@@ -261,6 +261,7 @@ The repository equips coding assistants and human developers with structured gui
 * 🧪 [**`unit-testing-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/unit-testing-guidelines/SKILL.md): Standards for test structuring (AAA pattern, in-memory Room, coroutine testing).
 * 🚀 [**`feature-implementation-workflow`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/feature-implementation-workflow/SKILL.md): 8-step lifecycle from user stories through architecture validation to atomic commits.
 * 📦 [**`release-versioning-rules`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/release-versioning-rules/SKILL.md): Criteria catalog for SemVer 2.0.0 (Major vs. Minor vs. Patch) and Gradle release bumps.
+* 🌐 [**`internationalization-guide`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/internationalization-guide/SKILL.md): Step-by-step instructions for adding new language locales, string extraction, and formatting rules.
 
 ---
 
