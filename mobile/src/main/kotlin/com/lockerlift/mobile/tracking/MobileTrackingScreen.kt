@@ -1,10 +1,8 @@
 package com.lockerlift.mobile.tracking
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,8 +48,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     val healthConnectManager = remember { HealthConnectManager(app) }
     val coroutineScope = rememberCoroutineScope()
 
-    val templates by templateDao.getAllTemplatesFlow().collectAsState(initial = emptyList())
-    val machines by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
+    val templateWithMachinesList by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
+    val machineEntities by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
+
+    val machines: List<Machine> = remember(machineEntities) { machineEntities.map { it.toDomainModel() } }
+    val templates: List<WorkoutTemplate> = remember(templateWithMachinesList) { templateWithMachinesList.map { it.template.toDomainModel() } }
 
     // Active session state
     var isWorkoutActive by remember { mutableStateOf(false) }
@@ -364,7 +364,8 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             }
 
                             // Setup Note (editable)
-                            if (instance.customSettingsNote.isNotBlank()) {
+                            val noteText = instance.customSettingsNote ?: ""
+                            if (noteText.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 TextButton(
                                     onClick = { showEditNoteIndex = index },
@@ -373,7 +374,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = stringResource(R.string.setup_format, instance.customSettingsNote),
+                                        text = stringResource(R.string.setup_format, noteText),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -703,6 +704,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             }
 
                             val newMachine = Machine(
+                                id = UUID.randomUUID().toString(),
                                 name = newMachineName.trim(),
                                 targetMuscleGroup = newMuscleGroup.trim().ifEmpty { "General" },
                                 machineSettingsNote = newSettingsNote.trim(),
@@ -776,7 +778,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     // --- EDIT NOTE DIALOG ---
     if (showEditNoteIndex in sessionInstances.indices) {
         val instance = sessionInstances[showEditNoteIndex]
-        var noteInput by remember { mutableStateOf(instance.customSettingsNote) }
+        var noteInput by remember(showEditNoteIndex) { mutableStateOf(instance.customSettingsNote ?: "") }
 
         AlertDialog(
             onDismissRequest = { showEditNoteIndex = -1 },
@@ -879,7 +881,8 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             // 2. Consolidate template if requested
                             if (consolidateTemplate && currentTemplateId != null) {
                                 val activeMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-                                val existingTemplate = templateDao.getTemplateById(currentTemplateId!!)
+                                val templateWithMachines = templateDao.getTemplateWithMachinesById(currentTemplateId!!)
+                                val existingTemplate = templateWithMachines?.template
                                 if (existingTemplate != null) {
                                     templateDao.saveTemplateWithMachines(existingTemplate, activeMachineIds)
                                 }
@@ -910,6 +913,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
                             syncQueueDao.insertQueueItem(
                                 SyncQueueEntity(
+                                    id = UUID.randomUUID().toString(),
                                     sessionId = session.id,
                                     payloadJson = payloadJson
                                 )

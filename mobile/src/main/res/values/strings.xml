@@ -78,6 +78,7 @@
     <string name="consolidate_template_desc">Save modifications (added, replaced, or skipped exercises) back to template?</string>
     <string name="btn_save_and_finish">Save &amp; Finish</string>
     <string name="workout_finished_success">Workout successfully recorded and queued for sync!</string>
+    <string name="sets_completed_format">%1$d sets completed</string>
     <string name="discard_workout">Discard Workout</string>
     <string name="discard_workout_confirm">Are you sure you want to discard this active workout? All logged sets will be lost.</string>
 </resources>

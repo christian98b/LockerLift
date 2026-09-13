@@ -78,6 +78,7 @@
     <string name="consolidate_template_desc">Sollen die Änderungen (hinzugefügte, ersetzte oder übersprungene Übungen) in der Trainingsvorlage gespeichert werden?</string>
     <string name="btn_save_and_finish">Speichern &amp; Abschließen</string>
     <string name="workout_finished_success">Training erfolgreich gespeichert und zur Synchronisation eingereiht!</string>
+    <string name="sets_completed_format">%1$d Sätze absolviert</string>
     <string name="discard_workout">Training abbrechen</string>
     <string name="discard_workout_confirm">Möchtest du dieses Training wirklich verwerfen? Alle erfassten Sätze gehen verloren.</string>
 </resources>
