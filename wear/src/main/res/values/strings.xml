@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">LockerLift</string>
+    <string name="title_active_workout">Training</string>
+    <string name="notification_channel_name">LockerLift Workout Tracking</string>
+    <string name="notification_title">Aktives Workout</string>
+    <string name="notification_text">Dein Training wird im Hintergrund aufgezeichnet.</string>
+</resources>

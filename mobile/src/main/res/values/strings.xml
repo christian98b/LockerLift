@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">LockerLift</string>
+    <string name="title_catalog">Maschinenkatalog</string>
+    <string name="title_templates">Trainingspläne</string>
+    <string name="title_history">Historie</string>
+    <string name="title_tracking">Live Tracking</string>
+</resources>
