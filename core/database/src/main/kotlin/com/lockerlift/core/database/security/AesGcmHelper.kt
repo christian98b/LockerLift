@@ -30,7 +30,6 @@ object AesGcmHelper {
     private const val ALGORITHM_AES = "AES"
     private const val TRANSFORMATION_AES_GCM = "AES/GCM/NoPadding"
     private const val GCM_TAG_LENGTH_BITS = 128
-    private const val GCM_IV_LENGTH_BYTES = 12
     const val KEY_SIZE_BYTES = 32
 
     private val secureRandom = SecureRandom()
@@ -62,15 +61,16 @@ object AesGcmHelper {
     }
 
     /**
-     * Encrypts plaintext using AES-GCM with a freshly generated 12-byte IV.
+     * Encrypts plaintext using AES-GCM with a provider-generated IV.
+     *
+     * AndroidKeyStore keys require the provider to generate the IV when
+     * randomized encryption is enabled (the secure default).
      */
     fun encrypt(secretKey: SecretKey, plaintext: ByteArray): AesGcmEncryptedData {
-        val iv = generateRandomBytes(GCM_IV_LENGTH_BYTES)
         val cipher = Cipher.getInstance(TRANSFORMATION_AES_GCM)
-        val parameterSpec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         val ciphertext = cipher.doFinal(plaintext)
-        return AesGcmEncryptedData(iv = iv, ciphertext = ciphertext)
+        return AesGcmEncryptedData(iv = cipher.iv, ciphertext = ciphertext)
     }
 
     /**

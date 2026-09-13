@@ -19,6 +19,7 @@ class AesGcmHelperTest {
 
         assertArrayEquals(originalPlaintext, decrypted)
         assertEquals(String(originalPlaintext, Charsets.UTF_8), String(decrypted, Charsets.UTF_8))
+        assertEquals(12, encrypted.iv.size)
     }
 
     @Test
