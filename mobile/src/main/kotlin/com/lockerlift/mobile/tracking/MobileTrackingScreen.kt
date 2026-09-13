@@ -217,9 +217,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    if (!template.description.isNullOrBlank()) {
+                                    val desc = template.description
+                                    if (!desc.isNullOrBlank()) {
                                         Text(
-                                            text = template.description,
+                                            text = desc,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
