@@ -2,9 +2,9 @@ name: Test & Build APKs
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -20,16 +20,19 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android SDK 37
+        run: sdkmanager "platforms;android-37"
+
       - name: Set up Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: "8.10.2"
           cache-read-only: false
 
       - name: Run Unit Tests
@@ -40,7 +43,7 @@ jobs:
         if: always()
         with:
           name: unit-test-reports
-          path: '**/build/reports/tests/**'
+          path: "**/build/reports/tests/**"
           retention-days: 7
 
   # 2. Build Stage: Build Mobile and Wear OS APKs only if test job passes
@@ -56,16 +59,19 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android SDK 37
+        run: sdkmanager "platforms;android-37"
+
       - name: Set up Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: "8.10.2"
 
       - name: Build Mobile & Wear OS APKs
         run: gradle :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
