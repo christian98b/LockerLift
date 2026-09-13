@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.lockerlift.core.healthconnect"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28

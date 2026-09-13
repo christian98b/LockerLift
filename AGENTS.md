@@ -175,9 +175,9 @@ flowchart TD
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 - [x] **16 KB Page-Size Compatibility Remediation**
-  - Upgraded Compose BOM from `2024.11.00` to `2026.09.00`, which brings the current `androidx.graphics.path` native artifact.
-  - Upgraded `net.zetetic:sqlcipher-android` from `4.5.5` to `4.19.0` for a 16 KB-compatible native SQLCipher binary.
-  - Verified both published dependency coordinates and confirmed AGP `8.7.2` already satisfies the required 16 KB APK packaging support.
+  - Upgraded the Compose BOM to `2025.08.01` and pinned `androidx.graphics:graphics-path` to `1.1.0` for the current native graphics artifact while retaining SDK 35 compatibility.
+  - Upgraded `net.zetetic:sqlcipher-android` from `4.5.5` to `4.17.0`, the latest SDK 35-compatible release.
+  - Verified AGP `8.7.2` already satisfies the required 16 KB APK packaging support.
 
 ---
 

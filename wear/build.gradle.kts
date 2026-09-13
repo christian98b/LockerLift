@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.lockerlift.wear"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.lockerlift.wear"
@@ -52,6 +52,7 @@ dependencies {
 
     // Wear OS Compose & Horologist
     implementation(libs.androidx.wear.compose.material)
+    implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.compose.navigation)
     implementation(libs.horologist.composables)
