@@ -18,7 +18,42 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
 
 ---
 
-## 2. Strict Unit Testing Mandate
+## 2. Multi-Agent Orchestration & Workflow Model
+
+LockerLift development is executed via an **autonomous multi-agent hierarchy**:
+
+```mermaid
+flowchart TD
+    User["User / Product Owner"] --> Orchestrator["Main AI Orchestrator"]
+    Orchestrator -->|"Decomposes tasks & spawns"| Impl["Implementation Agents (Domain / UI / Sync)"]
+    Impl -->|"Delivers code + unit tests"| Orchestrator
+    Orchestrator -->|"Collects implementations & pushes"| DevOps["DevOps Engineer Agent"]
+    DevOps -->|"Monitors & watches"| CI["GitHub Actions CI Pipeline"]
+    CI -- "Build/Test Failure" --> DevOps
+    DevOps -- "Diagnoses & fixes errors" --> CI
+    DevOps -->|"Reports green pipeline & APKs"| Orchestrator
+```
+
+### 2.1 Agent Roles & Responsibilities
+
+1. **Main AI Orchestrator:**
+   * Acts as the primary interface to the user and overall project architect.
+   * Analyzes user requests, maintains architectural invariants, and decomposes goals into modular implementation tasks.
+   * Spawns specialized **Implementation Agents** as needed across modules (`:core:*`, `:mobile`, `:wear`).
+   * Collects and integrates deliverables from all implementation agents once their work is completed.
+2. **Implementation Agents:**
+   * Autonomous subagents assigned to specific domain logic, screens, DAOs, or sync features.
+   * Adhere strictly to the unit testing mandate: write tests concurrently with code (`AAA` pattern).
+   * Report diffs, files created/modified, and test outcomes back to the Main AI Orchestrator.
+3. **DevOps Engineer Agent:**
+   * Spawned by the Main AI Orchestrator after implementations are consolidated and pushed to the repository.
+   * Monitors and watches GitHub Actions CI/CD workflows (`gh run list`, `gh run watch`).
+   * Inspects runner logs, diagnoses build, compilation, classpath, or test failures on GitHub, and fixes them autonomously.
+   * Ensures the entire CI pipeline turns green and downloadable APK artifacts are produced.
+
+---
+
+## 3. Strict Unit Testing Mandate
 
 > [!IMPORTANT]
 > **Unit tests are mandatory for every implementation:**
@@ -29,7 +64,7 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
 
 ---
 
-## 3. Implementation Progress & Tracking
+## 4. Implementation Progress & Tracking
 
 > [!NOTE]
 > **Mandatory for every agent:** Whenever new features are implemented, adjusted, or extended, this section in `AGENTS.md` **MUST** be updated immediately. Document:
@@ -96,7 +131,7 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
 
 ---
 
-## 4. Immutable Architectural Invariants
+## 5. Immutable Architectural Invariants
 
 1. **UUIDs as Primary Keys:**
    * Always use `java.util.UUID.randomUUID().toString()` as the primary key for all entities.
@@ -117,7 +152,7 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
 
 ---
 
-## 5. Module Structure & Package Organization
+## 6. Module Structure & Package Organization
 
 Root package: `com.lockerlift`
 
@@ -135,9 +170,9 @@ Root package: `com.lockerlift`
 
 ---
 
-## 6. Code Conventions & Best Practices
+## 7. Code Conventions & Best Practices
 
-### 6.1 Kotlin & Coroutines
+### 7.1 Kotlin & Coroutines
 * **Null Safety:** Prefer non-nullable types. Avoid `!!` without exception.
 * **Coroutines Dispatcher:**
   * UI / ViewModels: `viewModelScope.launch` on `Dispatchers.Main`.
@@ -147,7 +182,7 @@ Root package: `com.lockerlift`
   * ViewModels expose `StateFlow<UiState>` via `asStateFlow()`.
   * One-off events (navigation, snackbars, haptics) are handled via `SharedFlow` or `Channel`.
 
-### 6.2 Jetpack Compose & Wear OS Compose
+### 7.2 Jetpack Compose & Wear OS Compose
 * **State Hoisting:** UI components are stateless whenever possible.
 * **Wear OS Horologist:**
   * Use Horologist `ScalingLazyColumn` with appropriate content padding for round displays.
@@ -155,14 +190,14 @@ Root package: `com.lockerlift`
 * **Haptics:**
   * Use `LocalHapticFeedback.current` for clicks on rotary steps and completion of sets or rest timer expiration.
 
-### 6.3 Room Database
+### 7.3 Room Database
 * All foreign keys define explicit cascade delete behavior (`onDelete = ForeignKey.CASCADE` for child elements such as sets).
 * Create indices for all foreign keys and frequently queried columns (e.g., `machine_id`, `session_id`).
 * Complex write operations (e.g., workout completion, sync import) must be encapsulated in `@Transaction` methods.
 
 ---
 
-## 7. Git & Commit Guidelines (Commit Message Guidelines)
+## 8. Git & Commit Guidelines (Commit Message Guidelines)
 
 All commits must adhere to the **Conventional Commits** standard (v1.0.0). This ensures a clean project history, automatic changelog generation, and full traceability.
 
@@ -175,7 +210,7 @@ All commits must adhere to the **Conventional Commits** standard (v1.0.0). This 
 [Optional footer: references to user stories or issue tracking, e.g. 'Closes US-3.1']
 ```
 
-### 7.1 Allowed Types (`type`)
+### 8.1 Allowed Types (`type`)
 * `feat`: New user feature (e.g., new screen, progression logic).
 * `fix`: Bugfix or correction of unexpected behavior.
 * `test`: Adding, updating, or fixing unit tests.
@@ -184,7 +219,7 @@ All commits must adhere to the **Conventional Commits** standard (v1.0.0). This 
 * `chore`: Build configuration, Gradle updates, version bumps, `.gitignore`.
 * `perf`: Performance optimizations.
 
-### 7.2 Allowed Scopes (`scope`)
+### 8.2 Allowed Scopes (`scope`)
 * `model`: Changes in `:core:model`
 * `database`: Changes in `:core:database`
 * `sync`: Changes in `:core:sync`
@@ -193,7 +228,7 @@ All commits must adhere to the **Conventional Commits** standard (v1.0.0). This 
 * `wear`: Changes in `:wear`
 * `project`: Cross-cutting changes affecting multiple modules or root setup
 
-### 7.3 Mandatory Commit Rules
+### 8.3 Mandatory Commit Rules
 1. **Imperative Mood / Present Tense:** Write `feat(wear): add rotary input support` instead of `added rotary input`.
 2. **No Trailing Period:** The subject line must **never** end with a period.
 3. **Subject Length:** Keep the first line strictly under 72 characters.
