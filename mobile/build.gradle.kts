@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.lockerlift.mobile"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.lockerlift.mobile"

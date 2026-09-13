@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.lockerlift.wear"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.lockerlift.wear"
