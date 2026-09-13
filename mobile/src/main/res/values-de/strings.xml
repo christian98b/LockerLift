@@ -81,4 +81,31 @@
     <string name="sets_completed_format">%1$d Sätze absolviert</string>
     <string name="discard_workout">Training abbrechen</string>
     <string name="discard_workout_confirm">Möchtest du dieses Training wirklich verwerfen? Alle erfassten Sätze gehen verloren.</string>
+
+    <!-- Navigation -->
+    <string name="tab_settings">Einstellungen</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_backup_folder_section">Sicherungsordner</string>
+    <string name="settings_backup_folder_not_set">Kein Ordner ausgewählt</string>
+    <string name="settings_btn_choose_folder">Ordner auswählen</string>
+    <string name="settings_manual_backup_section">Manuelle Sicherung</string>
+    <string name="settings_btn_export">In lokalen Ordner exportieren</string>
+    <string name="settings_restore_section">Wiederherstellen</string>
+    <string name="settings_btn_restore">Aus Datei wiederherstellen</string>
+    <string name="settings_schedule_section">Geplante Sicherungen</string>
+    <string name="settings_schedule_label">Sicherungsintervall</string>
+    <string name="settings_schedule_disabled">Deaktiviert</string>
+    <string name="settings_schedule_daily">Täglich</string>
+    <string name="settings_schedule_weekly">Wöchentlich</string>
+    <string name="settings_keep_count_label">Letzte N Sicherungen behalten</string>
+    <string name="settings_share_section">Sicherung teilen</string>
+    <string name="settings_btn_share">Letzte Sicherung teilen</string>
+    <string name="settings_backup_success">Sicherung erstellt: %1$s</string>
+    <string name="settings_backup_error">Sicherung fehlgeschlagen: %1$s</string>
+    <string name="settings_restore_success">Wiederherstellung erfolgreich abgeschlossen</string>
+    <string name="settings_restore_error">Wiederherstellung fehlgeschlagen: %1$s</string>
+    <string name="settings_no_backup_to_share">Keine Sicherungsdatei zum Teilen gefunden</string>
+    <string name="settings_folder_selected_format">Ordner: %1$s</string>
 </resources>

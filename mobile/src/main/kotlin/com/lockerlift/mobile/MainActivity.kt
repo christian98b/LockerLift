@@ -9,12 +9,14 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.lockerlift.mobile.tracking.MobileTrackingScreen
 import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
+import com.lockerlift.mobile.ui.settings.SettingsScreen
 import com.lockerlift.mobile.ui.templates.TemplateListScreen
 
 import androidx.annotation.StringRes
@@ -24,7 +26,8 @@ enum class MobileTab(@StringRes val labelRes: Int) {
     CATALOG(R.string.tab_catalog),
     TEMPLATES(R.string.tab_templates),
     HISTORY(R.string.tab_history),
-    TRACKING(R.string.tab_tracking)
+    TRACKING(R.string.tab_tracking),
+    SETTINGS(R.string.tab_settings)
 }
 
 class MainActivity : ComponentActivity() {
@@ -64,6 +67,12 @@ class MainActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.TRACKING.labelRes)) }
                             )
+                            NavigationBarItem(
+                                selected = selectedTab == MobileTab.SETTINGS,
+                                onClick = { selectedTab = MobileTab.SETTINGS },
+                                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                label = { Text(stringResource(MobileTab.SETTINGS.labelRes)) }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -73,6 +82,7 @@ class MainActivity : ComponentActivity() {
                             MobileTab.TEMPLATES -> TemplateListScreen(app)
                             MobileTab.HISTORY -> HistoryScreen(app)
                             MobileTab.TRACKING -> MobileTrackingScreen(app)
+                            MobileTab.SETTINGS -> SettingsScreen(app)
                         }
                     }
                 }

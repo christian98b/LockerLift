@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -61,6 +62,7 @@ dependencies {
 
     implementation(libs.play.services.wearable)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.documentfile)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
@@ -68,4 +70,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
+
+    // Local backup (US 7.2)
+    implementation(libs.kotlinx.serialization.json)
 }
