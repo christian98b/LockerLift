@@ -48,7 +48,9 @@ class WearDataLayerListenerService : WearableListenerService() {
                         serviceScope.launch {
                             runCatching {
                                 val templates = json.decodeFromString<List<WorkoutTemplateEntity>>(payloadString)
-                                templates.forEach { database.workoutTemplateDao().insertTemplate(it) }
+                                for (template in templates) {
+                                    database.workoutTemplateDao().insertTemplate(template)
+                                }
                                 Log.i(TAG, "Synchronized ${templates.size} templates from phone.")
                             }
                         }
