@@ -49,6 +49,10 @@
                     android:host="*"
                     android:pathPrefix="/workout_payload_transfer"
                     android:scheme="wear" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/workout_ack"
+                    android:scheme="wear" />
             </intent-filter>
         </service>
 

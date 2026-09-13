@@ -8,8 +8,8 @@
 }
 
 # SQLCipher
--keep class net.sqlcipher.** { *; }
--keep class net.sqlcipher.database.** { *; }
+-keep class net.zetetic.** { *; }
+-keep class net.zetetic.database.sqlcipher.** { *; }
 
 # Kotlinx Serialization
 -keepattributes *Annotation*, InnerClasses

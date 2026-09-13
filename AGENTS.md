@@ -112,31 +112,37 @@ flowchart TD
   - `CatalogScreen` (Machine catalog management, duplicate name validation, edit machine, Wear OS catalog replication via `DataClient`, localized strings).
   - `TemplateListScreen` (Template management, reordering exercises via Move Up/Down [AK 2.1.3], adding exercises via catalog picker [AK 2.2.1], removing exercises leaving catalog intact [AK 2.2.2], Wear OS templates replication via `DataClient` [US 5.2], localized strings).
   - `HistoryScreen` (Past sessions, set breakdown, localized strings).
-  - `MobileDataLayerListenerService` (Reception via `ChannelClient`, Room insert, Health Connect trigger & ACK).
+  - `MobileTrackingScreen`: Full standalone active workout tracking parity with Wear OS (free workout, template selection, station management, rep/weight input with quick steppers, double progression suggestion banner, rest timer with countdown, ad-hoc machine creation, station skip/replace, template consolidation prompt, Health Connect export, and Wearable sync).
+  - `MobileDataLayerListenerService` (Reception via `ChannelClient`, Room insert, Health Connect trigger & ACK, plus bidirectional ACK processing from Wear OS).
 - [x] **Epic 3 & 4: Standalone Wear OS Tracking (`:wear`)**
   - `WorkoutForegroundService` with Ongoing Activity notification & WakeLock.
   - `MainActivity` with template selection & free workout (localized strings).
   - `ActiveWorkoutScreen` (Exercise list, machine catalog selection, ad-hoc machine creation with duplicate check [US 1.1, AK 1.1.2, AK 1.1.3], station replacement [US 3.3, AK 3.3.2], settings note editing with catalog persistence [US 1.2, AK 1.2.2], station skipping [AK 3.3.1], template consolidation, queue persistence, localized strings).
   - `RepsWeightInputScreen` (Rotary input support, quick buttons, double progression overload suggestion, historical reference data card & prefill [US 4.1, AK 4.1.1], localized strings).
   - `RestTimerScreen` (Rest timer with haptic vibration, localized strings).
-  - `WearWorkoutLogic` (Pure domain logic for double progression, historical sets extraction & formatting, duplicate name validation, machine replacement, and prefilling).
-  - `WearDataLayerListenerService` (Master data sync for catalog and ordered templates via `SyncPayloadSerializer`, ACK handling).
+  - `WearWorkoutLogic` (Pure domain logic delegating to shared `WorkoutTrackingLogic`).
+  - `WearDataLayerListenerService` (Master data sync for catalog and templates, bidirectional workout session reception from phone via `ChannelClient`, ACK dispatch).
+- [x] **Bidirectional Workout History Synchronization (`:core:sync`, `:mobile`, `:wear`)**
+  - Symmetric workout session streaming: workouts tracked on either phone or watch stream via `ChannelClient` (`/workout_payload_transfer`) to the companion device.
+  - Automatic ingestion into Room DB for both devices ensuring identical past performance logs (`getLastCompletedSetsForMachine`), prefilling, and double progression baseline.
 - [x] **Security & Privacy Hardening (Audit Remediation)**
   - `AesGcmHelper`: Cryptographic utility for hardware-grade AES-256-GCM encryption, decryption, and secure random byte generation.
   - `DatabaseKeyManager`: AndroidKeyStore-backed master key lifecycle manager encrypting SQLCipher 256-bit passphrase at rest.
-  - `LockerLiftDatabase`: Active SQLCipher encryption integration with `SupportFactory`, automatic migration of existing plaintext SQLite databases, and removal of destructive migration fallback (`fallbackToDestructiveMigration`).
+  - `LockerLiftDatabase`: Active SQLCipher encryption integration with `SupportOpenHelperFactory`, automatic migration of existing plaintext SQLite databases, and removal of destructive migration fallback (`fallbackToDestructiveMigration`).
   - OS Backup Hardening: Disabled unencrypted automatic backups (`android:allowBackup="false"`) with explicit XML data extraction and backup rules (`data_extraction_rules.xml`, `backup_rules.xml`) across `:mobile` and `:wear`.
-  - Channel Stream Bounding: Enforced 5 MB maximum stream threshold in `MobileDataLayerListenerService` to prevent OOM/DoS attacks.
+  - Channel Stream Bounding: Enforced 5 MB maximum stream threshold in `MobileDataLayerListenerService` and `WearDataLayerListenerService` to prevent OOM/DoS attacks.
   - Node Capability Verification: Added capability declarations (`wear.xml`) for `lockerlift_mobile_app` and `lockerlift_wear_app`, and sender authorization checks in listener services.
   - Health Connect Standards: Added `ACTION_SHOW_PERMISSIONS_RATIONALE` and `VIEW_PERMISSION_USAGE` alias in mobile manifest, and dynamic local timezone offset calculation in `ExerciseRecordBuilder`.
-  - Domain Input Bounds: Added weight clamping (`0.0f..1000.0f` kg) and rep clamping (`1..999`) in `WearWorkoutLogic`.
-  - Release Optimization & Privacy: Added `proguard-rules.pro` stripping debug logging in release builds and retaining Room, SQLCipher, and serialization classes.
-- [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`, `:core:healthconnect`, `:wear`)**
+  - Domain Input Bounds: Added weight clamping (`0.0f..1000.0f` kg) and rep clamping (`1..999`) in `WorkoutTrackingLogic`.
+  - Release Optimization & Privacy: Added `proguard-rules.pro` stripping debug logging in release builds and retaining Room, SQLCipher (`net.zetetic`), and serialization classes.
+- [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`, `:core:healthconnect`, `:mobile`, `:wear`)**
   - `DomainModelTest.kt`: Tests for instantiation, UUIDs, defaults, and JSON serialization.
   - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads, `WorkoutTemplatePayload`, and machine catalogs.
   - `EntityMappingTest.kt`: Tests for bidirectional mappings, type converters, and `getLastCompletedSetsForMachine` query contract verification.
+  - `WorkoutTrackingLogicTest.kt`: Unit tests for double progression calculations, clamping, validation, and station operations.
   - `AesGcmHelperTest.kt`: Tests for AES-256-GCM encryption, decryption roundtrip, invalid key rejection, IV/ciphertext tampering detection, and key reconstruction.
   - `ExerciseRecordBuilderTest.kt`: Tests for `ExerciseSessionRecord`, `TotalCaloriesBurnedRecord`, and `HeartRateRecord` builders, boundary safeguards, dynamic system zone offset resolution, and custom zone offset propagation.
+  - `MobileWorkoutTrackingTest.kt`: Unit tests for mobile session instances, set volume calculations, double progression triggers, template variation detection, and payload serialization.
   - `WearWorkoutLogicTest.kt`: Tests for double progression calculation, historical reference data extraction & formatting, machine replacement, station skip toggle, name validation, weight/reps prefilling, and input boundary clamping (`clampWeight`, `clampReps`).
 
 - [x] **Agent Skills (`.agents/skills/`)**

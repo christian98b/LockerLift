@@ -50,7 +50,34 @@
     <string name="history_no_sets">Keine Sätze</string>
 
     <!-- Mobile Tracking Screen -->
-    <string name="tracking_title">Mobiles Workout Tracking</string>
-    <string name="locker_mode_title">LockerLift Spind-Modus</string>
-    <string name="locker_mode_desc">Lass dein Handy sicher im Spind und tracke deine Einheit autark auf deiner Wear OS Smartwatch!</string>
+    <string name="tracking_title">Trainingstracking</string>
+    <string name="start_workout_title">Training starten</string>
+    <string name="start_free_workout">Freies Training starten</string>
+    <string name="start_free_workout_desc">Ungeführtes Training mit spontanen Übungen erfassen</string>
+    <string name="start_from_template_title">Aus Vorlage starten</string>
+    <string name="btn_start">Starten</string>
+    <string name="active_workout_title">Aktives Training</string>
+    <string name="finish_workout">Training beenden</string>
+    <string name="station_number_format">Station %1$d</string>
+    <string name="btn_log_set">Satz eintragen</string>
+    <string name="btn_skip">Überspringen</string>
+    <string name="btn_resume">Fortsetzen</string>
+    <string name="btn_replace">Ersetzen</string>
+    <string name="historical_last_format">Zuletzt: %1$s</string>
+    <string name="set_format">Satz %1$d: %2$s kg × %3$d</string>
+    <string name="log_set_dialog_title">Satz %1$d eintragen • %2$s</string>
+    <string name="weight_label">Gewicht (kg)</string>
+    <string name="reps_label">Wiederholungen</string>
+    <string name="progression_suggestion_format">Doppelte Progression: Ziel erreicht! Gewicht auf %1$s kg steigern?</string>
+    <string name="btn_apply_overload">+%1$s kg anwenden</string>
+    <string name="rest_timer_label">Satzpause</string>
+    <string name="rest_timer_seconds_format">Pause: %1$02d:%2$02d</string>
+    <string name="finish_workout_dialog_title">Training abschließen</string>
+    <string name="workout_notes_hint">Notizen zum Training (optional)</string>
+    <string name="consolidate_template_title">Vorlage aktualisieren?</string>
+    <string name="consolidate_template_desc">Sollen die Änderungen (hinzugefügte, ersetzte oder übersprungene Übungen) in der Trainingsvorlage gespeichert werden?</string>
+    <string name="btn_save_and_finish">Speichern &amp; Abschließen</string>
+    <string name="workout_finished_success">Training erfolgreich gespeichert und zur Synchronisation eingereiht!</string>
+    <string name="discard_workout">Training abbrechen</string>
+    <string name="discard_workout_confirm">Möchtest du dieses Training wirklich verwerfen? Alle erfassten Sätze gehen verloren.</string>
 </resources>

@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.lockerlift.core.database.security.DatabaseKeyManager
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import com.lockerlift.core.database.dao.MachineDao
 import com.lockerlift.core.database.dao.SyncQueueDao
 import com.lockerlift.core.database.dao.WorkoutSessionDao
@@ -55,12 +55,10 @@ abstract class LockerLiftDatabase : RoomDatabase() {
 
         private fun buildDatabase(context: Context): LockerLiftDatabase {
             val appContext = context.applicationContext
-            SQLiteDatabase.loadLibs(appContext)
-
             val passphrase = DatabaseKeyManager.getOrCreatePassphrase(appContext)
             migratePlaintextIfNeeded(appContext, passphrase)
 
-            val factory = SupportFactory(passphrase)
+            val factory = SupportOpenHelperFactory(passphrase)
 
             return Room.databaseBuilder(
                 appContext,
@@ -91,7 +89,8 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                     dbFile.absolutePath,
                     "",
                     null,
-                    SQLiteDatabase.OPEN_READWRITE
+                    SQLiteDatabase.OPEN_READWRITE,
+                    null
                 )
                 val hexKey = passphrase.joinToString("") { "%02x".format(it) }
                 plaintextDb.rawExecSQL("ATTACH DATABASE '${tempEncrypted.absolutePath}' AS encrypted KEY \"x'$hexKey'\";")

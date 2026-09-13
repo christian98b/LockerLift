@@ -3,6 +3,7 @@ package com.lockerlift.mobile.service
 import android.util.Log
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
@@ -33,6 +34,29 @@ class MobileDataLayerListenerService : WearableListenerService() {
         if (channel.path == SyncConstants.PATH_WORKOUT_CHANNEL) {
             serviceScope.launch {
                 receiveWorkoutFromChannel(channel)
+            }
+        }
+    }
+
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        super.onMessageReceived(messageEvent)
+        if (messageEvent.path == SyncConstants.PATH_WORKOUT_ACK) {
+            val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
+            serviceScope.launch {
+                // Verify sender node capability if available (SEC-05)
+                runCatching {
+                    val capabilityInfo = Wearable.getCapabilityClient(this@MobileDataLayerListenerService)
+                        .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
+                        .await()
+                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+                        Log.w(TAG, "Rejected ACK from unauthorized watch node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                }
+
+                database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
+                Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
             }
         }
     }
