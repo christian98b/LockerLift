@@ -174,6 +174,10 @@ flowchart TD
   - Covers AK 7.2.1 (SAF directory picker), AK 7.2.2 (manual backup), AK 7.2.3 (scheduled backups + retention), AK 7.2.4 (restore + integrity validation), AK 7.2.5 (sharesheet).
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
+- [x] **16 KB Page-Size Compatibility Remediation**
+  - Upgraded Compose BOM from `2024.11.00` to `2026.09.00`, which brings the current `androidx.graphics.path` native artifact.
+  - Upgraded `net.zetetic:sqlcipher-android` from `4.5.5` to `4.19.0` for a 16 KB-compatible native SQLCipher binary.
+  - Verified both published dependency coordinates and confirmed AGP `8.7.2` already satisfies the required 16 KB APK packaging support.
 
 ---
 
