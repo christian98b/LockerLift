@@ -55,6 +55,14 @@ abstract class LockerLiftDatabase : RoomDatabase() {
 
         private fun buildDatabase(context: Context): LockerLiftDatabase {
             val appContext = context.applicationContext
+            // The sqlcipher-android library requires the native library to be loaded
+            // into memory BEFORE any database operation. Unlike the legacy
+            // android-database-sqlcipher (SQLiteDatabase.loadLibs), sqlcipher-android
+            // no longer loads it implicitly. The 4.17 native binary registers its JNI
+            // methods via JNI_OnLoad/RegisterNatives, so without this call the first DB
+            // access throws UnsatisfiedLinkError on nativeOpen.
+            System.loadLibrary("sqlcipher")
+
             val passphrase = DatabaseKeyManager.getOrCreatePassphrase(appContext)
             migratePlaintextIfNeeded(appContext, passphrase)
 
