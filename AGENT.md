@@ -44,9 +44,9 @@ LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tra
 - [x] **Projekt-Setup & Multi-Module-Architektur**
   - Root Gradle Konfiguration: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `.gitignore`.
   - Modulaufteilung: `:core:model`, `:core:database`, `:core:sync`, `:core:healthconnect`, `:mobile`, `:wear`.
-- [x] **Dokumentation**
+- [x] **Dokumentation & Issue-Tracking**
   - `README.md` (Projektübersicht & Tech-Stack)
-  - `USER_STORIES.md` (Epics 1–6 mit allen Akzeptanzkriterien)
+  - GitHub Issues #1–#15 (Epics 1–6 mit allen Akzeptanzkriterien, transferiert aus Spezifikation)
   - `ARCHITECTURE.md` (Systemdesign, ERD, Wearable Data Layer Protokolle, Health Connect)
   - `AGENT.md` / `agents.md` (Entwickler- & Agent-Guidelines mit Testvorgaben & Changelog)
 - [x] **Epic 1 & 2: Datenbasis & Modelle (`:core:model`, `:core:database`)**

@@ -26,7 +26,7 @@ Dieses Dokument ist identisch zu [AGENT.md](AGENT.md) und dient als Referenz und
 ### Aktueller Implementierungsstand
 
 - [x] **Projekt-Setup & Multi-Module-Architektur** (`settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `.gitignore`)
-- [x] **Dokumentation & Guidelines** (`README.md`, `USER_STORIES.md`, `ARCHITECTURE.md`, `AGENT.md`, `agents.md`)
+- [x] **Dokumentation & Guidelines** (`README.md`, `ARCHITECTURE.md`, `AGENT.md`, `agents.md`, GitHub Issues #1–#15)
 - [x] **Domain Models & Room Datenbank** (`:core:model`, `:core:database`)
 - [x] **Wearable Data Layer Sync & Serialization** (`:core:sync`)
 - [x] **Health Connect Client & Record Builder** (`:core:healthconnect`)
