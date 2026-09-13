@@ -17,7 +17,7 @@ object ExerciseRecordBuilder {
     ): ExerciseSessionRecord {
         val startInstant = Instant.ofEpochMilli(session.startTime)
         val endInstant = session.endTime?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-        val finalEndInstant = if (endInstant.isBefore(startInstant)) startInstant else endInstant
+        val finalEndInstant = if (!endInstant.isAfter(startInstant)) startInstant.plusSeconds(1) else endInstant
 
         return ExerciseSessionRecord(
             startTime = startInstant,
@@ -37,7 +37,7 @@ object ExerciseRecordBuilder {
     ): TotalCaloriesBurnedRecord {
         val startInstant = Instant.ofEpochMilli(session.startTime)
         val endInstant = session.endTime?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-        val finalEndInstant = if (endInstant.isBefore(startInstant)) startInstant else endInstant
+        val finalEndInstant = if (!endInstant.isAfter(startInstant)) startInstant.plusSeconds(1) else endInstant
 
         return TotalCaloriesBurnedRecord(
             startTime = startInstant,
@@ -68,7 +68,7 @@ object ExerciseRecordBuilder {
             sessionEnd
         }
 
-        val endTime = if (rawEnd.isBefore(startTime)) startTime else rawEnd
+        val endTime = if (!rawEnd.isAfter(startTime)) startTime.plusSeconds(1) else rawEnd
 
         val heartRateSamples = samples.map { (time, bpm) ->
             HeartRateRecord.Sample(
