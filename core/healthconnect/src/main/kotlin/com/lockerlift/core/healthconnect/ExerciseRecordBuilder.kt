@@ -23,7 +23,7 @@ object ExerciseRecordBuilder {
             exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING,
             title = title,
             notes = session.notes,
-            metadata = Metadata.manualEntry()
+            metadata = Metadata(recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY)
         )
     }
 }
