@@ -61,6 +61,20 @@ interface WorkoutSessionDao {
     suspend fun deleteSession(sessionId: String)
 
     /**
+     * Query completed historical sets for a machine from past finished sessions,
+     * ordered by session completion time descending and set number ascending.
+     */
+    @Query("""
+        SELECT ws.* FROM workout_sets ws
+        INNER JOIN session_machine_instances smi ON ws.session_machine_id = smi.id
+        INNER JOIN workout_sessions s ON smi.session_id = s.id
+        WHERE smi.machine_id = :machineId AND s.end_time IS NOT NULL
+        ORDER BY s.end_time DESC, ws.set_number ASC
+        LIMIT 10
+    """)
+    suspend fun getLastCompletedSetsForMachine(machineId: String): List<WorkoutSetEntity>
+
+    /**
      * Atomically inserts or updates a full workout session graph (used by sync receiver).
      */
     @Transaction

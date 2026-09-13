@@ -94,33 +94,40 @@ flowchart TD
   - Room Entities with Cascade Delete, indices, and mappers (`MachineEntity`, `WorkoutTemplateEntity`, `TemplateMachineCrossRefEntity`, `WorkoutSessionEntity`, `SessionMachineInstanceEntity`, `WorkoutSetEntity`, `SyncQueueEntity`).
   - DAOs: `MachineDao`, `WorkoutTemplateDao`, `WorkoutSessionDao`, `SyncQueueDao`.
   - Relations: `WorkoutTemplateWithMachines`, `WorkoutSessionWithDetails`.
+  - `WorkoutSessionDao.getLastCompletedSetsForMachine`: historical sets query for double progression and past performance (US 4.1).
+  - `WorkoutTemplateDao.getCrossRefsForTemplate` & `getMachinesForTemplateOrdered` for ordered template exercises (US 2.1).
   - `Converters` for Room enums and `LockerLiftDatabase` builder.
 - [x] **Epic 5: Wearable Data Layer Synchronization (`:core:sync`)**
   - `SyncConstants` (Paths for DataClient, ChannelClient, MessageClient).
-  - DTOs: `WorkoutSessionPayload`, `SessionMachineInstancePayload`.
-  - `SyncPayloadSerializer` (Kotlinx Serialization JSON with type safety).
+  - DTOs: `WorkoutSessionPayload`, `SessionMachineInstancePayload`, `WorkoutTemplatePayload`.
+  - `SyncPayloadSerializer` (Kotlinx Serialization JSON with type safety, session, template list, and machine catalog serializers).
   - `WearableDataLayerManager` (Streaming via `ChannelClient`, Master Data via `DataClient`, ACK via `MessageClient`).
+  - Master data synchronization of templates and catalog from mobile to watch via `DataClient` (US 5.2, AK 5.2.1).
   - `SyncQueueWorker` (WorkManager task for background transfer upon reconnect).
 - [x] **Epic 6: Health Connect Integration (`:core:healthconnect`)**
-  - `HealthConnectManager` with SDK status & permission checking (`WRITE_EXERCISE`, etc.).
-  - `ExerciseRecordBuilder` (`EXERCISE_TYPE_STRENGTH_TRAINING`).
+  - `HealthConnectManager` with SDK status, granular permission checking (`WRITE_EXERCISE`, `WRITE_TOTAL_CALORIES_BURNED`, `WRITE_HEART_RATE`), and silent fallback on denied telemetry.
+  - `ExerciseRecordBuilder` (`EXERCISE_TYPE_STRENGTH_TRAINING`, `TotalCaloriesBurnedRecord`, `HeartRateRecord` with sample bounds safeguards).
 - [x] **Epic 1, 2 & 4: Mobile App (`:mobile`)**
   - `MainActivity` with bottom navigation and localized tabs.
-  - `CatalogScreen` (Machine catalog management, duplicate name validation, localized strings).
-  - `TemplateListScreen` ($n$-templates management, cold-start templates, localized strings).
+  - `CatalogScreen` (Machine catalog management, duplicate name validation, edit machine, Wear OS catalog replication via `DataClient`, localized strings).
+  - `TemplateListScreen` (Template management, reordering exercises via Move Up/Down [AK 2.1.3], adding exercises via catalog picker [AK 2.2.1], removing exercises leaving catalog intact [AK 2.2.2], Wear OS templates replication via `DataClient` [US 5.2], localized strings).
   - `HistoryScreen` (Past sessions, set breakdown, localized strings).
   - `MobileDataLayerListenerService` (Reception via `ChannelClient`, Room insert, Health Connect trigger & ACK).
 - [x] **Epic 3 & 4: Standalone Wear OS Tracking (`:wear`)**
   - `WorkoutForegroundService` with Ongoing Activity notification & WakeLock.
   - `MainActivity` with template selection & free workout (localized strings).
-  - `ActiveWorkoutScreen` (Exercise list, ad-hoc station addition, skip, template consolidation, queue persistence, localized strings).
-  - `RepsWeightInputScreen` (Rotary input support, quick buttons, double progression highlight, localized strings).
+  - `ActiveWorkoutScreen` (Exercise list, machine catalog selection, ad-hoc machine creation with duplicate check [US 1.1, AK 1.1.2, AK 1.1.3], station replacement [US 3.3, AK 3.3.2], settings note editing with catalog persistence [US 1.2, AK 1.2.2], station skipping [AK 3.3.1], template consolidation, queue persistence, localized strings).
+  - `RepsWeightInputScreen` (Rotary input support, quick buttons, double progression overload suggestion, historical reference data card & prefill [US 4.1, AK 4.1.1], localized strings).
   - `RestTimerScreen` (Rest timer with haptic vibration, localized strings).
-  - `WearDataLayerListenerService` (Master data sync and ACK handling).
-- [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`)**
+  - `WearWorkoutLogic` (Pure domain logic for double progression, historical sets extraction & formatting, duplicate name validation, machine replacement, and prefilling).
+  - `WearDataLayerListenerService` (Master data sync for catalog and ordered templates via `SyncPayloadSerializer`, ACK handling).
+- [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`, `:core:healthconnect`, `:wear`)**
   - `DomainModelTest.kt`: Tests for instantiation, UUIDs, defaults, and JSON serialization.
-  - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads.
-  - `EntityMappingTest.kt`: Tests for bidirectional mappings between domain models and Room entities as well as type converters.
+  - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads, `WorkoutTemplatePayload`, and machine catalogs.
+  - `EntityMappingTest.kt`: Tests for bidirectional mappings, type converters, and `getLastCompletedSetsForMachine` query contract verification.
+  - `ExerciseRecordBuilderTest.kt`: Tests for `ExerciseSessionRecord`, `TotalCaloriesBurnedRecord`, and `HeartRateRecord` builders, boundary safeguards, and energy mappings.
+  - `WearWorkoutLogicTest.kt`: Tests for double progression calculation, historical reference data extraction & formatting, machine replacement, station skip toggle, name validation, and weight/reps prefilling.
+
 - [x] **Agent Skills (`.agents/skills/`)**
   - `git-commit-guidelines`: Skill enforcing Conventional Commits, scope validation, and mandatory test inclusion.
   - `unit-testing-guidelines`: Guide for automated unit tests (AAA pattern, mappers, serializers, Room, invariants).

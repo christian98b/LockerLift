@@ -84,4 +84,73 @@ class SyncPayloadSerializerTest {
         assertEquals(130f, firstInstance.sets[1].weightKg, 0.001f)
         assertEquals(10, firstInstance.sets[1].reps)
     }
+
+    @Test
+    fun testWorkoutTemplatePayloadRoundTrip() {
+        val template = WorkoutTemplate(
+            id = "tmpl-push-1",
+            name = "Push Day",
+            description = "Brust, Schultern und Trizeps",
+            isArchived = false,
+            createdAt = 1700000000000L,
+            updatedAt = 1700001000000L
+        )
+        val machineIds = listOf("mach-chest-press", "mach-shoulder-press", "mach-triceps-ext")
+        val payload = WorkoutTemplatePayload(
+            template = template,
+            machineIdsInOrder = machineIds
+        )
+
+        val json = SyncPayloadSerializer.encodeTemplates(listOf(payload))
+        assertNotNull(json)
+        assertTrue(json.contains("Push Day"))
+        assertTrue(json.contains("mach-chest-press"))
+        assertTrue(json.contains("mach-shoulder-press"))
+        assertTrue(json.contains("mach-triceps-ext"))
+
+        val decoded = SyncPayloadSerializer.decodeTemplates(json)
+        assertEquals(1, decoded.size)
+        val first = decoded.first()
+        assertEquals(template.id, first.template.id)
+        assertEquals(template.name, first.template.name)
+        assertEquals(template.description, first.template.description)
+        assertEquals(template.isArchived, first.template.isArchived)
+        assertEquals(template.createdAt, first.template.createdAt)
+        assertEquals(template.updatedAt, first.template.updatedAt)
+        assertEquals(3, first.machineIdsInOrder.size)
+        assertEquals("mach-chest-press", first.machineIdsInOrder[0])
+        assertEquals("mach-shoulder-press", first.machineIdsInOrder[1])
+        assertEquals("mach-triceps-ext", first.machineIdsInOrder[2])
+    }
+
+    @Test
+    fun testMachineListPayloadRoundTrip() {
+        val machine1 = Machine(
+            id = "m1",
+            name = "Bankdrücken",
+            targetMuscleGroup = "Brust",
+            machineSettingsNote = "Stufe 3",
+            defaultIncrementKg = 2.5f,
+            defaultCadence = "2-0-1-0"
+        )
+        val machine2 = Machine(
+            id = "m2",
+            name = "Kniebeugen",
+            targetMuscleGroup = "Beine",
+            machineSettingsNote = null,
+            defaultIncrementKg = 5.0f,
+            defaultCadence = null
+        )
+
+        val json = SyncPayloadSerializer.encodeMachines(listOf(machine1, machine2))
+        assertNotNull(json)
+        assertTrue(json.contains("Bankdrücken"))
+        assertTrue(json.contains("Kniebeugen"))
+
+        val decoded = SyncPayloadSerializer.decodeMachines(json)
+        assertEquals(2, decoded.size)
+        assertEquals(machine1, decoded[0])
+        assertEquals(machine2, decoded[1])
+    }
 }
+

@@ -20,17 +20,28 @@
     <string name="hint_increment">Schrittweite in kg (z.B. 2.5)</string>
     <string name="error_required_fields">Name und Muskelgruppe sind Pflichtfelder.</string>
     <string name="error_machine_exists">Eine Maschine mit diesem Namen existiert bereits.</string>
+    <string name="dialog_edit_machine_title">Maschine bearbeiten</string>
     <string name="btn_save">Speichern</string>
     <string name="btn_cancel">Abbrechen</string>
+    <string name="btn_delete">Löschen</string>
 
     <!-- Template Screen -->
     <string name="templates_title">Trainingsvorlagen</string>
     <string name="add_template">Vorlage hinzufügen</string>
     <string name="exercises_assigned_format">%1$d Übungen zugewiesen</string>
     <string name="dialog_new_template_title">Neue Trainingsvorlage anlegen</string>
+    <string name="dialog_edit_template_title">Trainingsvorlage bearbeiten</string>
     <string name="hint_template_name">Name (z.B. Push, Pull, Beine)</string>
     <string name="hint_template_desc">Beschreibung (optional)</string>
     <string name="btn_create">Erstellen</string>
+    <string name="section_assigned_exercises">Zugewiesene Übungen</string>
+    <string name="no_exercises_in_template">Noch keine Übungen zugewiesen.</string>
+    <string name="btn_add_exercise">Übung hinzufügen</string>
+    <string name="action_move_up">Nach oben</string>
+    <string name="action_move_down">Nach unten</string>
+    <string name="action_remove">Entfernen</string>
+    <string name="dialog_select_machine_title">Übung aus Katalog auswählen</string>
+    <string name="no_machines_in_catalog">Keine Maschinen im Katalog vorhanden. Bitte lege zuerst welche an.</string>
 
     <!-- History Screen -->
     <string name="history_title">Trainingshistorie</string>

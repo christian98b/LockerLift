@@ -33,4 +33,36 @@
     <!-- Rest Timer Screen -->
     <string name="rest_timer_title">Rest</string>
     <string name="btn_skip">Skip</string>
+
+    <!-- Station Actions & Dialogs (US 1.1, 1.2, 3.2, 3.3) -->
+    <string name="dialog_select_machine">Select Exercise</string>
+    <string name="dialog_replace_machine">Replace Exercise</string>
+    <string name="btn_new_machine">+ New Machine</string>
+    <string name="btn_replace">Replace</string>
+    <string name="btn_skip_exercise">Skip</string>
+    <string name="btn_unskip">Resume</string>
+    <string name="btn_note">Setup</string>
+
+    <!-- Create Machine View (US 1.1, AK 1.1.2, AK 1.1.3) -->
+    <string name="title_new_machine">New Machine</string>
+    <string name="hint_machine_name">Machine Name</string>
+    <string name="hint_increment">Increment (kg)</string>
+    <string name="error_empty_name">Name cannot be empty</string>
+    <string name="error_machine_exists">Machine already exists</string>
+    <string name="btn_save_machine">Save Machine</string>
+
+    <!-- Machine Setup Note View (US 1.2, AK 1.2.2) -->
+    <string name="title_machine_setup">Machine Setup</string>
+    <string name="hint_setup_note">Setup Note</string>
+    <string name="action_save_workout_only">For Workout</string>
+    <string name="action_save_note_to_catalog">To Catalog</string>
+
+    <!-- Historical Reference (US 4.1, AK 4.1.1) -->
+    <string name="historical_performance_format">Last: %1$s</string>
+
+    <!-- Template Consolidation Dialog (US 3.2, 3.3) -->
+    <string name="dialog_consolidation_title">Update Template?</string>
+    <string name="dialog_consolidation_message">Save changes back into workout template?</string>
+    <string name="btn_yes">Yes</string>
+    <string name="btn_no">No</string>
 </resources>

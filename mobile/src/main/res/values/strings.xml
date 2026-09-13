@@ -20,17 +20,28 @@
     <string name="hint_increment">Increment in kg (e.g. 2.5)</string>
     <string name="error_required_fields">Name and muscle group are required.</string>
     <string name="error_machine_exists">A machine with this name already exists.</string>
+    <string name="dialog_edit_machine_title">Edit Machine</string>
     <string name="btn_save">Save</string>
     <string name="btn_cancel">Cancel</string>
+    <string name="btn_delete">Delete</string>
 
     <!-- Template Screen -->
     <string name="templates_title">Workout Templates</string>
     <string name="add_template">Add template</string>
     <string name="exercises_assigned_format">%1$d exercises assigned</string>
     <string name="dialog_new_template_title">Create New Workout Template</string>
+    <string name="dialog_edit_template_title">Edit Workout Template</string>
     <string name="hint_template_name">Name (e.g. Push, Pull, Legs)</string>
     <string name="hint_template_desc">Description (optional)</string>
     <string name="btn_create">Create</string>
+    <string name="section_assigned_exercises">Assigned Exercises</string>
+    <string name="no_exercises_in_template">No exercises assigned yet.</string>
+    <string name="btn_add_exercise">Add Exercise</string>
+    <string name="action_move_up">Move Up</string>
+    <string name="action_move_down">Move Down</string>
+    <string name="action_remove">Remove</string>
+    <string name="dialog_select_machine_title">Select Exercise from Catalog</string>
+    <string name="no_machines_in_catalog">No machines in catalog. Add some first.</string>
 
     <!-- History Screen -->
     <string name="history_title">Workout History</string>

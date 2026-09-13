@@ -33,4 +33,36 @@
     <!-- Rest Timer Screen -->
     <string name="rest_timer_title">Pause</string>
     <string name="btn_skip">Überspringen</string>
+
+    <!-- Station Actions & Dialogs (US 1.1, 1.2, 3.2, 3.3) -->
+    <string name="dialog_select_machine">Übung auswählen</string>
+    <string name="dialog_replace_machine">Übung ersetzen</string>
+    <string name="btn_new_machine">+ Neues Gerät</string>
+    <string name="btn_replace">Ersetzen</string>
+    <string name="btn_skip_exercise">Überspringen</string>
+    <string name="btn_unskip">Fortsetzen</string>
+    <string name="btn_note">Setup</string>
+
+    <!-- Create Machine View (US 1.1, AK 1.1.2, AK 1.1.3) -->
+    <string name="title_new_machine">Neues Gerät</string>
+    <string name="hint_machine_name">Gerätename</string>
+    <string name="hint_increment">Schrittweite (kg)</string>
+    <string name="error_empty_name">Name darf nicht leer sein</string>
+    <string name="error_machine_exists">Gerät existiert bereits</string>
+    <string name="btn_save_machine">Gerät speichern</string>
+
+    <!-- Machine Setup Note View (US 1.2, AK 1.2.2) -->
+    <string name="title_machine_setup">Geräte-Setup</string>
+    <string name="hint_setup_note">Setup-Notiz</string>
+    <string name="action_save_workout_only">Für Workout</string>
+    <string name="action_save_note_to_catalog">In Katalog</string>
+
+    <!-- Historical Reference (US 4.1, AK 4.1.1) -->
+    <string name="historical_performance_format">Zuletzt: %1$s</string>
+
+    <!-- Template Consolidation Dialog (US 3.2, 3.3) -->
+    <string name="dialog_consolidation_title">Vorlage anpassen?</string>
+    <string name="dialog_consolidation_message">Änderungen in der Vorlage speichern?</string>
+    <string name="btn_yes">Ja</string>
+    <string name="btn_no">Nein</string>
 </resources>

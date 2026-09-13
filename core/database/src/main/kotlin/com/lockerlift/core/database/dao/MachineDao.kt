@@ -16,6 +16,9 @@ interface MachineDao {
     @Query("SELECT * FROM machines ORDER BY name ASC")
     fun getAllMachinesFlow(): Flow<List<MachineEntity>>
 
+    @Query("SELECT * FROM machines ORDER BY name ASC")
+    suspend fun getAllMachines(): List<MachineEntity>
+
     @Query("SELECT * FROM machines WHERE id = :id LIMIT 1")
     suspend fun getMachineById(id: String): MachineEntity?
 

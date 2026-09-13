@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.TemplateMachineCrossRefEntity
 import com.lockerlift.core.database.entity.WorkoutTemplateEntity
 import com.lockerlift.core.database.model.WorkoutTemplateWithMachines
@@ -21,6 +22,17 @@ interface WorkoutTemplateDao {
     @Transaction
     @Query("SELECT * FROM workout_templates WHERE id = :id LIMIT 1")
     suspend fun getTemplateWithMachinesById(id: String): WorkoutTemplateWithMachines?
+
+    @Query("SELECT * FROM template_machine_cross_ref WHERE template_id = :templateId ORDER BY sort_order ASC")
+    suspend fun getCrossRefsForTemplate(templateId: String): List<TemplateMachineCrossRefEntity>
+
+    @Query("""
+        SELECT m.* FROM machines m
+        INNER JOIN template_machine_cross_ref cr ON m.id = cr.machine_id
+        WHERE cr.template_id = :templateId
+        ORDER BY cr.sort_order ASC
+    """)
+    suspend fun getMachinesForTemplateOrdered(templateId: String): List<MachineEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTemplate(template: WorkoutTemplateEntity)

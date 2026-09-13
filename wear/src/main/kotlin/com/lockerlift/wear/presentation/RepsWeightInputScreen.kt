@@ -9,10 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.*
@@ -20,6 +20,7 @@ import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.wear.R
+import com.lockerlift.wear.logic.WearWorkoutLogic
 import kotlinx.coroutines.launch
 
 @Composable
@@ -29,13 +30,14 @@ fun RepsWeightInputScreen(
     lastWeight: Float = 60f,
     lastReps: Int = 10,
     cadence: String? = machine.defaultCadence,
+    historicalPerformanceText: String? = null,
     onSaveSet: (WorkoutSet) -> Unit,
     onCancel: () -> Unit
 ) {
-    var weight by remember { mutableFloatStateOf(lastWeight) }
-    var reps by remember { mutableIntStateOf(lastReps) }
+    var weight by remember(lastWeight) { mutableFloatStateOf(lastWeight) }
+    var reps by remember(lastReps) { mutableIntStateOf(lastReps) }
     val increment = machine.defaultIncrementKg
-    val isProgressionProposed = reps >= 12
+    val isProgressionProposed = WearWorkoutLogic.isProgressionProposed(reps)
 
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -67,6 +69,27 @@ fun RepsWeightInputScreen(
             )
         }
 
+        if (!historicalPerformanceText.isNullOrBlank()) {
+            item {
+                Card(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(vertical = 2.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    )
+                ) {
+                    Text(
+                        text = historicalPerformanceText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
+            }
+        }
+
         if (cadence != null) {
             item {
                 Text(
@@ -80,12 +103,17 @@ fun RepsWeightInputScreen(
         if (isProgressionProposed) {
             item {
                 Card(
-                    onClick = { weight += increment },
+                    onClick = {
+                        weight = WearWorkoutLogic.calculateNextWeight(weight, increment, true)
+                    },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                 ) {
                     Text(
-                        text = stringResource(R.string.progression_suggestion_format, increment.toString()),
+                        text = stringResource(
+                            R.string.progression_suggestion_format,
+                            WearWorkoutLogic.formatWeight(increment)
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
@@ -108,7 +136,7 @@ fun RepsWeightInputScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "$weight kg",
+                        text = "${WearWorkoutLogic.formatWeight(weight)} kg",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
