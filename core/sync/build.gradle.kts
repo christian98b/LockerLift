@@ -25,6 +25,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:database"))
+    implementation(libs.androidx.room.runtime)
 
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.serialization.json)
