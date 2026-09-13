@@ -135,6 +135,7 @@ flowchart TD
   - `release-versioning-rules`: Rules and criteria for SemVer release bumps (Major vs. Minor vs. Patch) and Gradle version bumps.
   - `internationalization-guide`: Standards and procedures for adding new language locales and managing strings across mobile and wear.
   - `user-documentation-guide`: Guidelines and standards for writing structured, accessible, and user-centric documentation.
+  - `issue-closing-and-commenting-guide`: Standards, quality gates, and structured Markdown templates for verifying, commenting on, and closing GitHub issues.
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 
