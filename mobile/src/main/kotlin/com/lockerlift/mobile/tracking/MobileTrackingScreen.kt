@@ -217,7 +217,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    if (template.description.isNotBlank()) {
+                                    if (!template.description.isNullOrBlank()) {
                                         Text(
                                             text = template.description,
                                             style = MaterialTheme.typography.bodySmall,
@@ -324,7 +324,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     var historicalSets by remember(instance.machineId) { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
                     LaunchedEffect(instance.machineId) {
                         withContext(Dispatchers.IO) {
-                            historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId, limit = 5)
+                            historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId)
                         }
                     }
 
@@ -468,7 +468,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         var historicalSets by remember { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
         LaunchedEffect(instance.machineId) {
             withContext(Dispatchers.IO) {
-                historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId, limit = 5)
+                historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId)
             }
         }
 

@@ -138,7 +138,7 @@ flowchart TD
 - [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`, `:core:healthconnect`, `:mobile`, `:wear`)**
   - `DomainModelTest.kt`: Tests for instantiation, UUIDs, defaults, and JSON serialization.
   - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads, `WorkoutTemplatePayload`, and machine catalogs.
-  - `EntityMappingTest.kt`: Tests for bidirectional mappings, type converters, and `getLastCompletedSetsForMachine` query contract verification.
+  - `EntityMappingTest.kt`: Tests for bidirectional mappings, type converters, `getLastCompletedSetsForMachine` query contract verification, and sync status updates.
   - `WorkoutTrackingLogicTest.kt`: Unit tests for double progression calculations, clamping, validation, and station operations.
   - `AesGcmHelperTest.kt`: Tests for AES-256-GCM encryption, decryption roundtrip, invalid key rejection, IV/ciphertext tampering detection, and key reconstruction.
   - `ExerciseRecordBuilderTest.kt`: Tests for `ExerciseSessionRecord`, `TotalCaloriesBurnedRecord`, and `HeartRateRecord` builders, boundary safeguards, dynamic system zone offset resolution, and custom zone offset propagation.

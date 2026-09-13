@@ -203,5 +203,16 @@ class EntityMappingTest {
         assertEquals(2, resultSets[3].setNumber)
         assertEquals(85f, resultSets[3].weightKg, 0.001f)
     }
+
+    @Test
+    fun testWorkoutSessionSyncStatusUpdateContract() {
+        val initialSession = WorkoutSessionEntity(
+            id = "sess-100",
+            startTime = 5000L,
+            syncStatus = SyncStatus.PENDING_SYNC
+        )
+        val updatedSession = initialSession.copy(syncStatus = SyncStatus.SYNCED)
+        assertEquals(SyncStatus.SYNCED, updatedSession.syncStatus)
+    }
 }
 

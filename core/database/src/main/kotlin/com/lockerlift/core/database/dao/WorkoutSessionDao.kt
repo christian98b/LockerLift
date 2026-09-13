@@ -10,6 +10,7 @@ import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
 import com.lockerlift.core.database.entity.WorkoutSessionEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.model.WorkoutSessionWithDetails
+import com.lockerlift.core.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -59,6 +60,9 @@ interface WorkoutSessionDao {
 
     @Query("DELETE FROM workout_sessions WHERE id = :sessionId")
     suspend fun deleteSession(sessionId: String)
+
+    @Query("UPDATE workout_sessions SET sync_status = :syncStatus WHERE id = :sessionId")
+    suspend fun updateSyncStatus(sessionId: String, syncStatus: SyncStatus)
 
     /**
      * Query completed historical sets for a machine from past finished sessions,
