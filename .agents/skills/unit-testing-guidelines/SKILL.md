@@ -14,7 +14,7 @@ This skill defines the testing philosophy, conventions, structure, and execution
 
 ## 1. Core Principles & Mandate
 
-1. **Strict Test Mandate:** Every new feature, logic calculation (e.g., Double Progression, cadence parsing), data model, mapper, Room TypeConverter, and serialization workflow **MUSS** have 100% unit test coverage.
+1. **Strict Test Mandate:** Every new feature, logic calculation (e.g., Double Progression, cadence parsing), data model, mapper, Room TypeConverter, and serialization workflow **MUST** have 100% unit test coverage.
 2. **Regression-Free Guarantee:** All existing unit tests must remain green across future changes.
 3. **No Deletion Rule:** Existing tests may **only** be modified or deleted if the corresponding feature has been explicitly removed or superseded by a new specification.
 4. **Fast & Deterministic:** Unit tests must be fast, isolated, and require no physical hardware or external network access.

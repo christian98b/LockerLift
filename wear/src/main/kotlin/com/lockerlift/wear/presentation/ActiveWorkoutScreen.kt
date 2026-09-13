@@ -73,10 +73,15 @@ fun ActiveWorkoutScreen(
         return
     }
 
+    val defaultExerciseName = androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.exercise_default_name)
+    val defaultStationName = androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.station_default_name)
+    val fullBodyMuscleGroup = androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.full_body_muscle_group)
+    val freeWorkoutTitle = androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.workout_free)
+
     if (selectedInstanceIndex >= 0 && selectedInstanceIndex < sessionInstances.size) {
         val currentInstance = sessionInstances[selectedInstanceIndex]
         val machine = initialMachines.find { it.id == currentInstance.machineId }
-            ?: Machine(id = currentInstance.machineId, name = "Übung", targetMuscleGroup = "")
+            ?: Machine(id = currentInstance.machineId, name = defaultExerciseName, targetMuscleGroup = "")
         val currentSets = loggedSets.getOrPut(currentInstance.id) { mutableListOf() }
         val nextSetNumber = currentSets.size + 1
         val lastSet = currentSets.lastOrNull()
@@ -108,7 +113,7 @@ fun ActiveWorkoutScreen(
     ) {
         item {
             Text(
-                text = templateName ?: "Freies Training",
+                text = templateName ?: freeWorkoutTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -131,18 +136,28 @@ fun ActiveWorkoutScreen(
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     Text(
-                        text = "${index + 1}. ${machine?.name ?: "Station"}",
+                        text = "${index + 1}. ${machine?.name ?: defaultStationName}",
                         style = MaterialTheme.typography.titleSmall
                     )
                     if (!machine?.machineSettingsNote.isNullOrBlank()) {
                         Text(
-                            text = "Setup: ${machine?.machineSettingsNote}",
+                            text = androidx.compose.ui.res.stringResource(
+                                com.lockerlift.wear.R.string.setup_format,
+                                machine?.machineSettingsNote!!
+                            ),
                             style = MaterialTheme.typography.bodyExtraSmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
                     Text(
-                        text = if (instance.isSkipped) "Übersprungen" else "${sets.size} Sätze absolviert",
+                        text = if (instance.isSkipped) {
+                            androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.skipped_status)
+                        } else {
+                            androidx.compose.ui.res.stringResource(
+                                com.lockerlift.wear.R.string.sets_completed_format,
+                                sets.size
+                            )
+                        },
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -156,7 +171,7 @@ fun ActiveWorkoutScreen(
                     coroutineScope.launch {
                         val adHocMachine = Machine(
                             name = "Station ${sessionInstances.size + 1}",
-                            targetMuscleGroup = "Ganzkörper"
+                            targetMuscleGroup = fullBodyMuscleGroup
                         )
                         machineDao.insertMachine(adHocMachine.toEntity())
                         initialMachines.add(adHocMachine)
@@ -171,7 +186,7 @@ fun ActiveWorkoutScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
-                Text("+ Übung hinzufügen")
+                Text(androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.add_exercise_button))
             }
         }
 
@@ -196,7 +211,7 @@ fun ActiveWorkoutScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
-                Text("Workout beenden")
+                Text(androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.finish_workout_button))
             }
         }
     }
@@ -229,7 +244,7 @@ private fun finishAndSaveWorkout(
         machineInstances = sessionInstances.map { inst ->
             SessionMachineInstancePayload(
                 instance = inst,
-                machine = Machine(id = inst.machineId, name = "Station", targetMuscleGroup = "Allgemein"),
+                machine = Machine(id = inst.machineId, name = "Station", targetMuscleGroup = "General"),
                 sets = loggedSets[inst.id] ?: emptyList()
             )
         }

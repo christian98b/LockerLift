@@ -9,10 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.WorkoutTemplate
 import com.lockerlift.mobile.LockerLiftMobileApp
+import com.lockerlift.mobile.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,7 +30,7 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Trainingsvorlagen") })
+            TopAppBar(title = { Text(stringResource(R.string.templates_title)) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
@@ -36,7 +38,7 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                 templateDesc = ""
                 showDialog = true
             }) {
-                Icon(Icons.Default.Add, contentDescription = "Vorlage hinzufügen")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_template))
             }
         }
     ) { padding ->
@@ -64,7 +66,7 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${item.machines.size} Übungen zugewiesen",
+                            text = stringResource(R.string.exercises_assigned_format, item.machines.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -76,20 +78,20 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text("Neue Trainingsvorlage anlegen") },
+                title = { Text(stringResource(R.string.dialog_new_template_title)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = templateName,
                             onValueChange = { templateName = it },
-                            label = { Text("Name (z.B. Push, Pull, Beine)") },
+                            label = { Text(stringResource(R.string.hint_template_name)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = templateDesc,
                             onValueChange = { templateDesc = it },
-                            label = { Text("Beschreibung (optional)") },
+                            label = { Text(stringResource(R.string.hint_template_desc)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -107,12 +109,12 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                             }
                         }
                     }) {
-                        Text("Erstellen")
+                        Text(stringResource(R.string.btn_create))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDialog = false }) {
-                        Text("Abbrechen")
+                        Text(stringResource(R.string.btn_cancel))
                     }
                 }
             )

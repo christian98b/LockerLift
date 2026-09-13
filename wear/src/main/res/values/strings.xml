@@ -1,7 +1,36 @@
 <resources>
     <string name="app_name">LockerLift</string>
-    <string name="title_active_workout">Training</string>
+
+    <!-- Foreground Notification -->
     <string name="notification_channel_name">LockerLift Workout Tracking</string>
-    <string name="notification_title">Aktives Workout</string>
-    <string name="notification_text">Dein Training wird im Hintergrund aufgezeichnet.</string>
+    <string name="notification_title">Active Workout</string>
+    <string name="notification_text">Your workout is being recorded in the background.</string>
+
+    <!-- Template Selection Screen -->
+    <string name="workout_free">Free Workout</string>
+    <string name="exercises_count_format">%1$d exercises</string>
+
+    <!-- Active Workout Screen -->
+    <string name="exercise_default_name">Exercise</string>
+    <string name="station_default_name">Station</string>
+    <string name="station_format">Station %1$d</string>
+    <string name="setup_format">Setup: %1$s</string>
+    <string name="skipped_status">Skipped</string>
+    <string name="sets_completed_format">%1$d sets completed</string>
+    <string name="add_exercise_button">+ Add exercise</string>
+    <string name="finish_workout_button">Finish Workout</string>
+    <string name="general_muscle_group">General</string>
+    <string name="full_body_muscle_group">Full Body</string>
+
+    <!-- Reps Weight Input Screen -->
+    <string name="set_header_format">%1$s • Set %2$d</string>
+    <string name="tempo_format">Tempo: %1$s</string>
+    <string name="progression_suggestion_format">Suggestion: Increase +%1$s kg?</string>
+    <string name="reps_count_format">%1$d reps</string>
+    <string name="btn_finish_set">Complete Set</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- Rest Timer Screen -->
+    <string name="rest_timer_title">Rest</string>
+    <string name="btn_skip">Skip</string>
 </resources>

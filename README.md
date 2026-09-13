@@ -2,8 +2,8 @@
 
 # 🏋️‍♂️ LockerLift
 
-### **Local-First, Open-Source Gym Tracker für Android & Wear OS**
-*Das Smartphone bleibt im Spind – volle Autonomie auf deiner Smartwatch.*
+### **Local-First, Open-Source Gym Tracker for Android & Wear OS**
+*The smartphone stays in the locker – full autonomy on your smartwatch.*
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg?style=for-the-badge&logo=kotlin)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/Android-API%2028+-3DDC84.svg?style=for-the-badge&logo=android)](https://developer.android.com)
@@ -13,78 +13,78 @@
 [![Local-First](https://img.shields.io/badge/Database-Room%20%2F%20Offline--First-orange.svg?style=for-the-badge)](https://developer.android.com/training/data-storage/room)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/christian98b/LockerLift/build-and-test.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI%2FCD)](https://github.com/christian98b/LockerLift/actions)
 
-
 ---
 
-[📖 Dokumentation](#-dokumentation--ressourcen) •
-[🎯 Das Spind-Szenario](#-das-spind-szenario-locker-isolation) •
-[✨ Kernfunktionen](#-kernfunktionen) •
-[🏗️ Architektur & Module](#-systemarchitektur--modulaufbau) •
-[🔄 Sync-Protokoll](#-synchronisations-protokoll-wearable-data-layer) •
-[🧪 Testing & Qualität](#-unit-testing--qualitätsgarantie) •
+[📖 Documentation](#-documentation--resources) •
+[🎯 The Locker Scenario](#-the-locker-scenario-locker-isolation) •
+[✨ Key Features](#-key-features) •
+[🏗️ Architecture & Modules](#-system-architecture--module-structure) •
+[🔄 Sync Protocol](#-synchronization-protocol-wearable-data-layer) •
+[🧪 Testing & Quality](#-unit-testing--quality-mandate) •
 [🛠️ Setup & Build](#-getting-started--build)
 
 ---
 
 </div>
 
-## 🎯 Das Spind-Szenario (Locker Isolation)
+## 🎯 The Locker Scenario (Locker Isolation)
 
-> **Die Kernphilosophie:**  
-> Viele Kraftsportler lassen ihr Smartphone bewusst im Umkleidespind – um Ablenkungen zu vermeiden, Diebstahl vorzubeugen oder weil sperrige Smartphones bei Übungen stören.  
-> **LockerLift ist exakt für dieses Szenario gebaut.**
+> **Core Philosophy:**  
+> Many strength athletes deliberately leave their smartphone in the locker room – to avoid distractions, prevent theft, or simply because bulky smartphones are cumbersome during heavy lifts.  
+> **LockerLift is engineered specifically for this scenario.**
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as 🏋️ Sportler
+    actor User as 🏋️ Athlete
     participant Watch as ⌚ Wear OS Watch
-    participant Locker as 🔒 Spind (Außer Funkreichweite)
+    participant Locker as 🔒 Locker (Out of Radio Range)
     participant Phone as 📱 Smartphone
     participant HC as 💚 Health Connect
 
-    User->>Watch: Startet Workout im Freihantelbereich
-    Note over Watch,Phone: Keine Bluetooth- oder WLAN-Verbindung!
-    User->>Watch: Erfasst Sätze, Gewichte & Kadenz via Lünette (Rotary)
-    Watch->>Watch: Speichert lokal in Room DB & SyncQueue
-    User->>Watch: Workout beenden (Template-Konsolidierung)
-    Note over User,Phone: Sportler kehrt nach dem Training zum Spind zurück
-    Note over Watch,Phone: 📶 Bluetooth / WLAN Reconnect
-    Watch->>Phone: Automatischer Stream via ChannelClient
-    Phone->>Phone: Atomares DB-Insert (Room)
-    Phone->>HC: Exportiert ExerciseSessionRecord
-    Phone->>Watch: Quittierung (ACK via MessageClient)
-    Watch->>Watch: SyncQueue-Eintrag archiviert/gelöscht
+    User->>Watch: Starts workout in weight room
+    Note over Watch,Phone: No Bluetooth or Wi-Fi connection!
+    User->>Watch: Logs sets, weights & cadence via bezel (Rotary Input)
+    Watch->>Watch: Saves locally to Room DB & SyncQueue
+    User->>Watch: Finishes workout (Template consolidation)
+    Note over User,Phone: Athlete returns to locker after workout
+    Note over Watch,Phone: 📶 Bluetooth / Wi-Fi reconnects
+    Watch->>Phone: Automatic stream via ChannelClient
+    Phone->>Phone: Atomic DB insert (Room)
+    Phone->>HC: Exports ExerciseSessionRecord
+    Phone->>Watch: Acknowledgment (ACK via MessageClient)
+    Watch->>Watch: SyncQueue item archived/cleared
 ```
 
-* **Kein Thin-Client:** Die Smartwatch-App ist eine vollständige, autarke Applikation mit lokaler Room-Datenbank.
-* **Keine Cloud-Pflicht:** Deine Trainingsdaten gehören dir. Sie verbleiben verschlüsselt und lokal auf deinen Geräten.
-* **Store-and-Forward Synchronisation:** Datensätze werden lokal gequeued und erst übertragen, wenn du nach dem Workout wieder am Spind bist.
+* **Not a Thin Client:** The smartwatch app is a full-featured, autonomous application backed by its own local Room database.
+* **No Cloud Requirement:** Your training data belongs to you. It remains encrypted and stored locally on your devices.
+* **Store-and-Forward Synchronization:** Workout records are queued locally and only transmitted once you return to the locker room.
 
 ---
 
-## ✨ Kernfunktionen
+## ✨ Key Features
 
 ### 📱 Smartphone App (`:mobile`)
-* 📋 **Globaler Maschinen- & Übungskatalog:** Maschinen mit Zielmuskelgruppe, individueller Schrittweite (z. B. 2,5 kg) und Notizen für Geräteeinstellungen (z. B. *„Sitzhöhe Stufe 4“*).
-* 📑 **$n$-Vorlagenverwaltung:** Beliebig viele Trainingspläne (Push, Pull, Legs, etc.) – inklusive Cold-Start Vorlagen (initial leer anlegen und spontan befüllen).
-* 📈 **Trainingshistorie:** Detaillierte Einsicht in vergangene Sessions mit Satz-für-Satz Aufschlüsselung.
-* 🌉 **Health Connect Bridge:** Nahtlose Übergabe an Google Fit, Samsung Health und Drittanbieter.
+* 📋 **Global Machine & Exercise Catalog:** Equipment configured with target muscle groups, customized weight increments (e.g., 2.5 kg), and equipment setup notes (e.g., *"Seat height setting 4"*).
+* 📑 **$n$-Template Management:** Unlimited training plans (Push, Pull, Legs, etc.) – including cold-start templates (create empty plans and fill on the fly).
+* 📈 **Workout History:** Detailed insights into past sessions with set-by-set breakdowns.
+* 🌉 **Health Connect Bridge:** Seamless export to Google Fit, Samsung Health, and third-party fitness ecosystems.
+* 🌐 **Multi-Language Support:** Localized in English (default) and German (`values-de/`).
 
 ### ⌚ Standalone Wear OS App (`:wear`)
-* 🚀 **100% Autonomes Tracking:** Funktioniert komplett ohne Handyverbindung.
-* ⚙️ **Rotary Input Support:** Blitzschnelle Eingabe von Gewicht und Wiederholungen über die drehbare Lünette oder Touch-Buttons.
-* 🔄 **Cold-Start & Ad-Hoc Erweiterung:** Maschinen können mitten im Training spontan hinzugefügt, ausgetauscht oder übersprungen werden.
-* 💡 **Template-Konsolidierung:** Wurde der Plan im Training variiert? Die App fragt beim Abschluss: *„Änderungen als Standard im Plan speichern?“*.
-* ⏱️ **Pausentimer mit Haptik:** Automatischer Countdown nach jedem Satz mit diskreter Vibration beim Ablauf.
-* 🛡️ **Ongoing Activity Foreground Service:** Verhindert, dass Wear OS das Workout im Ambient-Mode oder bei Speicherdruck beendet.
-* 📊 **Progressive Overload Empfehlungen:** Anzeige des letzten Leistungsstands an der Station und visuelle Vorschläge zur Gewichtssteigerung (z. B. Double Progression).
+* 🚀 **100% Autonomous Tracking:** Fully operational with zero smartphone connectivity.
+* ⚙️ **Rotary Input Support:** Lightning-fast rep and weight adjustments using the physical watch bezel or touch controls.
+* 🔄 **Cold-Start & Ad-Hoc Modification:** Add, substitute, or skip machines in the middle of a workout session.
+* 💡 **Template Consolidation:** Varied your routine during the workout? The app prompts on completion: *"Save variations into template?"*.
+* ⏱️ **Rest Timer with Haptics:** Automatic countdown timer between sets with discrete vibration upon expiration.
+* 🛡️ **Ongoing Activity Foreground Service:** Prevents Wear OS from terminating active tracking during ambient mode or under memory pressure.
+* 📊 **Progressive Overload Guidance:** Displays previous performance at each station with visual suggestions for weight increases (Double Progression).
 
 ---
 
-## 🏗️ Systemarchitektur & Modulaufbau
+## 🏗️ System Architecture & Module Structure
 
-LockerLift setzt auf ein hochgradig modulares Monorepo mit strikter Trennung von Verantwortlichkeiten:
+LockerLift utilizes a highly modular monorepo architecture with strict separation of concerns:
 
 ```mermaid
 graph TD
@@ -120,32 +120,32 @@ graph TD
     class core_model,core_database,core_sync,core_healthconnect core;
 ```
 
-### Modul-Matrix
+### Module Matrix
 
-| Modul | Typ | Zweck & Enthaltene Komponenten |
+| Module | Type | Purpose & Contained Components |
 |---|---|---|
-| [`:core:model`](file:///C:/Users/Chris/code/LockerLift/core/model) | Pure Kotlin | Plattformunabhängige Domain Models (`Machine`, `WorkoutSession`, `WorkoutSet`, Enums). Keine Android-Abhängigkeiten. |
-| [`:core:database`](file:///C:/Users/Chris/code/LockerLift/core/database) | Android Library | Room Database, SQLite TypeConverters, DAOs (`MachineDao`, `WorkoutSessionDao`), Relationen & Cipher-Support. |
-| [`:core:sync`](file:///C:/Users/Chris/code/LockerLift/core/sync) | Android Library | Google Play Services Wearable API Kapselung (`DataClient`, `ChannelClient`, `MessageClient`), JSON-Serializer, WorkManager Queue-Worker. |
-| [`:core:healthconnect`](file:///C:/Users/Chris/code/LockerLift/core/healthconnect) | Android Library | AndroidX Health Connect Client, Permission Controller, Record Builder für `EXERCISE_TYPE_STRENGTH_TRAINING`. |
-| [`:mobile`](file:///C:/Users/Chris/code/LockerLift/mobile) | Android App | Smartphone UI (Jetpack Compose Material 3), Katalog-, Vorlagen- und Historienverwaltung, Background Sync Listener. |
-| [`:wear`](file:///C:/Users/Chris/code/LockerLift/wear) | Wear OS App | Wear OS UI (Horologist & Wear Compose), Rotary Input Steuerung, Workout Foreground Service, Rest Timer mit Vibration. |
+| [`:core:model`](file:///C:/Users/Chris/code/LockerLift/core/model) | Pure Kotlin | Platform-independent domain models (`Machine`, `WorkoutSession`, `WorkoutSet`, enums). Zero Android dependencies. |
+| [`:core:database`](file:///C:/Users/Chris/code/LockerLift/core/database) | Android Library | Room database, SQLite TypeConverters, DAOs (`MachineDao`, `WorkoutSessionDao`), relations & SQLCipher encryption. |
+| [`:core:sync`](file:///C:/Users/Chris/code/LockerLift/core/sync) | Android Library | Google Play Services Wearable API encapsulation (`DataClient`, `ChannelClient`, `MessageClient`), JSON serialization, WorkManager queue worker. |
+| [`:core:healthconnect`](file:///C:/Users/Chris/code/LockerLift/core/healthconnect) | Android Library | AndroidX Health Connect client, permission controller, record builder for `EXERCISE_TYPE_STRENGTH_TRAINING`. |
+| [`:mobile`](file:///C:/Users/Chris/code/LockerLift/mobile) | Android App | Smartphone UI (Jetpack Compose Material 3), catalog, template, and history management, background sync listener service. |
+| [`:wear`](file:///C:/Users/Chris/code/LockerLift/wear) | Wear OS App | Wear OS UI (Horologist & Wear Compose), Rotary Input, workout foreground service, rest timer with haptics. |
 
 ---
 
-## 🗄️ Datenbankschema & Entitäten
+## 🗄️ Database Schema & Entities
 
-Alle Entitäten nutzen **UUIDv4 (`String`) als Primärschlüssel**, um dezentral auf Uhr und Smartphone Datensätze kollisionsfrei erzeugen zu können.
+All entities utilize **UUIDv4 (`String`) as primary keys** to enable decentralized, collision-free record generation across both watch and phone.
 
 ```mermaid
 erDiagram
-    Machine ||--o{ TemplateMachineCrossRef : "zugeordnet in"
-    WorkoutTemplate ||--o{ TemplateMachineCrossRef : "enthält"
-    Machine ||--o{ SessionMachineInstance : "instanziiert als"
-    WorkoutSession ||--o{ SessionMachineInstance : "besteht aus"
-    WorkoutSession }o--|| WorkoutTemplate : "basiert optional auf"
-    SessionMachineInstance ||--o{ WorkoutSet : "beinhaltet"
-    WorkoutSession ||--o| SyncQueue : "abgelegt in"
+    Machine ||--o{ TemplateMachineCrossRef : "assigned in"
+    WorkoutTemplate ||--o{ TemplateMachineCrossRef : "contains"
+    Machine ||--o{ SessionMachineInstance : "instantiated as"
+    WorkoutSession ||--o{ SessionMachineInstance : "consists of"
+    WorkoutSession }o--|| WorkoutTemplate : "optionally based on"
+    SessionMachineInstance ||--o{ WorkoutSet : "includes"
+    WorkoutSession ||--o| SyncQueue : "queued in"
 
     Machine {
         string id PK "UUID"
@@ -210,94 +210,94 @@ erDiagram
 
 ---
 
-## 🔄 Synchronisations-Protokoll (Wearable Data Layer)
+## 🔄 Synchronization Protocol (Wearable Data Layer)
 
-LockerLift trennt bewusst die Kanäle der Wearable Data Layer API:
+LockerLift strictly segments channels within the Wearable Data Layer API:
 
 <details>
-<summary><b>1. Stammdaten (Maschinen & Vorlagen) ➔ <code>DataClient</code></b></summary>
+<summary><b>1. Master Data (Machines & Templates) ➔ <code>DataClient</code></b></summary>
 
-* **Pfad:** `/equipment_catalog`, `/workout_templates`
-* **Mechanik:** Automatisch replizierter Key-Value-Speicher (DataItem API).
-* **Konfliktregel:** Smartphone ist **Master (Single Source of Truth)**. Auf dem Smartphone gepflegte Maschinen und Pläne werden automatisch auf gekoppelte Uhren gespiegelt.
+* **Paths:** `/equipment_catalog`, `/workout_templates`
+* **Mechanism:** Automatically replicated key-value store (DataItem API).
+* **Conflict Policy:** Smartphone is the **Master (Single Source of Truth)**. Machines and plans managed on the phone are automatically mirrored to paired watches.
 </details>
 
 <details>
-<summary><b>2. Workout Sessions (Historie & Sätze) ➔ <code>ChannelClient</code></b></summary>
+<summary><b>2. Workout Sessions (History & Sets) ➔ <code>ChannelClient</code></b></summary>
 
-* **Pfad:** `/workout_payload_transfer`
-* **Mechanik:** Bidirektionaler Byte-Stream für atomare Datentransfers großer JSON-Payloads inklusive aller Sätze, Notizen und Zeiten.
-* **Konfliktregel:** Smartwatch ist **Master** für Einheiten, die auf der Smartwatch ausgeführt wurden.
+* **Path:** `/workout_payload_transfer`
+* **Mechanism:** Bidirectional byte stream for atomic transfers of comprehensive JSON payloads, including all sets, instances, and timestamps.
+* **Conflict Policy:** Smartwatch is the **Master** for workouts executed on the watch.
 </details>
 
 <details>
-<summary><b>3. Quittierung & RPC ➔ <code>MessageClient</code></b></summary>
+<summary><b>3. Acknowledgment & RPC ➔ <code>MessageClient</code></b></summary>
 
-* **Pfad:** `/workout_ack`, `/sync_ping`
-* **Mechanik:** Schnelle, unbestätigte Nachrichten mit geringer Latenz zur Übermittlung von Bestätigungs-IDs (Zwei-Wege-Handshake). Nach Empfang des ACKs wird die Session in der Queue der Uhr bereinigt.
+* **Paths:** `/workout_ack`, `/sync_ping`
+* **Mechanism:** Low-latency messages transmitting confirmation IDs (two-way handshake). After receiving an ACK, the session is cleared from the watch queue.
 </details>
 
 ---
 
-## 🧪 Unit Testing & Qualitätsgarantie
+## 🧪 Unit Testing & Quality Mandate
 
 > [!IMPORTANT]
-> In LockerLift gilt ein **strenges Unit-Testing-Mandat**. Alle mathematischen Logiken, Progressionen, Enums, Converter, Mappings und Serialisierungen sind zu 100 % mit Unit-Tests abgedeckt.
+> LockerLift enforces a **strict unit testing mandate**. All business calculations, progressions, enums, converters, mappers, and serializations are covered by unit tests.
 > 
-> **Regressionstest-Garantie:** Alle Tests müssen bei künftigen Änderungen fehlerfrei durchlaufen. Ein Test darf nur modifiziert oder gelöscht werden, wenn das Feature bewusst aus der Spezifikation entfernt wurde.
+> **Zero Regression Guarantee:** All tests must pass cleanly upon future additions. A test may only be modified or deleted if the corresponding feature has been explicitly removed from specification.
 
-### Enthaltene Unit-Test-Suites:
-* [`DomainModelTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/model/src/test/kotlin/com/lockerlift/core/model/DomainModelTest.kt): Validierung von Instanziierung, UUID-Kollisionsfreiheit, Standardwerten und JSON-Serialisierung.
-* [`SyncPayloadSerializerTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/sync/src/test/kotlin/com/lockerlift/core/sync/SyncPayloadSerializerTest.kt): Verlustfreier Roundtrip komplexer Workout-Payload-Graphen.
-* [`EntityMappingTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/database/src/test/kotlin/com/lockerlift/core/database/EntityMappingTest.kt): Bidirektionale Mappings zwischen Domain Models und Room Entities sowie Validierung aller TypeConverter.
+### Included Unit Test Suites:
+* [`DomainModelTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/model/src/test/kotlin/com/lockerlift/core/model/DomainModelTest.kt): Validation of model instantiation, UUID uniqueness, defaults, and JSON serialization.
+* [`SyncPayloadSerializerTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/sync/src/test/kotlin/com/lockerlift/core/sync/SyncPayloadSerializerTest.kt): Lossless round-trip encoding and decoding of complex workout payload graphs.
+* [`EntityMappingTest.kt`](file:///C:/Users/Chris/code/LockerLift/core/database/src/test/kotlin/com/lockerlift/core/database/EntityMappingTest.kt): Bidirectional mappings between domain models and Room entities, plus validation of all Room TypeConverters.
 
 ---
 
 ## 🤖 AI Agent & Developer Skills
 
-Das Repository stattet Coding-Assistenten (und Entwickler) mit vordefinierten Skills im Ordner `.agents/skills/` aus:
+The repository equips coding assistants and human developers with structured guidance in `.agents/skills/`:
 
-* 🧭 [**`git-commit-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/git-commit-guidelines/SKILL.md): Verbindliche Formatvorgaben nach Conventional Commits (v1.0.0), Scopes und Test-Commit-Pflicht.
-* 🧪 [**`unit-testing-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/unit-testing-guidelines/SKILL.md): Standards zur Teststrukturierung (AAA-Pattern, Room In-Memory, Coroutine Testing).
-* 🚀 [**`feature-implementation-workflow`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/feature-implementation-workflow/SKILL.md): 8-Schritte-Workflow von der User Story über Architekturchecks und TDD bis zum atomaren Commit.
-* 📦 [**`release-versioning-rules`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/release-versioning-rules/SKILL.md): Kriterienkatalog für SemVer 2.0.0 (Major vs. Minor vs. Patch Releases) und Gradle-Bumps.
+* 🧭 [**`git-commit-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/git-commit-guidelines/SKILL.md): Strict formatting rules following Conventional Commits (v1.0.0), module scopes, and mandatory test inclusion.
+* 🧪 [**`unit-testing-guidelines`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/unit-testing-guidelines/SKILL.md): Standards for test structuring (AAA pattern, in-memory Room, coroutine testing).
+* 🚀 [**`feature-implementation-workflow`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/feature-implementation-workflow/SKILL.md): 8-step lifecycle from user stories through architecture validation to atomic commits.
+* 📦 [**`release-versioning-rules`**](file:///C:/Users/Chris/code/LockerLift/.agents/skills/release-versioning-rules/SKILL.md): Criteria catalog for SemVer 2.0.0 (Major vs. Minor vs. Patch) and Gradle release bumps.
 
 ---
 
-## 📖 Dokumentation & Ressourcen
+## 📖 Documentation & Resources
 
-| Dokument | Beschreibung |
+| Document | Description |
 |---|---|
-| [**GitHub Issues & User Stories**](https://github.com/christian98b/LockerLift/issues) | Vollständiger Anforderungskatalog (Epics 1 bis 6, US 1.1–US 6.2) als interaktive Issues. |
-| [**`ARCHITECTURE.md`**](file:///C:/Users/Chris/code/LockerLift/ARCHITECTURE.md) | Detailliertes technisches Systemdesign, ERDs, Sequenzdiagramme und Wear OS Invarianten. |
-| [**`AGENTS.md`**](file:///C:/Users/Chris/code/LockerLift/AGENTS.md) | Verbindliche Entwicklerrichtlinien, Invarianten und aktuelles Implementierungsprotokoll. |
+| [**GitHub Issues & User Stories**](https://github.com/christian98b/LockerLift/issues) | Complete specification (Epics 1 through 6, US 1.1–US 6.2) tracked as GitHub Issues. |
+| [**`ARCHITECTURE.md`**](file:///C:/Users/Chris/code/LockerLift/ARCHITECTURE.md) | Technical system architecture, ER diagrams, sequence diagrams, and Wear OS invariants. |
+| [**`AGENTS.md`**](file:///C:/Users/Chris/code/LockerLift/AGENTS.md) | Developer guidelines, invariant mandates, and active implementation progress log. |
 
 ---
 
 ## 🛠️ Getting Started & Build
 
-### Voraussetzungen
+### Prerequisites
 * **Java Development Kit (JDK):** Version 21
-* **Android SDK:** Build-Tools 35, Compile SDK 35 (Min SDK: 28 für Phone, 30 für Wear OS)
-* **Gradle:** 8.7+ (wird via Gradle Wrapper bereitgestellt)
+* **Android SDK:** Build-Tools 35, Compile SDK 35 (Min SDK: 28 for phone, 30 for Wear OS)
+* **Gradle:** 8.7+
 
-### Unit Tests ausführen
+### Running Unit Tests
 ```bash
-# Führe alle Unit-Tests der Core-Module aus
+# Run all unit tests across modules
 ./gradlew test
 ```
 
-### Apps bauen
+### Building Application APKs
 ```bash
-# Smartphone App (APK) bauen
+# Build Mobile Smartphone APK
 ./gradlew :mobile:assembleDebug
 
-# Wear OS Smartwatch App (APK) bauen
+# Build Wear OS Smartwatch APK
 ./gradlew :wear:assembleDebug
 ```
 
 ---
 
 <div align="center">
-<b>LockerLift</b> • Entwickelt für Kraftsportler, die volle Konzentration und absolute Datensouveränität verlangen.
+<b>LockerLift</b> • Built for strength athletes demanding complete focus and absolute data sovereignty.
 </div>

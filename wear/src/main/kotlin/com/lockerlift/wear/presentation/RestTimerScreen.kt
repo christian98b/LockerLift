@@ -47,7 +47,7 @@ fun RestTimerScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Pause",
+            text = androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.rest_timer_title),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -63,7 +63,7 @@ fun RestTimerScreen(
             onClick = onTimerFinished,
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Überspringen")
+            Text(androidx.compose.ui.res.stringResource(com.lockerlift.wear.R.string.btn_skip))
         }
     }
 }

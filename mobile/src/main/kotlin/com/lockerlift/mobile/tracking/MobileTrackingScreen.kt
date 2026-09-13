@@ -5,15 +5,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.lockerlift.mobile.LockerLiftMobileApp
+import com.lockerlift.mobile.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Mobiles Workout Tracking") })
+            TopAppBar(title = { Text(stringResource(R.string.tracking_title)) })
         }
     ) { padding ->
         Box(
@@ -25,12 +27,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "LockerLift Spind-Modus",
+                    text = stringResource(R.string.locker_mode_title),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Lass dein Handy sicher im Spind und tracke deine Einheit autark auf deiner Wear OS Smartwatch!",
+                    text = stringResource(R.string.locker_mode_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

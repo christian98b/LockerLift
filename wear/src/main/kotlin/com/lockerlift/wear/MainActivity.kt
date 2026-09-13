@@ -56,6 +56,7 @@ fun TemplateSelectionScreen(
     val templateDao = remember { app.database.workoutTemplateDao() }
     val templatesState by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
     val listState = rememberScalingLazyListState()
+    val freeWorkoutTitle = androidx.compose.ui.res.stringResource(R.string.workout_free)
 
     ScalingLazyColumn(
         state = listState,
@@ -72,12 +73,12 @@ fun TemplateSelectionScreen(
 
         item {
             Button(
-                onClick = { onSelectTemplate(null, "Freies Training") },
+                onClick = { onSelectTemplate(null, freeWorkoutTitle) },
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .padding(vertical = 4.dp)
             ) {
-                Text("Freies Training")
+                Text(freeWorkoutTitle)
             }
         }
 
@@ -92,7 +93,7 @@ fun TemplateSelectionScreen(
                 Column(modifier = Modifier.padding(8.dp)) {
                     Text(text = template.name, style = MaterialTheme.typography.titleSmall)
                     Text(
-                        text = "${item.machines.size} Übungen",
+                        text = androidx.compose.ui.res.stringResource(R.string.exercises_count_format, item.machines.size),
                         style = MaterialTheme.typography.bodyExtraSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -12,12 +12,14 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.*
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
+import com.lockerlift.wear.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -59,7 +61,7 @@ fun RepsWeightInputScreen(
     ) {
         item {
             Text(
-                text = "${machine.name} • Satz $setNumber",
+                text = stringResource(R.string.set_header_format, machine.name, setNumber),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -68,7 +70,7 @@ fun RepsWeightInputScreen(
         if (cadence != null) {
             item {
                 Text(
-                    text = "Tempo: $cadence",
+                    text = stringResource(R.string.tempo_format, cadence),
                     style = MaterialTheme.typography.bodyExtraSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -83,7 +85,7 @@ fun RepsWeightInputScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                 ) {
                     Text(
-                        text = "Vorschlag: +${increment}kg steigern?",
+                        text = stringResource(R.string.progression_suggestion_format, increment.toString()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
@@ -136,7 +138,7 @@ fun RepsWeightInputScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "$reps Wdh.",
+                        text = stringResource(R.string.reps_count_format, reps),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -167,7 +169,7 @@ fun RepsWeightInputScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
-                Text("Satz abschließen")
+                Text(stringResource(R.string.btn_finish_set))
             }
         }
 
@@ -176,7 +178,7 @@ fun RepsWeightInputScreen(
                 onClick = onCancel,
                 modifier = Modifier.padding(top = 4.dp)
             ) {
-                Text("Abbrechen")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     }

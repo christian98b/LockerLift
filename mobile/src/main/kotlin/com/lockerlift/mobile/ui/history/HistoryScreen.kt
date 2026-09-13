@@ -6,9 +6,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.mobile.LockerLiftMobileApp
+import com.lockerlift.mobile.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,7 +24,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Trainingshistorie") })
+            TopAppBar(title = { Text(stringResource(R.string.history_title)) })
         }
     ) { padding ->
         if (sessionsState.isEmpty()) {
@@ -33,7 +35,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                 contentAlignment = androidx.compose.ui.Alignment.Center
             ) {
                 Text(
-                    text = "Noch keine absolvierten Einheiten vorhanden.",
+                    text = stringResource(R.string.history_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -58,7 +60,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = item.template?.name ?: "Freies Training",
+                                    text = item.template?.name ?: stringResource(R.string.workout_free),
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
@@ -77,13 +79,14 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                             Divider()
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            val noSetsText = stringResource(R.string.history_no_sets)
                             item.machineInstances.forEach { instanceWithDetails ->
                                 val machineName = instanceWithDetails.machine.name
                                 val sets = instanceWithDetails.sets
                                 val setsSummary = sets.joinToString(", ") { "${it.weightKg}kg × ${it.reps}" }
 
                                 Text(
-                                    text = "• $machineName: ${if (setsSummary.isNotBlank()) setsSummary else "Keine Sätze"}",
+                                    text = "• $machineName: ${if (setsSummary.isNotBlank()) setsSummary else noSetsText}",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }

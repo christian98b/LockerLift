@@ -1,196 +1,200 @@
 # LockerLift – AI Agent & Developer Guidelines (`AGENTS.md`)
 
-Dieses Dokument dient als verbindliches Handbuch und Fortschrittsprotokoll für Entwickler und KI-Assistenten (z. B. Antigravity, Claude, Copilot), die am Projekt **LockerLift** arbeiten. Es definiert Leitlinien, Architekturvorgaben, Testregeln und den aktuellen Implementierungsstand.
+This document serves as the authoritative handbook and progress tracking log for developers and AI assistants (e.g., Antigravity, Claude, Copilot) working on **LockerLift**. It defines guidelines, architectural mandates, testing requirements, and current implementation progress.
 
 ---
 
-## 1. Vision & Leitbild von LockerLift
+## 1. Vision & Core Philosophy of LockerLift
 
-LockerLift ist ein **datenschutzfreundlicher, lokaler Open-Source-Kraftsport-Tracker** für Android und Wear OS.
+LockerLift is a **privacy-first, local, open-source strength training tracker** for Android and Wear OS.
 
-### Das Spind-Prinzip (The Locker Scenario)
-> Das Smartphone verbleibt während des gesamten Trainings im Spind. Das Wear OS Device agiert vollkommen autonom ohne Funkverbindung (kein Bluetooth, kein WLAN).
+### The Locker Scenario
+> The smartphone remains in the locker during the entire workout. The Wear OS smartwatch operates completely autonomously without wireless connectivity (no Bluetooth, no Wi-Fi).
 
-**Konsequenz für jeden Code-Beitrag:**
-* **Niemals** annehmen, dass während eines Workouts auf der Watch eine Verbindung zum Phone oder Internet existiert.
-* Alle CRUD-Aktionen müssen lokal auf der Uhr ohne Latenz und ohne Fehler quittiert werden.
-* Datenübertragung erfolgt ausschließlich asynchron nach dem **Store-and-Forward**-Prinzip.
+**Consequences for Every Code Contribution:**
+* **Never** assume that a connection to the phone or internet exists during a workout on the watch.
+* All CRUD actions must complete locally on the watch with zero latency and zero errors.
+* Data transmission occurs strictly asynchronously following the **Store-and-Forward** principle.
 
 ---
 
-## 2. Verbindliche Test-Vorgaben (Strict Unit Testing Mandate)
+## 2. Strict Unit Testing Mandate
 
 > [!IMPORTANT]
-> **Unit Tests sind für jede Implementierung Pflicht:**
-> 1. **100% Testabdeckung für Logik:** Jede neue Funktion, Geschäftslogik, Berechnung (z. B. Double Progression, Kadenz), jedes Datenmodell, Mapping, Konvertierung, Serialisierung und jeder DAO-Workflow **MUSS** durch automatisierte Unit-Tests abgedeckt werden.
-> 2. **Bestehende Tests müssen immer funktionieren:** Alle bestehenden Unit-Tests müssen bei zukünftigen Änderungen und Erweiterungen fehlerfrei durchlaufen (Regressionstest-Garantie).
-> 3. **Ausnahme für Test-Änderungen:** Ein Unit-Test darf **ausschließlich dann** modifiziert oder entfernt werden, wenn das konkret getestete Feature bewusst gelöscht oder durch eine neue Spezifikation abgelöst wurde.
-> 4. **Zukunftssicherheit:** Zukünftige Implementierungen müssen die vorhandenen Test-Suites aktiv nutzen und erweitern. Vor dem Abschluss einer Implementierung ist sicherzustellen, dass die Tests für das Modul grün sind.
+> **Unit tests are mandatory for every implementation:**
+> 1. **100% Test Coverage for Logic:** Every new function, business logic, calculation (e.g., Double Progression, cadence), data model, mapping, conversion, serialization, and DAO workflow **MUST** be covered by automated unit tests.
+> 2. **Existing Tests Must Always Pass:** All existing unit tests must run cleanly without regressions when making future changes or additions.
+> 3. **Rule on Modifying Tests:** A unit test may **only** be modified or deleted if the specifically tested feature was intentionally removed or superseded by a new specification.
+> 4. **Future-Proofing:** Future implementations must actively leverage and expand existing test suites. Before finishing any task, verify that all tests for the module are green.
 
 ---
 
-## 3. Nachverfolgung von Implementierungen (Progress & Tracking)
+## 3. Implementation Progress & Tracking
 
 > [!NOTE]
-> **Pflicht für jeden Agenten:** Wenn neue Features implementiert, angepasst oder erweitert werden, **MUSS** dieser Abschnitt in `AGENTS.md` sofort aktualisiert werden. Dokumentiere:
-> * Welches Feature / welche User Story umgesetzt wurde.
-> * Welche Dateien erstellt oder modifiziert wurden.
-> * Welche Unit-Tests hinzugefügt wurden.
+> **Mandatory for every agent:** Whenever new features are implemented, adjusted, or extended, this section in `AGENTS.md` **MUST** be updated immediately. Document:
+> * Which feature / user story was implemented.
+> * Which files were created or modified.
+> * Which unit tests were added.
 
-### Aktueller Implementierungsstand
+### Current Implementation Status
 
-#### Status-Übersicht
+#### Status Overview
 
-- [x] **Projekt-Setup & Multi-Module-Architektur**
-  - Root Gradle Konfiguration: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `.gitignore`.
-  - Modulaufteilung: `:core:model`, `:core:database`, `:core:sync`, `:core:healthconnect`, `:mobile`, `:wear`.
-- [x] **Dokumentation & Issue-Tracking**
-  - `README.md` (Projektübersicht & Tech-Stack)
-  - GitHub Issues #1–#15 (Epics 1–6 mit allen Akzeptanzkriterien, transferiert aus Spezifikation)
-  - `ARCHITECTURE.md` (Systemdesign, ERD, Wearable Data Layer Protokolle, Health Connect)
-  - `AGENTS.md` (Entwickler- & Agent-Guidelines mit Testvorgaben & Changelog)
-- [x] **Epic 1 & 2: Datenbasis & Modelle (`:core:model`, `:core:database`)**
-  - Domain-Klassen: `Machine`, `WorkoutTemplate`, `TemplateMachineCrossRef`, `WorkoutSession`, `SessionMachineInstance`, `WorkoutSet`, `SyncQueueItem`, `SetType`, `SyncStatus`, `QueueStatus`.
-  - Room Entities mit Cascade Delete, Indexen und Mappern (`MachineEntity`, `WorkoutTemplateEntity`, `TemplateMachineCrossRefEntity`, `WorkoutSessionEntity`, `SessionMachineInstanceEntity`, `WorkoutSetEntity`, `SyncQueueEntity`).
+- [x] **Project Setup & Multi-Module Architecture**
+  - Root Gradle Configuration: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `.gitignore`.
+  - Module Structure: `:core:model`, `:core:database`, `:core:sync`, `:core:healthconnect`, `:mobile`, `:wear`.
+- [x] **Documentation & Issue Tracking**
+  - `README.md` (Project overview & tech stack in English)
+  - GitHub Issues #1–#15 (Epics 1–6 with all acceptance criteria, transferred from specification)
+  - `ARCHITECTURE.md` (System design, ERD, Wearable Data Layer protocols, Health Connect)
+  - `AGENTS.md` (Developer & agent guidelines with testing mandate & changelog)
+- [x] **Internationalization (i18n)**
+  - English (default) and German (`values-de/`) language support across `:mobile` and `:wear`.
+  - All user-facing strings migrated to `res/values/strings.xml` and `res/values-de/strings.xml`.
+  - Project documentation standardized in English.
+- [x] **Epic 1 & 2: Data Foundations & Models (`:core:model`, `:core:database`)**
+  - Domain classes: `Machine`, `WorkoutTemplate`, `TemplateMachineCrossRef`, `WorkoutSession`, `SessionMachineInstance`, `WorkoutSet`, `SyncQueueItem`, `SetType`, `SyncStatus`, `QueueStatus`.
+  - Room Entities with Cascade Delete, indices, and mappers (`MachineEntity`, `WorkoutTemplateEntity`, `TemplateMachineCrossRefEntity`, `WorkoutSessionEntity`, `SessionMachineInstanceEntity`, `WorkoutSetEntity`, `SyncQueueEntity`).
   - DAOs: `MachineDao`, `WorkoutTemplateDao`, `WorkoutSessionDao`, `SyncQueueDao`.
-  - Relationen: `WorkoutTemplateWithMachines`, `WorkoutSessionWithDetails`.
-  - `Converters` für Room Enums und `LockerLiftDatabase` Builder.
-- [x] **Epic 5: Wearable Data Layer Synchronisation (`:core:sync`)**
-  - `SyncConstants` (Pfade für DataClient, ChannelClient, MessageClient).
+  - Relations: `WorkoutTemplateWithMachines`, `WorkoutSessionWithDetails`.
+  - `Converters` for Room enums and `LockerLiftDatabase` builder.
+- [x] **Epic 5: Wearable Data Layer Synchronization (`:core:sync`)**
+  - `SyncConstants` (Paths for DataClient, ChannelClient, MessageClient).
   - DTOs: `WorkoutSessionPayload`, `SessionMachineInstancePayload`.
-  - `SyncPayloadSerializer` (Kotlinx Serialization JSON mit Typ-Sicherheit).
-  - `WearableDataLayerManager` (Streaming via `ChannelClient`, Master-Data per `DataClient`, ACK per `MessageClient`).
-  - `SyncQueueWorker` (WorkManager Task für Hintergrundübertragung bei Reconnect).
+  - `SyncPayloadSerializer` (Kotlinx Serialization JSON with type safety).
+  - `WearableDataLayerManager` (Streaming via `ChannelClient`, Master Data via `DataClient`, ACK via `MessageClient`).
+  - `SyncQueueWorker` (WorkManager task for background transfer upon reconnect).
 - [x] **Epic 6: Health Connect Integration (`:core:healthconnect`)**
-  - `HealthConnectManager` mit SDK-Status & Berechtigungsprüfung (`WRITE_EXERCISE`, etc.).
+  - `HealthConnectManager` with SDK status & permission checking (`WRITE_EXERCISE`, etc.).
   - `ExerciseRecordBuilder` (`EXERCISE_TYPE_STRENGTH_TRAINING`).
-- [x] **Epic 1 & 2 & 4: Mobile App (`:mobile`)**
-  - `MainActivity` mit Bottom-Navigation.
-  - `CatalogScreen` (Maschinenkatalog anlegen, Validierung gegen Namensduplikate).
-  - `TemplateListScreen` ($n$-Vorlagen anlegen, Cold-Start Vorlagen).
-  - `HistoryScreen` (Vergangene Einheiten, Satzübersicht).
-  - `MobileDataLayerListenerService` (Empfang via `ChannelClient`, Room-Insert, Health Connect Trigger & ACK).
+- [x] **Epic 1, 2 & 4: Mobile App (`:mobile`)**
+  - `MainActivity` with bottom navigation and localized tabs.
+  - `CatalogScreen` (Machine catalog management, duplicate name validation, localized strings).
+  - `TemplateListScreen` ($n$-templates management, cold-start templates, localized strings).
+  - `HistoryScreen` (Past sessions, set breakdown, localized strings).
+  - `MobileDataLayerListenerService` (Reception via `ChannelClient`, Room insert, Health Connect trigger & ACK).
 - [x] **Epic 3 & 4: Standalone Wear OS Tracking (`:wear`)**
-  - `WorkoutForegroundService` mit Ongoing Activity Notification & WakeLock.
-  - `MainActivity` mit Vorlagenauswahl & Freies Training.
-  - `ActiveWorkoutScreen` (Übungsliste, Ad-hoc Station hinzufügen, Überspringen, Template-Konsolidierungs-Logik, Queue-Speicherung).
-  - `RepsWeightInputScreen` (Rotary Input Unterstützung, Quick-Buttons, Double Progression Highlight).
-  - `RestTimerScreen` (Pausentimer mit haptischer Vibration).
-  - `WearDataLayerListenerService` (Stammdaten-Sync und Quittierungs-Handling).
+  - `WorkoutForegroundService` with Ongoing Activity notification & WakeLock.
+  - `MainActivity` with template selection & free workout (localized strings).
+  - `ActiveWorkoutScreen` (Exercise list, ad-hoc station addition, skip, template consolidation, queue persistence, localized strings).
+  - `RepsWeightInputScreen` (Rotary input support, quick buttons, double progression highlight, localized strings).
+  - `RestTimerScreen` (Rest timer with haptic vibration, localized strings).
+  - `WearDataLayerListenerService` (Master data sync and ACK handling).
 - [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`)**
-  - `DomainModelTest.kt`: Tests für Instanziierung, UUIDs, Defaults und JSON-Serialisierung.
-  - `SyncPayloadSerializerTest.kt`: Tests für verlustfreie Enkodierung/Dekodierung komplexer Workout-Payloads.
-  - `EntityMappingTest.kt`: Tests für bidirektionale Mappings zwischen Domain-Modellen und Room-Entities sowie Type-Converters.
+  - `DomainModelTest.kt`: Tests for instantiation, UUIDs, defaults, and JSON serialization.
+  - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads.
+  - `EntityMappingTest.kt`: Tests for bidirectional mappings between domain models and Room entities as well as type converters.
 - [x] **Agent Skills (`.agents/skills/`)**
-  - `git-commit-guidelines`: Skill zur Durchsetzung von Conventional Commits, Scope-Validierung und automatischem Testing-Mandat.
-  - `unit-testing-guidelines`: Leitfaden zur Erstellung automatisierter Unit-Tests (AAA-Pattern, Mappers, Serializers, Room, Invarianten).
-  - `feature-implementation-workflow`: End-to-End Workflow zur Implementierung neuer Features und User Stories (Requirements, Invarianten, Tests, UI, Tracking, Commit).
-  - `release-versioning-rules`: Regeln und Kriterien zur Einstufung von Releases in SemVer (Major vs. Minor vs. Patch) und Gradle-Version-Bumps.
+  - `git-commit-guidelines`: Skill enforcing Conventional Commits, scope validation, and mandatory test inclusion.
+  - `unit-testing-guidelines`: Guide for automated unit tests (AAA pattern, mappers, serializers, Room, invariants).
+  - `feature-implementation-workflow`: End-to-end workflow for implementing new features and user stories.
+  - `release-versioning-rules`: Rules and criteria for SemVer release bumps (Major vs. Minor vs. Patch) and Gradle version bumps.
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
-  - Automatisierte GitHub Actions Pipeline mit `test`-Stage (Unit-Tests) und `build-apks`-Stage (Debug-APKs für Mobile & Wear OS zum Download).
+  - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 
 ---
 
-## 4. Unveränderliche Architektur-Regeln (Invariants)
+## 4. Immutable Architectural Invariants
 
-1. **UUIDs als Primärschlüssel:**
-   * Verwende für alle Entitäten stets `java.util.UUID.randomUUID().toString()` als Primärschlüssel.
-   * **Niemals** `autoGenerate = true` bei Room-IDs verwenden! Verteilte Offline-Datenbanken erfordern kollisionsfreie Schlüssel.
-2. **Entkopplung von Vorlage (Template) und Training (Session):**
-   * Eine `WorkoutSession` kopiert die Maschinen des Templates in `SessionMachineInstance`-Einträge.
-   * Das Ändern, Hinzufügen oder Überspringen von Maschinen während des Trainings verändert das zugrundeliegende Template **nicht** automatisch.
-   * Erst bei Trainingsende wird der Nutzer explizit gefragt, ob die Änderungen in das Template übernommen werden sollen (Template-Konsolidierung).
-3. **Data Layer API Kanaltrennung:**
-   * **`DataClient`**: Für Stammdaten (Maschinen, Vorlagen).
-   * **`ChannelClient`**: Für komplette Workout-Sitzungen (Payload JSON via Stream).
-   * **`MessageClient`**: Für Bestätigungspakete (ACK) und Steuerungsbefehle.
-4. **Health Connect gehört ausschließlich aufs Smartphone:**
-   * Die Wear OS App schreibt **nicht** direkt in Health Connect.
-   * Die Wear OS App liefert das aggregierte Workout per Sync an das Phone, welches den `ExerciseSessionRecord` in Health Connect persistiert.
-5. **Foreground Service für Wear OS Tracking:**
-   * Ein aktives Workout auf der Uhr muss in einem Android `Foreground Service` laufen, der eine `Ongoing Activity` Notification registriert. Dadurch wird verhindert, dass das Betriebssystem die App im Ambient Mode oder bei Speicherdruck beendet.
+1. **UUIDs as Primary Keys:**
+   * Always use `java.util.UUID.randomUUID().toString()` as the primary key for all entities.
+   * **Never** use `autoGenerate = true` on Room IDs! Distributed offline databases require collision-free keys.
+2. **Decoupling of Template and Session:**
+   * A `WorkoutSession` copies template machines into `SessionMachineInstance` records.
+   * Modifying, adding, or skipping machines during a workout does **not** automatically alter the underlying template.
+   * Only upon workout completion is the user explicitly prompted whether variations should be consolidated back into the template.
+3. **Data Layer API Channel Separation:**
+   * **`DataClient`**: For master data (machines, templates).
+   * **`ChannelClient`**: For complete workout sessions (JSON payload via byte stream).
+   * **`MessageClient`**: For acknowledgment packets (ACK) and control messages.
+4. **Health Connect Belongs Strictly on the Smartphone:**
+   * The Wear OS app does **not** write directly to Health Connect.
+   * The Wear OS app streams aggregated workout sessions to the phone via sync, which then persists the `ExerciseSessionRecord` into Health Connect.
+5. **Foreground Service for Wear OS Tracking:**
+   * An active workout on the watch must run inside an Android `Foreground Service` registering an `Ongoing Activity` notification. This prevents the OS from killing the process during ambient mode or memory pressure.
 
 ---
 
-## 5. Modulorganisation & Paketstruktur
+## 5. Module Structure & Package Organization
 
-Das Root-Paket lautet: `com.lockerlift`
+Root package: `com.lockerlift`
 
-| Modul | Gradle Pfad | Zweck | Erlaubte Abhängigkeiten |
+| Module | Gradle Path | Purpose | Allowed Dependencies |
 |---|---|---|---|
-| Domain-Modelle | `:core:model` | Reine Kotlin-Klassen, Enums, Value Objects | **Keine** Android-Framework-Libs |
-| Datenbank | `:core:database` | Room DB, Entities, DAOs, SQLCipher | `:core:model`, Room, Coroutines |
-| Synchronisation | `:core:sync` | Wearable Data Layer Manager, Serialization | `:core:model`, `:core:database`, Play Services Wearable |
-| Health Connect | `:core:healthconnect` | Health Connect Client, Record Builder | `:core:model`, AndroidX Health Connect |
-| Mobile App | `:mobile` | Smartphone Compose UI, Tracking, Listener Service | Alle `:core:*` Module |
-| Wear OS App | `:wear` | Compose for Wear OS, Horologist, Rotary, Service | `:core:model`, `:core:database`, `:core:sync` |
+| Domain Models | `:core:model` | Pure Kotlin classes, enums, value objects | **No** Android framework libraries |
+| Database | `:core:database` | Room DB, entities, DAOs, SQLCipher | `:core:model`, Room, Coroutines |
+| Synchronization | `:core:sync` | Wearable Data Layer Manager, serialization | `:core:model`, `:core:database`, Play Services Wearable |
+| Health Connect | `:core:healthconnect` | Health Connect client, record builder | `:core:model`, AndroidX Health Connect |
+| Mobile App | `:mobile` | Smartphone Compose UI, tracking, listener service | All `:core:*` modules |
+| Wear OS App | `:wear` | Compose for Wear OS, Horologist, Rotary, service | `:core:model`, `:core:database`, `:core:sync` |
 
 > [!IMPORTANT]
-> Beachte strikt die Modulgrenzen! `:core:model` darf keine Android-Imports enthalten. `:wear` darf nicht `:core:healthconnect` referenzieren.
+> Strictly respect module boundaries! `:core:model` must never contain Android imports. `:wear` must never reference `:core:healthconnect`.
 
 ---
 
-## 6. Code-Konventionen & Best Practices
+## 6. Code Conventions & Best Practices
 
 ### 6.1 Kotlin & Coroutines
-* **Null-Safety:** Bevorzuge nicht-nullable Typen. Vermeide `!!` ausnahmslos.
+* **Null Safety:** Prefer non-nullable types. Avoid `!!` without exception.
 * **Coroutines Dispatcher:**
-  * UI / ViewModels: `viewModelScope.launch` auf `Dispatchers.Main`.
-  * Datenbank & IO: Alle DAO-Funktionen sind `suspend` oder liefern `Flow<T>`. Room wechselt intern automatisch auf einen Hintergrund-Dispatcher.
-  * Schwere Berechnungen / Parsing: `withContext(Dispatchers.Default)`.
+  * UI / ViewModels: `viewModelScope.launch` on `Dispatchers.Main`.
+  * Database & IO: All DAO functions are `suspend` or return `Flow<T>`. Room automatically switches to a background dispatcher.
+  * Heavy Computation / Parsing: `withContext(Dispatchers.Default)`.
 * **State Management:**
-  * ViewModels exponieren `StateFlow<UiState>` als `asStateFlow()`.
-  * Einmalige Ereignisse (Navigation, Snackbars, Haptik) werden über `SharedFlow` oder `Channel` gehandhabt.
+  * ViewModels expose `StateFlow<UiState>` via `asStateFlow()`.
+  * One-off events (navigation, snackbars, haptics) are handled via `SharedFlow` or `Channel`.
 
 ### 6.2 Jetpack Compose & Wear OS Compose
-* **State Hoisting:** UI-Komponenten sind möglichst zustandslos (*stateless*).
+* **State Hoisting:** UI components are stateless whenever possible.
 * **Wear OS Horologist:**
-  * Nutze für scrollbare Listen auf der Uhr Horologist `ScalingLazyColumn` mit passendem Content Padding für runde Displays.
-  * Unterstütze Rotary Input (drehbare Lünette) für Gewicht- und Wiederholungseingaben.
-* **Haptik:**
-  * Nutze `LocalHapticFeedback.current` für Klicks bei Rotary Steps und den Abschluss von Sätzen bzw. Pausentimer-Ablauf.
+  * Use Horologist `ScalingLazyColumn` with appropriate content padding for round displays.
+  * Support Rotary Input (rotatable bezel) for weight and rep adjustments.
+* **Haptics:**
+  * Use `LocalHapticFeedback.current` for clicks on rotary steps and completion of sets or rest timer expiration.
 
 ### 6.3 Room Database
-* Alle Foreign Keys definieren ein klares Löschverhalten (`onDelete = ForeignKey.CASCADE` für untergeordnete Elemente wie Sets).
-* Erstelle Indizes für alle Fremdschlüssel und häufig abgefragte Spalten (z. B. `machine_id`, `session_id`).
-* Komplexe Schreibvorgänge (z. B. Workout-Abschluss, Sync-Import) müssen in `@Transaction`-Methoden gekapselt werden.
+* All foreign keys define explicit cascade delete behavior (`onDelete = ForeignKey.CASCADE` for child elements such as sets).
+* Create indices for all foreign keys and frequently queried columns (e.g., `machine_id`, `session_id`).
+* Complex write operations (e.g., workout completion, sync import) must be encapsulated in `@Transaction` methods.
 
 ---
 
-## 7. Git- & Commit-Richtlinien (Commit Message Guidelines)
+## 7. Git & Commit Guidelines (Commit Message Guidelines)
 
-Alle Commits müssen dem **Conventional Commits**-Standard (v1.0.0) folgen. Dies stellt eine saubere Projekthistorie, automatische Changelog-Generierung und Nachvollziehbarkeit sicher.
+All commits must adhere to the **Conventional Commits** standard (v1.0.0). This ensures a clean project history, automatic changelog generation, and full traceability.
 
 ### Format
 ```text
-<type>(<scope>): <kurze Zusammenfassung im Imperativ/Präsens>
+<type>(<scope>): <short imperative summary>
 
-[Optionale detailliertere Beschreibung: Kontext, Problem, Lösung]
+[Optional detailed body: context, motivation, architectural decisions, what changed and why]
 
-[Optional: Referenz auf Akzeptanzkriterien/User Stories, z. B. 'Closes US-3.1']
+[Optional footer: references to user stories or issue tracking, e.g. 'Closes US-3.1']
 ```
 
-### 7.1 Erlaubte Typen (`type`)
-* `feat`: Neues Feature für den Anwender (z. B. neuer Screen, Progressionslogik).
-* `fix`: Bugfix oder Korrektur eines unerwünschten Verhaltens.
-* `test`: Hinzufügen, Ergänzen oder Anpassen von Unit-Tests.
-* `docs`: Reine Dokumentationsänderungen (`README.md`, `AGENTS.md`, etc.).
-* `refactor`: Code-Umbauten, die weder Funktionalität hinzufügen noch Fehler beheben.
-* `chore`: Build-Konfiguration, Gradle-Updates, Versionsanpassungen, `.gitignore`.
-* `perf`: Performance-Optimierungen.
+### 7.1 Allowed Types (`type`)
+* `feat`: New user feature (e.g., new screen, progression logic).
+* `fix`: Bugfix or correction of unexpected behavior.
+* `test`: Adding, updating, or fixing unit tests.
+* `docs`: Documentation changes only (`README.md`, `AGENTS.md`, etc.).
+* `refactor`: Code restructuring without adding functionality or fixing bugs.
+* `chore`: Build configuration, Gradle updates, version bumps, `.gitignore`.
+* `perf`: Performance optimizations.
 
-### 7.2 Gültige Scopes (`scope`)
-* `model`: Änderungen in `:core:model`
-* `database`: Änderungen in `:core:database`
-* `sync`: Änderungen in `:core:sync`
-* `healthconnect`: Änderungen in `:core:healthconnect`
-* `mobile`: Änderungen in `:mobile`
-* `wear`: Änderungen in `:wear`
-* `project`: Modulübergreifende Änderungen, Root-Setup oder Dokumentation
+### 7.2 Allowed Scopes (`scope`)
+* `model`: Changes in `:core:model`
+* `database`: Changes in `:core:database`
+* `sync`: Changes in `:core:sync`
+* `healthconnect`: Changes in `:core:healthconnect`
+* `mobile`: Changes in `:mobile`
+* `wear`: Changes in `:wear`
+* `project`: Cross-cutting changes affecting multiple modules or root setup
 
-### 7.3 Verbindliche Commit-Regeln
-1. **Imperativ / Präsens:** Schreibe `feat(wear): add rotary input support` statt `added rotary input`.
-2. **Kein Punkt am Zeilenende:** Die erste Betreffzeile endet **nie** mit einem Punkt.
-3. **Längenbegrenzung:** Die Betreffzeile sollte maximal 72 Zeichen lang sein.
-4. **Atomic Commits:** Ein Commit behandelt genau ein in sich geschlossenes logisches Thema.
-5. **Tests mit Feature committen:** Wenn ein neues Feature (`feat(...)`) hinzugefügt wird, **müssen** die zugehörigen Unit-Tests im selben Commit enthalten sein.
+### 7.3 Mandatory Commit Rules
+1. **Imperative Mood / Present Tense:** Write `feat(wear): add rotary input support` instead of `added rotary input`.
+2. **No Trailing Period:** The subject line must **never** end with a period.
+3. **Subject Length:** Keep the first line strictly under 72 characters.
+4. **Atomic Commits:** Each commit must encapsulate a single logical change.
+5. **Commit Tests with Features:** When introducing a new feature (`feat(...)`), the corresponding unit tests **MUST** be included in the exact same commit.

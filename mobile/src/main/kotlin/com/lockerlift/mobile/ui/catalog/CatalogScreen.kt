@@ -10,10 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
 import com.lockerlift.mobile.LockerLiftMobileApp
+import com.lockerlift.mobile.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,9 +32,12 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var incrementKgText by remember { mutableStateOf("2.5") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val errorRequiredFields = stringResource(R.string.error_required_fields)
+    val errorMachineExists = stringResource(R.string.error_machine_exists)
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Maschinenkatalog") })
+            TopAppBar(title = { Text(stringResource(R.string.catalog_title)) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
@@ -42,7 +47,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 errorMessage = null
                 showDialog = true
             }) {
-                Icon(Icons.Default.Add, contentDescription = "Maschine hinzufügen")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_machine))
             }
         }
     ) { padding ->
@@ -62,19 +67,19 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(text = machine.name, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = "Muskelgruppe: ${machine.targetMuscleGroup}",
+                            text = stringResource(R.string.muscle_group_format, machine.targetMuscleGroup),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (!machine.machineSettingsNote.isNullOrBlank()) {
                             Text(
-                                text = "Setup: ${machine.machineSettingsNote}",
+                                text = stringResource(R.string.setup_format, machine.machineSettingsNote!!),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
-                            text = "Schrittweite: ${machine.defaultIncrementKg} kg",
+                            text = stringResource(R.string.increment_format, machine.defaultIncrementKg.toString()),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -85,33 +90,33 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text("Neue Maschine anlegen") },
+                title = { Text(stringResource(R.string.dialog_new_machine_title)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = machineName,
                             onValueChange = { machineName = it },
-                            label = { Text("Name (z.B. Latzug)") },
+                            label = { Text(stringResource(R.string.hint_machine_name)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = muscleGroup,
                             onValueChange = { muscleGroup = it },
-                            label = { Text("Zielmuskelgruppe (z.B. Rücken)") },
+                            label = { Text(stringResource(R.string.hint_muscle_group)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = settingsNote,
                             onValueChange = { settingsNote = it },
-                            label = { Text("Geräteeinstellungen (optional)") },
+                            label = { Text(stringResource(R.string.hint_settings_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = incrementKgText,
                             onValueChange = { incrementKgText = it },
-                            label = { Text("Schrittweite in kg (z.B. 2.5)") },
+                            label = { Text(stringResource(R.string.hint_increment)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (errorMessage != null) {
@@ -122,13 +127,13 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 confirmButton = {
                     Button(onClick = {
                         if (machineName.isBlank() || muscleGroup.isBlank()) {
-                            errorMessage = "Name und Muskelgruppe sind Pflichtfelder."
+                            errorMessage = errorRequiredFields
                             return@Button
                         }
                         coroutineScope.launch {
                             val existing = machineDao.getMachineByName(machineName.trim())
                             if (existing != null) {
-                                errorMessage = "Eine Maschine mit diesem Namen existiert bereits."
+                                errorMessage = errorMachineExists
                                 return@launch
                             }
                             val increment = incrementKgText.toFloatOrNull() ?: 2.5f
@@ -142,12 +147,12 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             showDialog = false
                         }
                     }) {
-                        Text("Speichern")
+                        Text(stringResource(R.string.btn_save))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDialog = false }) {
-                        Text("Abbrechen")
+                        Text(stringResource(R.string.btn_cancel))
                     }
                 }
             )
