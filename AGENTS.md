@@ -158,6 +158,7 @@ flowchart TD
 - [x] **Official Releases**
   - `v1.0.0`: Initial production release with full offline tracking, rotary controls, template management, sync protocol, Health Connect, and standalone APK binaries.
   - `v1.1.0`: Standalone Phone Workout Tracking, Bidirectional Session History Sync, SQLCipher AES-256 DB Encryption, Security & Privacy Hardening, and Clamped Validation.
+  - `v1.2.0`: Local Storage Backup & Restore with SAF, GZip/JSON export, SHA-256 integrity verification, automated periodic backup worker, and settings UI.
 - [x] **US 7.2: Local Storage Backup & Restore (`:mobile`)**
   - `LocalBackupManager` (SAF-based export/restore, GZip + JSON via `SyncPayloadSerializer`, SHA-256 checksum, retention pruning).
   - `LocalBackupWorker` (`CoroutineWorker` / `PeriodicWorkRequest` for scheduled backups with configurable interval and keep-count).
