@@ -197,6 +197,21 @@ object WearWorkoutLogic {
             return Pair(firstHistoricalSet.weightKg, firstHistoricalSet.reps)
         }
 
-        return Pair(defaultWeight, defaultReps)
+        return Pair(clampWeight(defaultWeight), clampReps(defaultReps))
     }
+
+    const val MIN_WEIGHT_KG = 0.0f
+    const val MAX_WEIGHT_KG = 1000.0f
+    const val MIN_REPS = 1
+    const val MAX_REPS = 999
+
+    /**
+     * Clamps weight to a realistic non-negative training range [0.0, 1000.0] kg (SEC-08).
+     */
+    fun clampWeight(weight: Float): Float = weight.coerceIn(MIN_WEIGHT_KG, MAX_WEIGHT_KG)
+
+    /**
+     * Clamps reps to a valid non-zero training range [1, 999] (SEC-08).
+     */
+    fun clampReps(reps: Int): Int = reps.coerceIn(MIN_REPS, MAX_REPS)
 }

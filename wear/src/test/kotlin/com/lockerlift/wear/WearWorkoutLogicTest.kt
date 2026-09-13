@@ -253,4 +253,23 @@ class WearWorkoutLogicTest {
         assertEquals(50f, weight, 0.001f)
         assertEquals(12, reps)
     }
+
+    @Test
+    fun testClampWeight_boundaries() {
+        assertEquals(0.0f, WearWorkoutLogic.clampWeight(-10f), 0.001f)
+        assertEquals(0.0f, WearWorkoutLogic.clampWeight(0.0f), 0.001f)
+        assertEquals(80.0f, WearWorkoutLogic.clampWeight(80.0f), 0.001f)
+        assertEquals(1000.0f, WearWorkoutLogic.clampWeight(1000.0f), 0.001f)
+        assertEquals(1000.0f, WearWorkoutLogic.clampWeight(1500.0f), 0.001f)
+    }
+
+    @Test
+    fun testClampReps_boundaries() {
+        assertEquals(1, WearWorkoutLogic.clampReps(-5))
+        assertEquals(1, WearWorkoutLogic.clampReps(0))
+        assertEquals(1, WearWorkoutLogic.clampReps(1))
+        assertEquals(12, WearWorkoutLogic.clampReps(12))
+        assertEquals(999, WearWorkoutLogic.clampReps(999))
+        assertEquals(999, WearWorkoutLogic.clampReps(2000))
+    }
 }

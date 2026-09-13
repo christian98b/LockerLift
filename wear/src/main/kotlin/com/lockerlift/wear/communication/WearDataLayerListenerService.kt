@@ -3,11 +3,13 @@ package com.lockerlift.wear.communication
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
+import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.toEntity
@@ -17,12 +19,19 @@ import com.lockerlift.core.sync.SyncQueueWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class WearDataLayerListenerService : WearableListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val database by lazy { LockerLiftDatabase.getInstance(this) }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         super.onDataChanged(dataEvents)
@@ -65,12 +74,22 @@ class WearDataLayerListenerService : WearableListenerService() {
         }
     }
 
-
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
         if (messageEvent.path == SyncConstants.PATH_WORKOUT_ACK) {
             val sessionId = String(messageEvent.data, Charsets.UTF_8)
             serviceScope.launch {
+                // Verify sender node capability if available (SEC-05)
+                runCatching {
+                    val capabilityInfo = Wearable.getCapabilityClient(this@WearDataLayerListenerService)
+                        .getCapability(SyncConstants.CAPABILITY_MOBILE, CapabilityClient.FILTER_ALL)
+                        .await()
+                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+                        Log.w(TAG, "Rejected ACK from unauthorized node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                }
+
                 database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
                 Log.i(TAG, "Workout session $sessionId successfully acknowledged and removed from queue.")
             }
@@ -79,7 +98,8 @@ class WearDataLayerListenerService : WearableListenerService() {
 
     override fun onPeerConnected(peer: Node) {
         super.onPeerConnected(peer)
-        Log.i(TAG, "Phone reconnected (${peer.displayName}). Triggering sync worker.")
+        // Log node id without personal display name to avoid leaking PII (SEC-09)
+        Log.i(TAG, "Companion node reconnected (id=${peer.id}). Triggering sync worker.")
         val request = OneTimeWorkRequestBuilder<SyncQueueWorker>().build()
         WorkManager.getInstance(this).enqueue(request)
     }

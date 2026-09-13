@@ -11,4 +11,8 @@ object SyncConstants {
     // MessageClient paths (RPC & Acknowledgment)
     const val PATH_WORKOUT_ACK = "/workout_ack"
     const val PATH_PING = "/sync_ping"
+
+    // Wearable Data Layer Capabilities (Node verification)
+    const val CAPABILITY_WEAR = "lockerlift_wear_app"
+    const val CAPABILITY_MOBILE = "lockerlift_mobile_app"
 }

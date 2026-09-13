@@ -12,7 +12,7 @@ import java.time.ZoneOffset
 class ExerciseRecordBuilderTest {
 
     @Test
-    fun testBuildExerciseSessionRecord_standard() {
+    fun testBuildExerciseSessionRecord_standardWithCustomZoneOffset() {
         val startTime = 1700000000000L
         val endTime = 1700003600000L
         val session = WorkoutSession(
@@ -21,23 +21,25 @@ class ExerciseRecordBuilderTest {
             endTime = endTime,
             notes = "Chest and Triceps focus"
         )
+        val customOffset = ZoneOffset.ofHours(2)
 
         val record = ExerciseRecordBuilder.buildExerciseSessionRecord(
             session = session,
-            title = "Push Day A"
+            title = "Push Day A",
+            zoneOffset = customOffset
         )
 
         assertEquals(Instant.ofEpochMilli(startTime), record.startTime)
         assertEquals(Instant.ofEpochMilli(endTime), record.endTime)
-        assertEquals(ZoneOffset.UTC, record.startZoneOffset)
-        assertEquals(ZoneOffset.UTC, record.endZoneOffset)
+        assertEquals(customOffset, record.startZoneOffset)
+        assertEquals(customOffset, record.endZoneOffset)
         assertEquals(ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, record.exerciseType)
         assertEquals("Push Day A", record.title)
         assertEquals("Chest and Triceps focus", record.notes)
     }
 
     @Test
-    fun testBuildExerciseSessionRecord_defaultTitleAndNullEndTime() {
+    fun testBuildExerciseSessionRecord_defaultTitleAndDynamicZoneOffset() {
         val startTime = 1700000000000L
         val session = WorkoutSession(
             id = "session-2",
@@ -49,6 +51,8 @@ class ExerciseRecordBuilderTest {
 
         assertEquals(Instant.ofEpochMilli(startTime), record.startTime)
         assertTrue(!record.endTime.isBefore(record.startTime))
+        assertEquals(ExerciseRecordBuilder.resolveZoneOffset(record.startTime), record.startZoneOffset)
+        assertEquals(ExerciseRecordBuilder.resolveZoneOffset(record.endTime), record.endZoneOffset)
         assertEquals("LockerLift Krafttraining", record.title)
         assertEquals(ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, record.exerciseType)
     }
@@ -63,16 +67,18 @@ class ExerciseRecordBuilderTest {
             startTime = startTime,
             endTime = endTime
         )
+        val customOffset = ZoneOffset.ofHours(-5)
 
         val record = ExerciseRecordBuilder.buildTotalCaloriesBurnedRecord(
             session = session,
-            energyKcal = energyKcal
+            energyKcal = energyKcal,
+            zoneOffset = customOffset
         )
 
         assertEquals(Instant.ofEpochMilli(startTime), record.startTime)
         assertEquals(Instant.ofEpochMilli(endTime), record.endTime)
-        assertEquals(ZoneOffset.UTC, record.startZoneOffset)
-        assertEquals(ZoneOffset.UTC, record.endZoneOffset)
+        assertEquals(customOffset, record.startZoneOffset)
+        assertEquals(customOffset, record.endZoneOffset)
         assertEquals(energyKcal, record.energy.inKilocalories, 0.001)
         assertEquals(Energy.kilocalories(energyKcal), record.energy)
     }
@@ -94,6 +100,7 @@ class ExerciseRecordBuilderTest {
 
         assertEquals(Instant.ofEpochMilli(startTime), record.startTime)
         assertTrue(!record.endTime.isBefore(record.startTime))
+        assertEquals(ExerciseRecordBuilder.resolveZoneOffset(record.startTime), record.startZoneOffset)
         assertEquals(energyKcal, record.energy.inKilocalories, 0.001)
     }
 
@@ -106,6 +113,7 @@ class ExerciseRecordBuilderTest {
             startTime = startTime,
             endTime = endTime
         )
+        val customOffset = ZoneOffset.UTC
 
         val t1 = Instant.ofEpochMilli(1700000600000L)
         val t2 = Instant.ofEpochMilli(1700001800000L)
@@ -119,7 +127,8 @@ class ExerciseRecordBuilderTest {
 
         val record = ExerciseRecordBuilder.buildHeartRateRecord(
             session = session,
-            samples = samples
+            samples = samples,
+            zoneOffset = customOffset
         )
 
         assertEquals(Instant.ofEpochMilli(startTime), record.startTime)

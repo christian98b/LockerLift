@@ -1,6 +1,7 @@
 package com.lockerlift.mobile.service
 
 import android.util.Log
+import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
@@ -14,10 +15,10 @@ import com.lockerlift.core.sync.WearableDataLayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 
 class MobileDataLayerListenerService : WearableListenerService() {
@@ -36,13 +37,45 @@ class MobileDataLayerListenerService : WearableListenerService() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
+
     private suspend fun receiveWorkoutFromChannel(channel: ChannelClient.Channel) {
+        val channelClient = Wearable.getChannelClient(this)
         try {
-            val channelClient = Wearable.getChannelClient(this)
-            val inputStream = channelClient.getInputStream(channel).await()
-            val payloadJson = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8)).use {
-                it.readText()
+            // Verify node capability if available (SEC-05)
+            val capabilityClient = Wearable.getCapabilityClient(this)
+            val capabilityInfo = capabilityClient
+                .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
+                .await()
+
+            if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == channel.nodeId }) {
+                Log.w(TAG, "Rejected workout payload from unauthorized node: ${channel.nodeId}")
+                channelClient.close(channel).await()
+                return
             }
+
+            val inputStream = channelClient.getInputStream(channel).await()
+
+            // Read with bounded size limit to avoid OutOfMemory denial-of-service (SEC-04)
+            val outputStream = ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var totalBytes = 0
+
+            inputStream.use { stream ->
+                var bytesRead: Int
+                while (stream.read(buffer).also { bytesRead = it } != -1) {
+                    totalBytes += bytesRead
+                    if (totalBytes > MAX_PAYLOAD_BYTES) {
+                        throw IllegalStateException("Payload size exceeds maximum allowed limit ($MAX_PAYLOAD_BYTES bytes)")
+                    }
+                    outputStream.write(buffer, 0, bytesRead)
+                }
+            }
+
+            val payloadJson = outputStream.toString(StandardCharsets.UTF_8.name())
 
             val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
             val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
@@ -78,10 +111,12 @@ class MobileDataLayerListenerService : WearableListenerService() {
             Log.i(TAG, "Workout session ${session.id} successfully received and synchronized.")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to receive and process workout payload", e)
+            runCatching { channelClient.close(channel).await() }
         }
     }
 
     companion object {
         private const val TAG = "MobileDataLayerService"
+        private const val MAX_PAYLOAD_BYTES = 5 * 1024 * 1024 // 5 MB maximum bound
     }
 }
