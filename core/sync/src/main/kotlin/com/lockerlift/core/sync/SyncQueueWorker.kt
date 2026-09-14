@@ -2,9 +2,10 @@ package com.lockerlift.core.sync
 
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.lockerlift.core.database.LockerLiftDatabase
-import com.lockerlift.core.model.QueueStatus
 
 class SyncQueueWorker(
     appContext: Context,
@@ -16,35 +17,18 @@ class SyncQueueWorker(
         val syncQueueDao = database.syncQueueDao()
         val dataLayerManager = WearableDataLayerManager(applicationContext)
 
-        val connectedNodes = dataLayerManager.getConnectedNodes()
-        if (connectedNodes.isEmpty()) {
-            // No phone in range (still in gym / locker)
-            return Result.retry()
+        val result = dataLayerManager.flushPendingQueue(syncQueueDao)
+        return when (result) {
+            is SyncResult.Success -> Result.success()
+            is SyncResult.NoCompanionFound -> Result.retry()
+            is SyncResult.Error -> Result.retry()
         }
+    }
 
-        val pendingItems = syncQueueDao.getPendingQueueItems()
-        if (pendingItems.isEmpty()) {
-            return Result.success()
+    companion object {
+        fun enqueue(context: Context) {
+            val request = OneTimeWorkRequestBuilder<SyncQueueWorker>().build()
+            WorkManager.getInstance(context).enqueue(request)
         }
-
-        val targetNodeId = connectedNodes.first().id
-
-        for (item in pendingItems) {
-            syncQueueDao.updateAttemptStatus(item.id, QueueStatus.IN_TRANSIT, System.currentTimeMillis())
-            val success = if (item.payloadJson == SyncConstants.ACTION_DELETE) {
-                val delSuccess = dataLayerManager.sendWorkoutDelete(targetNodeId, item.sessionId)
-                if (delSuccess) {
-                    syncQueueDao.deleteQueueItemById(item.id)
-                }
-                delSuccess
-            } else {
-                dataLayerManager.sendWorkoutPayloadViaChannel(targetNodeId, item.payloadJson)
-            }
-            if (!success) {
-                syncQueueDao.updateAttemptStatus(item.id, QueueStatus.ERROR, System.currentTimeMillis())
-            }
-        }
-
-        return Result.success()
     }
 }

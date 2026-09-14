@@ -15,8 +15,14 @@ interface SyncQueueDao {
     @Query("SELECT * FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR' ORDER BY created_at ASC")
     fun getPendingQueueItemsFlow(): Flow<List<SyncQueueEntity>>
 
+    @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR'")
+    fun getPendingQueueCountFlow(): Flow<Int>
+
     @Query("SELECT * FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR' ORDER BY created_at ASC")
     suspend fun getPendingQueueItems(): List<SyncQueueEntity>
+
+    @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR'")
+    suspend fun getPendingQueueCount(): Int
 
     @Query("SELECT * FROM sync_queue WHERE id = :id LIMIT 1")
     suspend fun getQueueItemById(id: String): SyncQueueEntity?

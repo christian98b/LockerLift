@@ -93,4 +93,22 @@
     <string name="dialog_consolidation_message">Save changes back into workout template?</string>
     <string name="btn_yes">Yes</string>
     <string name="btn_no">No</string>
+
+    <!-- Settings Screen (US 5.3) -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_companion_connected_format">Connected: %1$s</string>
+    <string name="settings_companion_disconnected">Phone Disconnected / In Locker</string>
+    <string name="settings_checking_connection">Checking phone…</string>
+    <string name="settings_queue_pending_format">Pending Workouts: %1$d</string>
+    <string name="settings_queue_empty">All workouts synced</string>
+    <string name="settings_btn_sync_now">Sync Now</string>
+    <string name="settings_syncing">Syncing…</string>
+    <string name="settings_sync_success_format">Synced %1$d workout(s)</string>
+    <string name="settings_sync_up_to_date">Queue is empty</string>
+    <string name="settings_sync_failed_unreachable">Sync failed: Phone unreachable</string>
+    <string name="settings_sync_failed_format">Sync failed: %1$s</string>
+    <string name="settings_last_sync_format">Last sync: %1$s</string>
+    <string name="settings_sync_never">Never</string>
+    <string name="settings_version_format">Version: %1$s</string>
+    <string name="btn_back">Back</string>
 </resources>

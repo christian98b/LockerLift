@@ -6,19 +6,25 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
+import com.lockerlift.core.database.entity.toDomainModel
+import com.lockerlift.core.sync.*
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
 import com.lockerlift.mobile.backup.BackupResult
 import com.lockerlift.mobile.backup.LocalBackupManager
 import com.lockerlift.mobile.backup.LocalBackupWorker
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 // SharedPreferences keys
@@ -32,6 +38,7 @@ private const val PREF_BACKUP_KEEP_COUNT = "pref_backup_keep_count"
 fun SettingsScreen(app: LockerLiftMobileApp) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val dataLayerManager = remember { WearableDataLayerManager(context) }
 
     // --- Shared Preferences ---
     val prefs = remember { context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE) }
@@ -39,6 +46,18 @@ fun SettingsScreen(app: LockerLiftMobileApp) {
     var backupDirUriStr by remember { mutableStateOf(prefs.getString(PREF_BACKUP_DIR_URI, "") ?: "") }
     var backupSchedule by remember { mutableStateOf(prefs.getString(PREF_BACKUP_SCHEDULE, "disabled") ?: "disabled") }
     var keepCount by remember { mutableStateOf(prefs.getInt(PREF_BACKUP_KEEP_COUNT, 5)) }
+
+    // --- Companion & Sync State (US 5.3) ---
+    var companionStatus by remember { mutableStateOf<CompanionDeviceStatus?>(null) }
+    var lastSyncTimestamp by remember { mutableLongStateOf(dataLayerManager.getLastSyncTimestamp()) }
+    val pendingQueueCount by app.database.syncQueueDao().getPendingQueueCountFlow().collectAsState(initial = 0)
+    var isSyncingMasterData by remember { mutableStateOf(false) }
+    var isSyncingWorkouts by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        companionStatus = dataLayerManager.getWearCompanionStatus()
+        lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
+    }
 
     // --- Snackbar ---
     val snackbarHostState = remember { SnackbarHostState() }
@@ -51,6 +70,13 @@ fun SettingsScreen(app: LockerLiftMobileApp) {
     val strNoBackup = stringResource(R.string.settings_no_backup_to_share)
     val strFolderSelectedFmt = stringResource(R.string.settings_folder_selected_format)
     val strFolderNotSet = stringResource(R.string.settings_backup_folder_not_set)
+
+    val strMasterDataSuccess = stringResource(R.string.settings_master_data_success)
+    val strMasterDataError = stringResource(R.string.settings_master_data_error)
+    val strWorkoutsSyncSuccessFmt = stringResource(R.string.settings_workouts_sync_success_format)
+    val strWorkoutsSyncNoPending = stringResource(R.string.settings_workouts_sync_no_pending)
+    val strSyncNoCompanion = stringResource(R.string.settings_sync_no_companion)
+    val strSyncErrorFmt = stringResource(R.string.settings_sync_error_format)
 
     // --- SAF launchers ---
     val folderPickerLauncher = rememberLauncherForActivityResult(
@@ -111,6 +137,172 @@ fun SettingsScreen(app: LockerLiftMobileApp) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+
+            // ----------------------------------------------------------------
+            // Section: Wear OS Companion & Sync (US 5.3)
+            // ----------------------------------------------------------------
+            item {
+                SectionCard(title = stringResource(R.string.settings_companion_sync_section)) {
+                    val connectionText = when {
+                        companionStatus == null -> stringResource(R.string.settings_status_checking)
+                        companionStatus?.isConnected == true -> {
+                            val name = companionStatus?.deviceName ?: "Smartwatch"
+                            String.format(stringResource(R.string.settings_companion_connected_format), name)
+                        }
+                        else -> stringResource(R.string.settings_companion_disconnected)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = connectionText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (companionStatus?.isConnected == true)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (companionStatus?.isConnected == true && companionStatus?.hasRequiredCapability == false) {
+                                Text(
+                                    text = stringResource(R.string.settings_companion_no_app),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    companionStatus = dataLayerManager.getWearCompanionStatus()
+                                    lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.settings_btn_refresh)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = String.format(
+                            stringResource(R.string.settings_last_sync_format),
+                            SyncUtils.formatSyncTimestamp(lastSyncTimestamp, stringResource(R.string.settings_sync_never))
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = String.format(stringResource(R.string.settings_pending_queue_format), pendingQueueCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            if (isSyncingMasterData) return@Button
+                            isSyncingMasterData = true
+                            coroutineScope.launch {
+                                val allMachines = app.database.machineDao().getAllMachines()
+                                val catalogJson = SyncPayloadSerializer.encodeMachines(allMachines.map { it.toDomainModel() })
+                                val catalogSuccess = dataLayerManager.syncEquipmentCatalog(catalogJson)
+
+                                val allActive = app.database.workoutTemplateDao().getAllActiveTemplatesWithMachinesFlow().first()
+                                val payloads = allActive.map { item ->
+                                    val orderedMachineIds = app.database.workoutTemplateDao().getCrossRefsForTemplate(item.template.id).map { it.machineId }
+                                    WorkoutTemplatePayload(
+                                        template = item.template.toDomainModel(),
+                                        machineIdsInOrder = orderedMachineIds
+                                    )
+                                }
+                                val templatesJson = SyncPayloadSerializer.encodeTemplates(payloads)
+                                val templatesSuccess = dataLayerManager.syncTemplates(templatesJson)
+
+                                lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
+                                isSyncingMasterData = false
+
+                                if (catalogSuccess && templatesSuccess) {
+                                    snackbarHostState.showSnackbar(strMasterDataSuccess)
+                                } else {
+                                    snackbarHostState.showSnackbar(strMasterDataError)
+                                }
+                            }
+                        },
+                        enabled = !isSyncingMasterData,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isSyncingMasterData) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_syncing_master_data))
+                        } else {
+                            Text(stringResource(R.string.settings_btn_sync_master_data))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            if (isSyncingWorkouts) return@OutlinedButton
+                            isSyncingWorkouts = true
+                            coroutineScope.launch {
+                                val result = dataLayerManager.flushPendingQueue(
+                                    app.database.syncQueueDao(),
+                                    SyncConstants.CAPABILITY_WEAR
+                                )
+                                lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
+                                isSyncingWorkouts = false
+
+                                when (result) {
+                                    is SyncResult.Success -> {
+                                        val msg = if (result.itemsSyncedCount > 0) {
+                                            String.format(strWorkoutsSyncSuccessFmt, result.itemsSyncedCount)
+                                        } else {
+                                            strWorkoutsSyncNoPending
+                                        }
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
+                                    is SyncResult.NoCompanionFound -> {
+                                        snackbarHostState.showSnackbar(strSyncNoCompanion)
+                                    }
+                                    is SyncResult.Error -> {
+                                        snackbarHostState.showSnackbar(String.format(strSyncErrorFmt, result.message))
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isSyncingWorkouts,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isSyncingWorkouts) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_syncing_workouts))
+                        } else {
+                            Text(stringResource(R.string.settings_btn_sync_workouts))
+                        }
+                    }
+                }
+            }
 
             // ----------------------------------------------------------------
             // Section: Backup Folder

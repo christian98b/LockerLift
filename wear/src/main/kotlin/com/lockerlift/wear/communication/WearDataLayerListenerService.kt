@@ -99,6 +99,7 @@ class WearDataLayerListenerService : WearableListenerService() {
 
             // Send Acknowledgment back to phone
             dataLayerManager.sendAcknowledgment(channel.nodeId, session.id)
+            dataLayerManager.updateLastSyncTimestamp()
 
             channelClient.close(channel).await()
             Log.i(TAG, "Workout session ${session.id} synchronized from phone to watch.")
@@ -122,6 +123,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                             runCatching {
                                 val machines = SyncPayloadSerializer.decodeMachines(payloadString)
                                 database.machineDao().insertMachines(machines.map { it.toEntity() })
+                                dataLayerManager.updateLastSyncTimestamp()
                                 Log.i(TAG, "Synchronized ${machines.size} machines from phone.")
                             }.onFailure { e ->
                                 Log.e(TAG, "Failed to sync equipment catalog", e)
@@ -138,6 +140,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                                         machineIdsInOrder = payload.machineIdsInOrder
                                     )
                                 }
+                                dataLayerManager.updateLastSyncTimestamp()
                                 Log.i(TAG, "Synchronized ${payloads.size} templates from phone.")
                             }.onFailure { e ->
                                 Log.e(TAG, "Failed to sync workout templates", e)
@@ -166,6 +169,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                 }
 
                 database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                dataLayerManager.updateLastSyncTimestamp()
                 Log.i(TAG, "Workout session $sessionId successfully acknowledged and removed from queue.")
             }
         } else if (messageEvent.path == SyncConstants.PATH_WORKOUT_DELETE) {
@@ -184,6 +188,7 @@ class WearDataLayerListenerService : WearableListenerService() {
 
                 database.workoutSessionDao().deleteSession(sessionId)
                 database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                dataLayerManager.updateLastSyncTimestamp()
                 Log.i(TAG, "Workout session $sessionId deleted on watch via sync.")
             }
         }

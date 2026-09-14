@@ -14,6 +14,7 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.*
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.wear.presentation.ActiveWorkoutScreen
+import com.lockerlift.wear.presentation.WearSettingsScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
+                var showSettings by remember { mutableStateOf(false) }
 
                 if (activeWorkoutParams != null) {
                     val (templateId, templateName) = activeWorkoutParams!!
@@ -35,11 +37,19 @@ class MainActivity : ComponentActivity() {
                             activeWorkoutParams = null
                         }
                     )
+                } else if (showSettings) {
+                    WearSettingsScreen(
+                        app = app,
+                        onNavigateBack = { showSettings = false }
+                    )
                 } else {
                     TemplateSelectionScreen(
                         app = app,
                         onSelectTemplate = { id, name ->
                             activeWorkoutParams = Pair(id, name)
+                        },
+                        onOpenSettings = {
+                            showSettings = true
                         }
                     )
                 }
@@ -51,7 +61,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TemplateSelectionScreen(
     app: LockerLiftWearApp,
-    onSelectTemplate: (String?, String?) -> Unit
+    onSelectTemplate: (String?, String?) -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val templateDao = remember { app.database.workoutTemplateDao() }
     val templatesState by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
@@ -98,6 +109,17 @@ fun TemplateSelectionScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
+
+        item {
+            Button(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 4.dp)
+            ) {
+                Text(androidx.compose.ui.res.stringResource(R.string.settings_title))
             }
         }
     }

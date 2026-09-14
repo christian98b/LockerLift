@@ -89,8 +89,26 @@
     <string name="historical_performance_format">Zuletzt: %1$s</string>
 
     <!-- Template Consolidation Dialog (US 3.2, 3.3) -->
-    <string name="dialog_consolidation_title">Vorlage anpassen?</string>
-    <string name="dialog_consolidation_message">Änderungen in der Vorlage speichern?</string>
+    <string name="dialog_consolidation_title">Vorlage aktualisieren?</string>
+    <string name="dialog_consolidation_message">Änderungen in Trainingsplan übernehmen?</string>
     <string name="btn_yes">Ja</string>
     <string name="btn_no">Nein</string>
+
+    <!-- Settings Screen (US 5.3) -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_companion_connected_format">Verbunden: %1$s</string>
+    <string name="settings_companion_disconnected">Smartphone getrennt / Im Spind</string>
+    <string name="settings_checking_connection">Prüfe Smartphone…</string>
+    <string name="settings_queue_pending_format">Ausstehende Workouts: %1$d</string>
+    <string name="settings_queue_empty">Alle Workouts synchronisiert</string>
+    <string name="settings_btn_sync_now">Jetzt synchronisieren</string>
+    <string name="settings_syncing">Synchronisiere…</string>
+    <string name="settings_sync_success_format">%1$d Workout(s) synchronisiert</string>
+    <string name="settings_sync_up_to_date">Warteschlange ist leer</string>
+    <string name="settings_sync_failed_unreachable">Synchronisation fehlgeschlagen: Smartphone nicht erreichbar</string>
+    <string name="settings_sync_failed_format">Synchronisation fehlgeschlagen: %1$s</string>
+    <string name="settings_last_sync_format">Letzter Sync: %1$s</string>
+    <string name="settings_sync_never">Nie</string>
+    <string name="settings_version_format">Version: %1$s</string>
+    <string name="btn_back">Zurück</string>
 </resources>

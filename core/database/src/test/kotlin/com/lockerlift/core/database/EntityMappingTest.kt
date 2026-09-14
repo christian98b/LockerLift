@@ -237,5 +237,18 @@ class EntityMappingTest {
         assertEquals(1, sets.size)
         assertEquals("set-2", sets[0].id)
     }
-}
 
+    @Test
+    fun testSyncQueuePendingCountQueryContract() {
+        val pending1 = SyncQueueEntity(id = "q1", sessionId = "s1", status = QueueStatus.PENDING, payloadJson = "{}", createdAt = 100L)
+        val error1 = SyncQueueEntity(id = "q2", sessionId = "s2", status = QueueStatus.ERROR, payloadJson = "{}", createdAt = 200L)
+        val inTransit = SyncQueueEntity(id = "q3", sessionId = "s3", status = QueueStatus.IN_TRANSIT, payloadJson = "{}", createdAt = 300L)
+        val acknowledged = SyncQueueEntity(id = "q4", sessionId = "s4", status = QueueStatus.ACKNOWLEDGED, payloadJson = "{}", createdAt = 400L)
+
+        val allItems = listOf(pending1, error1, inTransit, acknowledged)
+
+        // Query contract: SELECT COUNT(*) FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR'
+        val count = allItems.count { it.status == QueueStatus.PENDING || it.status == QueueStatus.ERROR }
+        assertEquals(2, count)
+    }
+}

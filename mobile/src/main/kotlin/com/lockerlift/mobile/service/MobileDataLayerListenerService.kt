@@ -56,6 +56,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
 
                 database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
                 database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
+                dataLayerManager.updateLastSyncTimestamp()
                 Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
             }
         } else if (messageEvent.path == SyncConstants.PATH_WORKOUT_DELETE) {
@@ -77,6 +78,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
                 if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
                     healthConnectManager.deleteWorkoutSession(sessionId)
                 }
+                dataLayerManager.updateLastSyncTimestamp()
                 Log.i(TAG, "Workout session $sessionId deleted on phone via sync.")
             }
         }
@@ -151,6 +153,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
 
             // Send Acknowledgment back to sender node
             dataLayerManager.sendAcknowledgment(channel.nodeId, session.id)
+            dataLayerManager.updateLastSyncTimestamp()
 
             channelClient.close(channel).await()
             Log.i(TAG, "Workout session ${session.id} successfully received and synchronized.")

@@ -1,52 +1,46 @@
 <resources>
     <string name="app_name">LockerLift</string>
 
-    <!-- Navigation Tabs -->
-    <string name="tab_catalog">Catalog</string>
-    <string name="tab_templates">Templates</string>
-    <string name="tab_history">History</string>
-    <string name="tab_tracking">Tracking</string>
+    <!-- Navigation -->
+    <string name="nav_catalog">Catalog</string>
+    <string name="nav_templates">Templates</string>
+    <string name="nav_history">History</string>
+    <string name="nav_track">Track</string>
     <string name="tab_settings">Settings</string>
 
     <!-- Catalog Screen -->
-    <string name="catalog_title">Machine Catalog</string>
-    <string name="add_machine">Add machine</string>
-    <string name="muscle_group_format">Muscle group: %1$s</string>
-    <string name="setup_format">Setup: %1$s</string>
-    <string name="increment_format">Increment: %1$s kg</string>
-    <string name="dialog_new_machine_title">Add New Machine</string>
-    <string name="hint_machine_name">Name (e.g. Lat Pulldown)</string>
-    <string name="hint_muscle_group">Target muscle group (e.g. Back)</string>
-    <string name="hint_settings_note">Device settings (optional)</string>
-    <string name="hint_increment">Increment in kg (e.g. 2.5)</string>
-    <string name="error_required_fields">Name and muscle group are required.</string>
+    <string name="catalog_title">Equipment Catalog</string>
+    <string name="add_machine">Add Machine</string>
+    <string name="edit_machine">Edit Machine</string>
+    <string name="machine_name">Machine Name</string>
+    <string name="target_muscle">Target Muscle Group</string>
+    <string name="settings_note">Settings Note (Seat, Pin, etc.)</string>
+    <string name="increment_kg">Weight Increment (kg)</string>
+    <string name="cadence_hint">Default Tempo (e.g. 2-0-2-0)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="error_required_fields">Name and increment are required.</string>
     <string name="error_machine_exists">A machine with this name already exists.</string>
-    <string name="dialog_edit_machine_title">Edit Machine</string>
-    <string name="btn_save">Save</string>
-    <string name="btn_cancel">Cancel</string>
-    <string name="btn_delete">Delete</string>
+    <string name="search_catalog">Search machines...</string>
 
-    <!-- Template Screen -->
+    <!-- Template List Screen -->
     <string name="templates_title">Workout Templates</string>
-    <string name="add_template">Add template</string>
-    <string name="exercises_assigned_format">%1$d exercises assigned</string>
-    <string name="dialog_new_template_title">Create New Workout Template</string>
-    <string name="dialog_edit_template_title">Edit Workout Template</string>
-    <string name="hint_template_name">Name (e.g. Push, Pull, Legs)</string>
-    <string name="hint_template_desc">Description (optional)</string>
-    <string name="btn_create">Create</string>
-    <string name="section_assigned_exercises">Assigned Exercises</string>
-    <string name="no_exercises_in_template">No exercises assigned yet.</string>
-    <string name="btn_add_exercise">Add Exercise</string>
-    <string name="action_move_up">Move Up</string>
-    <string name="action_move_down">Move Down</string>
-    <string name="action_remove">Remove</string>
-    <string name="dialog_select_machine_title">Select Exercise from Catalog</string>
-    <string name="no_machines_in_catalog">No machines in catalog. Add some first.</string>
+    <string name="add_template">Add Template</string>
+    <string name="template_name">Template Name</string>
+    <string name="template_description">Description (Optional)</string>
+    <string name="exercises_count">%1$d exercises</string>
+    <string name="delete_template_confirm">Delete this template?</string>
+    <string name="no_templates">No templates yet. Create your first workout split!</string>
+    <string name="edit_exercises">Edit Exercises</string>
+    <string name="add_exercise">Add Exercise</string>
+    <string name="move_up">Move Up</string>
+    <string name="move_down">Move Down</string>
+    <string name="remove_exercise">Remove</string>
 
     <!-- History Screen -->
-    <string name="history_title">Workout History</string>
     <string name="history_empty">No completed workouts yet.</string>
+    <string name="no_history">No completed workouts yet.</string>
     <string name="workout_free">Free Workout</string>
     <string name="history_no_sets">No sets</string>
     <string name="history_edit_workout">Edit Workout</string>
@@ -64,14 +58,16 @@
     <string name="history_save_changes">Save Changes</string>
     <string name="history_discard_changes">Discard Changes</string>
     <string name="history_notes">Workout Notes</string>
+    <string name="session_duration">%1$d min</string>
+    <string name="total_volume">Volume: %1$s kg</string>
+    <string name="origin_wear">Wear OS</string>
+    <string name="origin_phone">Smartphone</string>
 
-    <!-- Mobile Tracking Screen -->
-    <string name="tracking_title">Workout Tracking</string>
-    <string name="start_workout_title">Start Workout</string>
-    <string name="start_free_workout">Start Free Workout</string>
-    <string name="start_free_workout_desc">Track an unguided workout with ad-hoc exercises</string>
-    <string name="start_from_template_title">Start from Template</string>
-    <string name="btn_start">Start</string>
+    <!-- Mobile Workout Tracking Screen (US 4.2) -->
+    <string name="track_workout_title">Track Workout</string>
+    <string name="start_workout">Start Workout</string>
+    <string name="select_template">Select a Template</string>
+    <string name="free_workout">Free Workout</string>
     <string name="active_workout_title">Active Workout</string>
     <string name="finish_workout">Finish Workout</string>
     <string name="station_number_format">Station %1$d</string>
@@ -98,8 +94,28 @@
     <string name="discard_workout">Discard Workout</string>
     <string name="discard_workout_confirm">Are you sure you want to discard this active workout? All logged sets will be lost.</string>
 
-    <!-- Settings Screen (US 7.2) -->
+    <!-- Settings Screen (US 7.2 & US 5.3) -->
     <string name="settings_title">Settings</string>
+    <string name="settings_companion_sync_section">Wear OS Companion &amp; Sync</string>
+    <string name="settings_companion_connected_format">Connected: %1$s</string>
+    <string name="settings_companion_disconnected">No watch connected / Disconnected</string>
+    <string name="settings_companion_no_app">LockerLift app not detected on watch</string>
+    <string name="settings_status_checking">Checking connection…</string>
+    <string name="settings_last_sync_format">Last sync: %1$s</string>
+    <string name="settings_sync_never">Never</string>
+    <string name="settings_pending_queue_format">Pending sync workouts: %1$d</string>
+    <string name="settings_btn_refresh">Refresh Status</string>
+    <string name="settings_btn_sync_master_data">Sync Master Data Now</string>
+    <string name="settings_syncing_master_data">Syncing master data…</string>
+    <string name="settings_master_data_success">Master data (catalog &amp; templates) synced to watch</string>
+    <string name="settings_master_data_error">Failed to sync master data to watch</string>
+    <string name="settings_btn_sync_workouts">Sync Workouts Now</string>
+    <string name="settings_syncing_workouts">Syncing workouts…</string>
+    <string name="settings_workouts_sync_success_format">Successfully synced %1$d workout session(s)</string>
+    <string name="settings_workouts_sync_no_pending">No pending workouts in queue</string>
+    <string name="settings_sync_no_companion">Cannot sync: No companion watch connected</string>
+    <string name="settings_sync_error_format">Sync failed: %1$s</string>
+
     <string name="settings_backup_folder_section">Backup Folder</string>
     <string name="settings_backup_folder_not_set">No folder selected</string>
     <string name="settings_btn_choose_folder">Choose Folder</string>
