@@ -7,8 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.lockerlift.wear.MainActivity
 import com.lockerlift.wear.R
@@ -25,7 +28,19 @@ class WorkoutForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = buildNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        }.onFailure { e ->
+            Log.e(TAG, "Failed to start foreground service", e)
+        }
         return START_STICKY
     }
 
@@ -86,17 +101,26 @@ class WorkoutForegroundService : Service() {
     }
 
     companion object {
+        private const val TAG = "WorkoutForegroundService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "lockerlift_workout_channel"
 
         fun startService(context: Context) {
             val intent = Intent(context, WorkoutForegroundService::class.java)
-            context.startForegroundService(intent)
+            runCatching {
+                context.startForegroundService(intent)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to startService", e)
+            }
         }
 
         fun stopService(context: Context) {
             val intent = Intent(context, WorkoutForegroundService::class.java)
-            context.stopService(intent)
+            runCatching {
+                context.stopService(intent)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to stopService", e)
+            }
         }
     }
 }

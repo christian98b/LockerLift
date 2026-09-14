@@ -272,4 +272,51 @@ class WearWorkoutLogicTest {
         assertEquals(999, WearWorkoutLogic.clampReps(999))
         assertEquals(999, WearWorkoutLogic.clampReps(2000))
     }
+
+    @Test
+    fun testInitializeSessionInstances_withTemplateMachines() {
+        // Arrange
+        val m1 = Machine(id = "m1", name = "Chest Press", targetMuscleGroup = "Chest", machineSettingsNote = "Seat 5")
+        val m2 = Machine(id = "m2", name = "Incline Fly", targetMuscleGroup = "Chest")
+        val machines = listOf(m1, m2)
+
+        // Act
+        val instances = WearWorkoutLogic.initializeSessionInstances(machines, "session-123")
+
+        // Assert
+        assertEquals(2, instances.size)
+        assertEquals("session-123", instances[0].sessionId)
+        assertEquals("m1", instances[0].machineId)
+        assertEquals(0, instances[0].executionOrder)
+        assertEquals("Seat 5", instances[0].customSettingsNote)
+        assertEquals("session-123", instances[1].sessionId)
+        assertEquals("m2", instances[1].machineId)
+        assertEquals(1, instances[1].executionOrder)
+        assertNull(instances[1].customSettingsNote)
+    }
+
+    @Test
+    fun testInitializeSessionInstances_nullOrEmptyForFreeWorkout() {
+        // Act & Assert for null and empty template lists (Free Workout path)
+        assertTrue(WearWorkoutLogic.initializeSessionInstances(null, "session-free").isEmpty())
+        assertTrue(WearWorkoutLogic.initializeSessionInstances(emptyList(), "session-free").isEmpty())
+    }
+
+    @Test
+    fun testFreeWorkoutWorkflow_startsEmptyAndAppendsMachines() {
+        // Arrange: Start a free workout session with no pre-configured machines
+        val sessionId = "free-workout-session"
+        val instances = WearWorkoutLogic.initializeSessionInstances(null, sessionId)
+        assertTrue(instances.isEmpty())
+
+        // Act: User selects an ad-hoc machine during free workout
+        val machine = Machine(id = "m-ad-hoc", name = "Cable Lateral Raise", targetMuscleGroup = "Shoulders")
+        val newInstance = WearWorkoutLogic.appendMachineToSession(instances, sessionId, machine)
+
+        // Assert
+        assertEquals(sessionId, newInstance.sessionId)
+        assertEquals("m-ad-hoc", newInstance.machineId)
+        assertEquals(0, newInstance.executionOrder)
+        assertFalse(newInstance.isSkipped)
+    }
 }

@@ -77,4 +77,19 @@ object WearWorkoutLogic {
     fun clampWeight(weight: Float): Float = WorkoutTrackingLogic.clampWeight(weight)
 
     fun clampReps(reps: Int): Int = WorkoutTrackingLogic.clampReps(reps)
+
+    fun initializeSessionInstances(
+        templateMachines: List<Machine>?,
+        sessionId: String
+    ): List<SessionMachineInstance> {
+        if (templateMachines.isNullOrEmpty()) return emptyList()
+        return templateMachines.mapIndexed { index, machine ->
+            SessionMachineInstance(
+                sessionId = sessionId,
+                machineId = machine.id,
+                executionOrder = index,
+                customSettingsNote = machine.machineSettingsNote
+            )
+        }
+    }
 }

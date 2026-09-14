@@ -137,6 +137,7 @@ flowchart TD
   - Release Optimization & Privacy: Added `proguard-rules.pro` stripping debug logging in release builds and retaining Room, SQLCipher (`net.zetetic`), and serialization classes.
   - Fixed AndroidKeyStore AES-GCM startup crash: encryption now uses the provider-generated IV required by hardware-backed keys; the IV is retained for decryption.
   - Fixed SQLCipher 4.17.0 `UnsatisfiedLinkError` startup crash: `LockerLiftDatabase.buildDatabase` now calls `System.loadLibrary("sqlcipher")` before any database operation, per the `sqlcipher-android` migration requirement (the 4.17 native binary registers JNI methods via `JNI_OnLoad`/`RegisterNatives`, so without explicit loading the first DB access throws `nativeOpen` `UnsatisfiedLinkError`). Affects both `:mobile` and `:wear` via shared `:core:database`.
+  - Fixed `WorkoutForegroundService` `SecurityException` crash on Wear OS / Android 14+ (Issue #19): Added required `HIGH_SAMPLING_RATE_SENSORS`, `POST_NOTIFICATIONS`, `ACTIVITY_RECOGNITION`, and `BODY_SENSORS` permissions for `FOREGROUND_SERVICE_HEALTH` compatibility under `targetSdk = 35`; updated `onStartCommand` to specify `ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH` on API 34+; guarded service start/stop operations with `runCatching`; refactored session initialization to `WearWorkoutLogic.initializeSessionInstances`.
 - [x] **Unit Testing Suite (`:core:model`, `:core:sync`, `:core:database`, `:core:healthconnect`, `:mobile`, `:wear`)**
   - `DomainModelTest.kt`: Tests for instantiation, UUIDs, defaults, and JSON serialization.
   - `SyncPayloadSerializerTest.kt`: Tests for lossless encoding/decoding of complex workout payloads, `WorkoutTemplatePayload`, and machine catalogs.
@@ -146,7 +147,7 @@ flowchart TD
   - `AesGcmHelperTest.kt`: Verifies that encryption retains the provider-generated 12-byte GCM IV for successful decryption.
   - `ExerciseRecordBuilderTest.kt`: Tests for `ExerciseSessionRecord`, `TotalCaloriesBurnedRecord`, and `HeartRateRecord` builders, boundary safeguards, dynamic system zone offset resolution, and custom zone offset propagation.
   - `MobileWorkoutTrackingTest.kt`: Unit tests for mobile session instances, set volume calculations, double progression triggers, template variation detection, and payload serialization.
-  - `WearWorkoutLogicTest.kt`: Tests for double progression calculation, historical reference data extraction & formatting, machine replacement, station skip toggle, name validation, weight/reps prefilling, and input boundary clamping (`clampWeight`, `clampReps`).
+  - `WearWorkoutLogicTest.kt`: Tests for double progression calculation, historical reference data extraction & formatting, machine replacement, station skip toggle, name validation, weight/reps prefilling, input boundary clamping (`clampWeight`, `clampReps`), and session instances initialization for template and free workouts.
 
 - [x] **Agent Skills (`.agents/skills/`)**
   - `git-commit-guidelines`: Skill enforcing Conventional Commits, scope validation, and mandatory test inclusion.

@@ -76,20 +76,15 @@ fun ActiveWorkoutScreen(
     var createMachineMode by remember { mutableStateOf(CreateMachineMode.ADD_NEW) }
 
     LaunchedEffect(Unit) {
-        WorkoutForegroundService.startService(app)
+        WorkoutForegroundService.startService(context)
         // Load initial machines from template if provided
         if (templateId != null) {
             val orderedEntities = templateDao.getMachinesForTemplateOrdered(templateId)
-            orderedEntities.forEachIndexed { index, entity ->
-                val machine = entity.toDomainModel()
-                initialMachines.add(machine)
-                val instance = SessionMachineInstance(
-                    sessionId = currentSessionId,
-                    machineId = machine.id,
-                    executionOrder = index,
-                    customSettingsNote = machine.machineSettingsNote
-                )
-                sessionInstances.add(instance)
+            val machines = orderedEntities.map { it.toDomainModel() }
+            initialMachines.addAll(machines)
+            val instances = WearWorkoutLogic.initializeSessionInstances(machines, currentSessionId)
+            sessionInstances.addAll(instances)
+            instances.forEach { instance ->
                 loggedSets[instance.id] = mutableListOf()
             }
         }
