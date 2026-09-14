@@ -31,13 +31,15 @@ fun RepsWeightInputScreen(
     lastReps: Int = 10,
     cadence: String? = machine.defaultCadence,
     historicalPerformanceText: String? = null,
+    isEditing: Boolean = false,
     onSaveSet: (WorkoutSet) -> Unit,
+    onDeleteSet: (() -> Unit)? = null,
     onCancel: () -> Unit
 ) {
-    var weight by remember(lastWeight) { mutableFloatStateOf(lastWeight) }
-    var reps by remember(lastReps) { mutableIntStateOf(lastReps) }
+    var weight by remember(lastWeight) { mutableFloatStateOf(WearWorkoutLogic.clampWeight(lastWeight)) }
+    var reps by remember(lastReps) { mutableIntStateOf(WearWorkoutLogic.clampReps(lastReps)) }
     val increment = machine.defaultIncrementKg
-    val isProgressionProposed = WearWorkoutLogic.isProgressionProposed(reps)
+    val isProgressionProposed = !isEditing && WearWorkoutLogic.isProgressionProposed(reps)
 
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -63,13 +65,17 @@ fun RepsWeightInputScreen(
     ) {
         item {
             Text(
-                text = stringResource(R.string.set_header_format, machine.name, setNumber),
+                text = if (isEditing) {
+                    stringResource(R.string.edit_set_header_format, machine.name, setNumber)
+                } else {
+                    stringResource(R.string.set_header_format, machine.name, setNumber)
+                },
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary
             )
         }
 
-        if (!historicalPerformanceText.isNullOrBlank()) {
+        if (!historicalPerformanceText.isNullOrBlank() && !isEditing) {
             item {
                 Card(
                     onClick = {},
@@ -121,6 +127,7 @@ fun RepsWeightInputScreen(
             }
         }
 
+        // Weight control row
         item {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -128,7 +135,11 @@ fun RepsWeightInputScreen(
                 modifier = Modifier.padding(vertical = 4.dp)
             ) {
                 Button(
-                    onClick = { if (weight > increment) weight -= increment },
+                    onClick = {
+                        if (weight > increment) {
+                            weight = WearWorkoutLogic.clampWeight(weight - increment)
+                        }
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Text("-", fontSize = 18.sp)
@@ -143,7 +154,9 @@ fun RepsWeightInputScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    onClick = { weight += increment },
+                    onClick = {
+                        weight = WearWorkoutLogic.clampWeight(weight + increment)
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Text("+", fontSize = 18.sp)
@@ -151,6 +164,7 @@ fun RepsWeightInputScreen(
             }
         }
 
+        // Reps control row
         item {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +172,9 @@ fun RepsWeightInputScreen(
                 modifier = Modifier.padding(vertical = 4.dp)
             ) {
                 Button(
-                    onClick = { if (reps > 1) reps -= 1 },
+                    onClick = {
+                        if (reps > 1) reps -= 1
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Text("-", fontSize = 18.sp)
@@ -173,7 +189,9 @@ fun RepsWeightInputScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    onClick = { reps += 1 },
+                    onClick = {
+                        reps = WearWorkoutLogic.clampReps(reps + 1)
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Text("+", fontSize = 18.sp)
@@ -181,6 +199,7 @@ fun RepsWeightInputScreen(
             }
         }
 
+        // Save Set Action (Complete or Save Changes)
         item {
             Spacer(modifier = Modifier.height(6.dp))
             Button(
@@ -188,8 +207,8 @@ fun RepsWeightInputScreen(
                     val completedSet = WorkoutSet(
                         sessionMachineId = "", // To be linked by caller
                         setNumber = setNumber,
-                        reps = reps,
-                        weightKg = weight,
+                        reps = WearWorkoutLogic.clampReps(reps),
+                        weightKg = WearWorkoutLogic.clampWeight(weight),
                         cadence = cadence,
                         setType = SetType.NORMAL
                     )
@@ -197,7 +216,29 @@ fun RepsWeightInputScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
-                Text(stringResource(R.string.btn_finish_set))
+                Text(
+                    if (isEditing) {
+                        stringResource(R.string.btn_save_changes)
+                    } else {
+                        stringResource(R.string.btn_finish_set)
+                    }
+                )
+            }
+        }
+
+        // Delete Set Action (in edit mode only, AK 3.12)
+        if (isEditing && onDeleteSet != null) {
+            item {
+                Button(
+                    onClick = onDeleteSet,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.9f).padding(top = 4.dp)
+                ) {
+                    Text(stringResource(R.string.btn_delete_set))
+                }
             }
         }
 

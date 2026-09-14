@@ -22,26 +22,54 @@
     <string name="general_muscle_group">Allgemein</string>
     <string name="full_body_muscle_group">Ganzkörper</string>
 
+    <!-- Pause / Resume Workout (AK 3.1, AK 3.2, AK 3.3) -->
+    <string name="btn_pause">Pause</string>
+    <string name="workout_paused_title">Workout pausiert</string>
+    <string name="workout_paused_text">Workout-Aufzeichnung ist pausiert.</string>
+    <string name="btn_resume_workout">Workout fortsetzen</string>
+
     <!-- Reps Weight Input Screen -->
     <string name="set_header_format">%1$s • Satz %2$d</string>
+    <string name="edit_set_header_format">%1$s • Satz %2$d bearbeiten</string>
     <string name="tempo_format">Tempo: %1$s</string>
     <string name="progression_suggestion_format">Vorschlag: +%1$s kg steigern?</string>
     <string name="reps_count_format">%1$d Wdh.</string>
     <string name="btn_finish_set">Satz abschließen</string>
+    <string name="btn_save_changes">Änderungen speichern</string>
+    <string name="btn_delete_set">Satz löschen</string>
     <string name="btn_cancel">Abbrechen</string>
 
-    <!-- Rest Timer Screen -->
+    <!-- Rest Timer Screen (AK 3.4, AK 3.5, AK 3.8, AK 3.9, AK 3.10) -->
     <string name="rest_timer_title">Pause</string>
+    <string name="rest_timer_resting">Erholung</string>
+    <string name="rest_timer_set_logged_format">%1$s • Satz %2$d erfasst</string>
+    <string name="rest_timer_finished">Pause beendet!</string>
+    <string name="btn_next_set">Nächster Satz</string>
+    <string name="btn_next_exercise">Nächste Übung</string>
+    <string name="btn_skip_rest">Pause überspringen</string>
     <string name="btn_skip">Überspringen</string>
+    <string name="btn_plus_15">+15s</string>
+    <string name="btn_minus_15">-15s</string>
+    <string name="rest_default_set_format">Als Standard (%1$ds)</string>
+    <string name="rest_default_updated">Standard-Pausenzeit auf %1$ds gesetzt</string>
 
-    <!-- Station Actions & Dialogs (US 1.1, 1.2, 3.2, 3.3) -->
+    <!-- Station Actions & Dialogs (US 1.1, 1.2, 3.2, 3.3, AK 3.6, AK 3.7) -->
     <string name="dialog_select_machine">Übung auswählen</string>
     <string name="dialog_replace_machine">Übung ersetzen</string>
     <string name="btn_new_machine">+ Neues Gerät</string>
     <string name="btn_replace">Ersetzen</string>
-    <string name="btn_skip_exercise">Überspringen</string>
-    <string name="btn_unskip">Fortsetzen</string>
+    <string name="btn_skip_exercise">Übung überspringen</string>
+    <string name="btn_unskip">Übung aktivieren</string>
+    <string name="skipped_exercise_info">Übung für dieses Workout übersprungen</string>
     <string name="btn_note">Setup</string>
+
+    <!-- In-Workout Set Correction (AK 3.11, AK 3.12, AK 3.13) -->
+    <string name="sets_completed_header">Sätze:</string>
+    <string name="btn_edit_short">Bearbeiten</string>
+    <string name="btn_start_exercise">+ Satz 1 erfassen</string>
+    <string name="btn_log_next_set">+ Satz %1$d erfassen</string>
+    <string name="dialog_delete_set_title">Satz %1$d löschen?</string>
+    <string name="dialog_delete_set_message">Diesen Satz aus dem aktuellen Workout entfernen?</string>
 
     <!-- Create Machine View (US 1.1, AK 1.1.2, AK 1.1.3) -->
     <string name="title_new_machine">Neues Gerät</string>

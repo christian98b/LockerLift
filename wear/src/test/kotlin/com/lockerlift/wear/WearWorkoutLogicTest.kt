@@ -7,6 +7,7 @@ import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.core.database.logic.ValidationResult
 import com.lockerlift.wear.logic.WearWorkoutLogic
+import com.lockerlift.wear.logic.WorkoutPauseState
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -318,5 +319,324 @@ class WearWorkoutLogicTest {
         assertEquals("m-ad-hoc", newInstance.machineId)
         assertEquals(0, newInstance.executionOrder)
         assertFalse(newInstance.isSkipped)
+    }
+
+    // ==========================================
+    // Rest Timer Calculation Tests (AK 3.9)
+    // ==========================================
+
+    @Test
+    fun testAdjustRestSeconds_withinBounds() {
+        // Arrange
+        val initial = 90
+        val step = WearWorkoutLogic.REST_ADJUSTMENT_STEP_SECONDS
+
+        // Act & Assert
+        assertEquals(105, WearWorkoutLogic.adjustRestSeconds(initial, step))
+        assertEquals(75, WearWorkoutLogic.adjustRestSeconds(initial, -step))
+    }
+
+    @Test
+    fun testAdjustRestSeconds_lowerBoundClamping() {
+        // Arrange & Act & Assert: MIN_REST_SECONDS is 5
+        assertEquals(5, WearWorkoutLogic.adjustRestSeconds(10, -15))
+        assertEquals(5, WearWorkoutLogic.adjustRestSeconds(5, -15))
+        assertEquals(5, WearWorkoutLogic.adjustRestSeconds(0, -100))
+    }
+
+    @Test
+    fun testAdjustRestSeconds_upperBoundClamping() {
+        // Arrange & Act & Assert: MAX_REST_SECONDS is 600
+        assertEquals(600, WearWorkoutLogic.adjustRestSeconds(590, 20))
+        assertEquals(600, WearWorkoutLogic.adjustRestSeconds(600, 15))
+        assertEquals(600, WearWorkoutLogic.adjustRestSeconds(700, 50))
+    }
+
+    // ==========================================
+    // In-Workout Set Update Tests (AK 3.11)
+    // ==========================================
+
+    @Test
+    fun testUpdateSetInList_updatesTargetWithClamping() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2)
+
+        // Act: update set at index 1 with new weight & reps
+        val updated = WearWorkoutLogic.updateSetInList(sets, targetIndex = 1, weightKg = 87.5f, reps = 9)
+
+        // Assert
+        assertEquals(2, updated.size)
+        assertEquals(s1, updated[0])
+        assertEquals("s2", updated[1].id)
+        assertEquals(87.5f, updated[1].weightKg, 0.001f)
+        assertEquals(9, updated[1].reps)
+        assertEquals(2, updated[1].setNumber)
+    }
+
+    @Test
+    fun testUpdateSetInList_clampsWeightAndReps() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val sets = listOf(s1)
+
+        // Act: negative weight clamped to 0f, 0 reps clamped to 1
+        val updatedLow = WearWorkoutLogic.updateSetInList(sets, targetIndex = 0, weightKg = -50f, reps = 0)
+        assertEquals(0.0f, updatedLow[0].weightKg, 0.001f)
+        assertEquals(1, updatedLow[0].reps)
+
+        // Act: excessive values clamped to max bounds
+        val updatedHigh = WearWorkoutLogic.updateSetInList(sets, targetIndex = 0, weightKg = 1500f, reps = 2000)
+        assertEquals(1000.0f, updatedHigh[0].weightKg, 0.001f)
+        assertEquals(999, updatedHigh[0].reps)
+    }
+
+    @Test
+    fun testUpdateSetInList_invalidIndex_returnsUnmodified() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val sets = listOf(s1)
+
+        // Act & Assert
+        assertSame(sets, WearWorkoutLogic.updateSetInList(sets, targetIndex = -1, weightKg = 90f, reps = 10))
+        assertSame(sets, WearWorkoutLogic.updateSetInList(sets, targetIndex = 5, weightKg = 90f, reps = 10))
+    }
+
+    @Test
+    fun testUpdateSetById_updatesCorrectSet() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2)
+
+        // Act
+        val updated = WearWorkoutLogic.updateSetById(sets, setId = "s1", weightKg = 82.5f, reps = 12)
+
+        // Assert
+        assertEquals(82.5f, updated[0].weightKg, 0.001f)
+        assertEquals(12, updated[0].reps)
+        assertEquals(s2, updated[1])
+
+        // Unknown ID returns unmodified
+        assertSame(sets, WearWorkoutLogic.updateSetById(sets, setId = "unknown", weightKg = 90f, reps = 10))
+    }
+
+    // ==========================================
+    // In-Workout Set Deletion & Renumbering Tests (AK 3.12)
+    // ==========================================
+
+    @Test
+    fun testDeleteSetAndRenumber_middleSet() {
+        // Arrange: 3 sets with set numbers 1, 2, 3
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val s3 = WorkoutSet(id = "s3", sessionMachineId = "smi", setNumber = 3, reps = 6, weightKg = 90f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2, s3)
+
+        // Act: Delete middle set (index 1)
+        val remaining = WearWorkoutLogic.deleteSetAndRenumber(sets, targetIndex = 1)
+
+        // Assert: Subsequent sets renumbered sequentially (1, 2)
+        assertEquals(2, remaining.size)
+        assertEquals("s1", remaining[0].id)
+        assertEquals(1, remaining[0].setNumber)
+        assertEquals(80f, remaining[0].weightKg, 0.001f)
+
+        assertEquals("s3", remaining[1].id)
+        assertEquals(2, remaining[1].setNumber) // renumbered from 3 to 2
+        assertEquals(90f, remaining[1].weightKg, 0.001f)
+    }
+
+    @Test
+    fun testDeleteSetAndRenumber_firstSet() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2)
+
+        // Act: Delete first set
+        val remaining = WearWorkoutLogic.deleteSetAndRenumber(sets, targetIndex = 0)
+
+        // Assert: remaining set renumbered to 1
+        assertEquals(1, remaining.size)
+        assertEquals("s2", remaining[0].id)
+        assertEquals(1, remaining[0].setNumber)
+    }
+
+    @Test
+    fun testDeleteSetAndRenumber_lastSet() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2)
+
+        // Act: Delete last set
+        val remaining = WearWorkoutLogic.deleteSetAndRenumber(sets, targetIndex = 1)
+
+        // Assert
+        assertEquals(1, remaining.size)
+        assertEquals("s1", remaining[0].id)
+        assertEquals(1, remaining[0].setNumber)
+    }
+
+    @Test
+    fun testDeleteSetAndRenumber_invalidIndex_returnsUnmodified() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val sets = listOf(s1)
+
+        // Act & Assert
+        assertSame(sets, WearWorkoutLogic.deleteSetAndRenumber(sets, targetIndex = -1))
+        assertSame(sets, WearWorkoutLogic.deleteSetAndRenumber(sets, targetIndex = 3))
+    }
+
+    @Test
+    fun testDeleteSetById_deletesAndRenumbers() {
+        // Arrange
+        val s1 = WorkoutSet(id = "s1", sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        val s2 = WorkoutSet(id = "s2", sessionMachineId = "smi", setNumber = 2, reps = 8, weightKg = 85f, setType = SetType.NORMAL)
+        val sets = listOf(s1, s2)
+
+        // Act
+        val remaining = WearWorkoutLogic.deleteSetById(sets, setId = "s1")
+
+        // Assert
+        assertEquals(1, remaining.size)
+        assertEquals("s2", remaining[0].id)
+        assertEquals(1, remaining[0].setNumber)
+
+        // Unknown ID returns unmodified
+        assertSame(sets, WearWorkoutLogic.deleteSetById(sets, setId = "nonexistent"))
+    }
+
+    // ==========================================
+    // Pause / Resume State Transition Tests (AK 3.1, AK 3.2, AK 3.3)
+    // ==========================================
+
+    @Test
+    fun testPauseWorkout_transitionsFromActiveToPaused() {
+        // Arrange
+        val initial = WorkoutPauseState(isPaused = false, pausedAtMillis = null, totalPausedDurationMillis = 0L)
+
+        // Act
+        val paused = WearWorkoutLogic.pauseWorkout(initial, currentTimeMillis = 1000L)
+
+        // Assert
+        assertTrue(paused.isPaused)
+        assertEquals(1000L, paused.pausedAtMillis)
+        assertEquals(0L, paused.totalPausedDurationMillis)
+    }
+
+    @Test
+    fun testPauseWorkout_alreadyPaused_isIdempotent() {
+        // Arrange
+        val paused = WorkoutPauseState(isPaused = true, pausedAtMillis = 1000L, totalPausedDurationMillis = 500L)
+
+        // Act
+        val result = WearWorkoutLogic.pauseWorkout(paused, currentTimeMillis = 2000L)
+
+        // Assert: pausedAtMillis should remain the original pause timestamp
+        assertEquals(1000L, result.pausedAtMillis)
+        assertEquals(500L, result.totalPausedDurationMillis)
+    }
+
+    @Test
+    fun testResumeWorkout_transitionsFromPausedToActive_accumulatesDuration() {
+        // Arrange: paused at 1000L
+        val paused = WorkoutPauseState(isPaused = true, pausedAtMillis = 1000L, totalPausedDurationMillis = 0L)
+
+        // Act: resumed at 3500L (2500ms paused)
+        val resumed = WearWorkoutLogic.resumeWorkout(paused, currentTimeMillis = 3500L)
+
+        // Assert
+        assertFalse(resumed.isPaused)
+        assertNull(resumed.pausedAtMillis)
+        assertEquals(2500L, resumed.totalPausedDurationMillis)
+    }
+
+    @Test
+    fun testResumeWorkout_multiplePauses_accumulatesTotalDuration() {
+        // Arrange
+        var state = WorkoutPauseState()
+
+        // 1st pause: 1000 to 3000 (duration = 2000)
+        state = WearWorkoutLogic.pauseWorkout(state, 1000L)
+        state = WearWorkoutLogic.resumeWorkout(state, 3000L)
+        assertEquals(2000L, state.totalPausedDurationMillis)
+
+        // 2nd pause: 5000 to 8000 (duration = 3000)
+        state = WearWorkoutLogic.pauseWorkout(state, 5000L)
+        state = WearWorkoutLogic.resumeWorkout(state, 8000L)
+        assertEquals(5000L, state.totalPausedDurationMillis)
+    }
+
+    @Test
+    fun testResumeWorkout_whenNotPaused_isIdempotent() {
+        // Arrange
+        val active = WorkoutPauseState(isPaused = false, pausedAtMillis = null, totalPausedDurationMillis = 1000L)
+
+        // Act & Assert
+        assertSame(active, WearWorkoutLogic.resumeWorkout(active, currentTimeMillis = 5000L))
+    }
+
+    @Test
+    fun testCalculateAdjustedStartTime_accountingForPause() {
+        // Arrange: 60s workout from 10_000 to 70_000, with 15s pause
+        val start = 10_000L
+        val end = 70_000L
+        val paused = 15_000L
+
+        // Act: Adjusted start shifts forward by 15s -> 25_000L
+        // Effective active duration: 70_000 - 25_000 = 45_000L (exactly 60s - 15s)
+        val adjustedStart = WearWorkoutLogic.calculateAdjustedStartTime(start, end, paused)
+
+        // Assert
+        assertEquals(25_000L, adjustedStart)
+        assertEquals(45_000L, end - adjustedStart)
+    }
+
+    @Test
+    fun testCalculateAdjustedStartTime_zeroPause() {
+        // Arrange & Act & Assert
+        assertEquals(10_000L, WearWorkoutLogic.calculateAdjustedStartTime(10_000L, 50_000L, 0L))
+    }
+
+    @Test
+    fun testCalculateAdjustedStartTime_clampedWhenPauseExceedsElapsed() {
+        // Arrange: pause duration exceeds total session elapsed
+        val start = 10_000L
+        val end = 20_000L // 10s elapsed
+        val pause = 30_000L // 30s reported pause
+
+        // Act & Assert: adjusted start should not exceed end time
+        val adjusted = WearWorkoutLogic.calculateAdjustedStartTime(start, end, pause)
+        assertEquals(end, adjusted)
+    }
+
+    // ==========================================
+    // Station Navigation Tests (AK 3.5)
+    // ==========================================
+
+    @Test
+    fun testFindNextStationIndex_and_hasNextStation() {
+        // Arrange: 3 stations, station 1 is skipped
+        val i0 = SessionMachineInstance(sessionId = "s", machineId = "m0", executionOrder = 0, isSkipped = false)
+        val i1 = SessionMachineInstance(sessionId = "s", machineId = "m1", executionOrder = 1, isSkipped = true)
+        val i2 = SessionMachineInstance(sessionId = "s", machineId = "m2", executionOrder = 2, isSkipped = false)
+        val instances = listOf(i0, i1, i2)
+
+        // Act & Assert from station 0: next non-skipped is station 2 (skipping 1)
+        assertTrue(WearWorkoutLogic.hasNextStation(0, instances))
+        assertEquals(2, WearWorkoutLogic.findNextStationIndex(0, instances))
+
+        // Act & Assert from station 2: no next station
+        assertFalse(WearWorkoutLogic.hasNextStation(2, instances))
+        assertEquals(-1, WearWorkoutLogic.findNextStationIndex(2, instances))
+
+        // All remaining skipped
+        val allNextSkipped = listOf(i0, i1)
+        assertFalse(WearWorkoutLogic.hasNextStation(0, allNextSkipped))
+        assertEquals(-1, WearWorkoutLogic.findNextStationIndex(0, allNextSkipped))
     }
 }

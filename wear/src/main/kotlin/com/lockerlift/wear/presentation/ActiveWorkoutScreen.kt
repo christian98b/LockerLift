@@ -30,7 +30,9 @@ import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
 import com.lockerlift.core.database.logic.CreateMachineMode
 import com.lockerlift.core.database.logic.ValidationResult
+import com.lockerlift.wear.logic.WearPreferences
 import com.lockerlift.wear.logic.WearWorkoutLogic
+import com.lockerlift.wear.logic.WorkoutPauseState
 import com.lockerlift.wear.tracking.WorkoutForegroundService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,6 +64,7 @@ fun ActiveWorkoutScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val currentSessionId = remember { UUID.randomUUID().toString() }
+    val workoutStartTimeMillis = remember { System.currentTimeMillis() }
     val initialMachines = remember { mutableStateListOf<Machine>() }
     val sessionInstances = remember { mutableStateListOf<SessionMachineInstance>() }
     val loggedSets = remember { mutableStateMapOf<String, MutableList<WorkoutSet>>() }
@@ -71,7 +74,15 @@ fun ActiveWorkoutScreen(
 
     var selectedInstanceIndex by remember { mutableIntStateOf(-1) }
     var targetInstanceIndex by remember { mutableIntStateOf(-1) }
+    var editingInstanceIndex by remember { mutableIntStateOf(-1) }
+    var editingSetIndex by remember { mutableIntStateOf(-1) }
+
+    var lastLoggedStationIndex by remember { mutableIntStateOf(-1) }
+    var lastLoggedSetNumber by remember { mutableIntStateOf(1) }
+    var lastLoggedMachineName by remember { mutableStateOf<String?>(null) }
+
     var showRestTimer by remember { mutableStateOf(false) }
+    var pauseState by remember { mutableStateOf(WorkoutPauseState()) }
     var currentSubScreen by remember { mutableStateOf(ActiveWorkoutSubScreen.OVERVIEW) }
     var createMachineMode by remember { mutableStateOf(CreateMachineMode.ADD_NEW) }
 
@@ -90,10 +101,92 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    if (showRestTimer) {
-        RestTimerScreen(initialSeconds = 90) {
-            showRestTimer = false
+    // Paused State Screen (AK 3.1, AK 3.2, AK 3.3)
+    if (pauseState.isPaused) {
+        val listState = rememberScalingLazyListState()
+        ScalingLazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.workout_paused_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.workout_paused_text),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
+            }
+            item {
+                Button(
+                    onClick = {
+                        pauseState = WearWorkoutLogic.resumeWorkout(pauseState, System.currentTimeMillis())
+                    },
+                    modifier = Modifier.fillMaxWidth(0.9f).padding(vertical = 4.dp)
+                ) {
+                    Text(stringResource(R.string.btn_resume_workout))
+                }
+            }
+            item {
+                CompactButton(
+                    onClick = {
+                        finishAndSaveWorkout(
+                            app = app,
+                            sessionId = currentSessionId,
+                            startTimeMillis = workoutStartTimeMillis,
+                            totalPausedMillis = pauseState.totalPausedDurationMillis,
+                            templateId = templateId,
+                            templateName = templateName,
+                            sessionInstances = sessionInstances,
+                            loggedSets = loggedSets,
+                            catalogMachines = catalogMachines.map { it.toDomainModel() },
+                            initialMachines = initialMachines,
+                            onFinish = onFinishWorkout
+                        )
+                    },
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text(stringResource(R.string.finish_workout_button), fontSize = 11.sp)
+                }
+            }
         }
+        return
+    }
+
+    // Rest Timer Screen (AK 3.4, AK 3.5, AK 3.8, AK 3.9, AK 3.10)
+    if (showRestTimer) {
+        val defaultRest = remember { WearPreferences.getDefaultRestSeconds(context) }
+        RestTimerScreen(
+            initialSeconds = defaultRest,
+            machineName = lastLoggedMachineName,
+            completedSetNumber = lastLoggedSetNumber,
+            isWorkoutPaused = pauseState.isPaused,
+            hasNextExercise = WearWorkoutLogic.hasNextStation(lastLoggedStationIndex, sessionInstances),
+            onNextSet = {
+                showRestTimer = false
+                selectedInstanceIndex = lastLoggedStationIndex
+            },
+            onNextExercise = {
+                showRestTimer = false
+                val nextIdx = WearWorkoutLogic.findNextStationIndex(lastLoggedStationIndex, sessionInstances)
+                selectedInstanceIndex = if (nextIdx != -1) nextIdx else -1
+            },
+            onSkipRest = {
+                showRestTimer = false
+                selectedInstanceIndex = -1
+            },
+            onDefaultDurationChanged = { newDefault ->
+                WearPreferences.setDefaultRestSeconds(context, newDefault)
+            }
+        )
         return
     }
 
@@ -101,6 +194,57 @@ fun ActiveWorkoutScreen(
     val defaultStationName = stringResource(R.string.station_default_name)
     val fullBodyMuscleGroup = stringResource(R.string.full_body_muscle_group)
     val freeWorkoutTitle = stringResource(R.string.workout_free)
+
+    // Edit Existing Set Screen (AK 3.11, AK 3.12)
+    if (editingInstanceIndex in sessionInstances.indices && editingSetIndex >= 0) {
+        val targetInstance = sessionInstances[editingInstanceIndex]
+        val machine = catalogMachines.find { it.id == targetInstance.machineId }?.toDomainModel()
+            ?: initialMachines.find { it.id == targetInstance.machineId }
+            ?: Machine(id = targetInstance.machineId, name = defaultExerciseName, targetMuscleGroup = "")
+        val currentSets = loggedSets.getOrPut(targetInstance.id) { mutableListOf() }
+        val setToEdit = currentSets.getOrNull(editingSetIndex)
+
+        if (setToEdit != null) {
+            RepsWeightInputScreen(
+                machine = machine,
+                setNumber = setToEdit.setNumber,
+                lastWeight = setToEdit.weightKg,
+                lastReps = setToEdit.reps,
+                cadence = setToEdit.cadence ?: machine.defaultCadence,
+                historicalPerformanceText = null,
+                isEditing = true,
+                onSaveSet = { updatedSet ->
+                    val updatedList = WearWorkoutLogic.updateSetInList(
+                        sets = currentSets,
+                        targetIndex = editingSetIndex,
+                        weightKg = updatedSet.weightKg,
+                        reps = updatedSet.reps,
+                        cadence = updatedSet.cadence
+                    )
+                    loggedSets[targetInstance.id] = updatedList.toMutableList()
+                    editingInstanceIndex = -1
+                    editingSetIndex = -1
+                },
+                onDeleteSet = {
+                    val renumberedList = WearWorkoutLogic.deleteSetAndRenumber(
+                        sets = currentSets,
+                        targetIndex = editingSetIndex
+                    )
+                    loggedSets[targetInstance.id] = renumberedList.toMutableList()
+                    editingInstanceIndex = -1
+                    editingSetIndex = -1
+                },
+                onCancel = {
+                    editingInstanceIndex = -1
+                    editingSetIndex = -1
+                }
+            )
+            return
+        } else {
+            editingInstanceIndex = -1
+            editingSetIndex = -1
+        }
+    }
 
     // Set Logging Screen (US 4.1, AK 4.1.1)
     if (selectedInstanceIndex >= 0 && selectedInstanceIndex < sessionInstances.size) {
@@ -142,9 +286,13 @@ fun ActiveWorkoutScreen(
             lastReps = prefillReps,
             cadence = machine.defaultCadence,
             historicalPerformanceText = historicalPerformanceText,
+            isEditing = false,
             onSaveSet = { newSet ->
                 val setWithCorrectId = newSet.copy(sessionMachineId = currentInstance.id)
                 currentSets.add(setWithCorrectId)
+                lastLoggedStationIndex = selectedInstanceIndex
+                lastLoggedSetNumber = nextSetNumber
+                lastLoggedMachineName = machine.name
                 selectedInstanceIndex = -1
                 showRestTimer = true
             },
@@ -656,6 +804,8 @@ fun ActiveWorkoutScreen(
                             finishAndSaveWorkout(
                                 app = app,
                                 sessionId = currentSessionId,
+                                startTimeMillis = workoutStartTimeMillis,
+                                totalPausedMillis = pauseState.totalPausedDurationMillis,
                                 templateId = templateId,
                                 templateName = templateName,
                                 sessionInstances = sessionInstances,
@@ -677,6 +827,8 @@ fun ActiveWorkoutScreen(
                         finishAndSaveWorkout(
                             app = app,
                             sessionId = currentSessionId,
+                            startTimeMillis = workoutStartTimeMillis,
+                            totalPausedMillis = pauseState.totalPausedDurationMillis,
                             templateId = templateId,
                             templateName = templateName,
                             sessionInstances = sessionInstances,
@@ -703,12 +855,28 @@ fun ActiveWorkoutScreen(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Title & Pause affordance header (AK 3.1)
         item {
-            Text(
-                text = templateName ?: freeWorkoutTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(0.92f).padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = templateName ?: freeWorkoutTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                CompactButton(
+                    onClick = {
+                        pauseState = WearWorkoutLogic.pauseWorkout(pauseState, System.currentTimeMillis())
+                    },
+                    modifier = Modifier.padding(start = 4.dp)
+                ) {
+                    Text(stringResource(R.string.btn_pause), fontSize = 11.sp)
+                }
+            }
         }
 
         itemsIndexed(sessionInstances) { index, instance ->
@@ -744,21 +912,79 @@ fun ActiveWorkoutScreen(
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
-                    Text(
-                        text = if (instance.isSkipped) {
-                            stringResource(R.string.skipped_status)
-                        } else {
-                            stringResource(R.string.sets_completed_format, sets.size)
-                        },
-                        style = MaterialTheme.typography.bodySmall
-                    )
+
+                    // Status and completed sets list (AK 3.11, AK 3.12)
+                    if (instance.isSkipped) {
+                        Text(
+                            text = stringResource(R.string.skipped_status),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.skipped_exercise_info),
+                            style = MaterialTheme.typography.bodyExtraSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.sets_completed_format, sets.size),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        // In-workout logged sets list with edit trigger (AK 3.11)
+                        if (sets.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            sets.forEachIndexed { setIdx, set ->
+                                CompactButton(
+                                    onClick = {
+                                        editingInstanceIndex = index
+                                        editingSetIndex = setIdx
+                                    },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "S${set.setNumber}: ${WearWorkoutLogic.formatWeight(set.weightKg)} kg × ${set.reps}",
+                                            fontSize = 11.sp
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.btn_edit_short),
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Explicit button to log the next set
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Button(
+                            onClick = { selectedInstanceIndex = index },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (sets.isEmpty()) {
+                                    stringResource(R.string.btn_start_exercise)
+                                } else {
+                                    stringResource(R.string.btn_log_next_set, sets.size + 1)
+                                },
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Skip station action (AK 3.3.1)
+                        // Clear Skip exercise action (AK 3.6, AK 3.7)
                         CompactButton(
                             onClick = {
                                 val updated = WearWorkoutLogic.toggleSkipStation(sessionInstances, index)
@@ -826,6 +1052,8 @@ fun ActiveWorkoutScreen(
                         finishAndSaveWorkout(
                             app = app,
                             sessionId = currentSessionId,
+                            startTimeMillis = workoutStartTimeMillis,
+                            totalPausedMillis = pauseState.totalPausedDurationMillis,
                             templateId = templateId,
                             templateName = templateName,
                             sessionInstances = sessionInstances,
@@ -847,6 +1075,8 @@ fun ActiveWorkoutScreen(
 private fun finishAndSaveWorkout(
     app: LockerLiftWearApp,
     sessionId: String,
+    startTimeMillis: Long,
+    totalPausedMillis: Long,
     templateId: String?,
     templateName: String?,
     sessionInstances: List<SessionMachineInstance>,
@@ -856,11 +1086,18 @@ private fun finishAndSaveWorkout(
     onFinish: () -> Unit
 ) {
     val database = app.database
+    val endTimeMillis = System.currentTimeMillis()
+    val adjustedStartTime = WearWorkoutLogic.calculateAdjustedStartTime(
+        originalStartTime = startTimeMillis,
+        endTime = endTimeMillis,
+        totalPausedMillis = totalPausedMillis
+    )
+
     val session = WorkoutSession(
         id = sessionId,
         templateId = templateId,
-        startTime = System.currentTimeMillis() - 3600000L,
-        endTime = System.currentTimeMillis(),
+        startTime = adjustedStartTime,
+        endTime = endTimeMillis,
         originDevice = "WEAR_OS",
         syncStatus = SyncStatus.PENDING_SYNC
     )
