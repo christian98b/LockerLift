@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<capabilities xmlns:android="http://schemas.android.com/apk/res/android">
+    <capability android:name="lockerlift_mobile_app" />
+</capabilities>

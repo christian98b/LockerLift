@@ -166,6 +166,7 @@ flowchart TD
   - `v1.2.0`: Local Storage Backup & Restore with SAF, GZip/JSON export, SHA-256 integrity verification, automated periodic backup worker, and settings UI.
   - `v1.2.1`: Patch release fixing the SQLCipher 4.17.0 `UnsatisfiedLinkError` startup crash via explicit `System.loadLibrary("sqlcipher")` in the database builder (code 4).
   - `v1.3.0`: Minor feature release delivering full Workout History Editing & Deletion on Mobile (Issue #20), Wear OS Tracking UX Enhancements with Workout Pause/Resume, Configurable Rest Timer, and in-workout set editing (Issue #21), and Companion Connection Status & Manual Sync Configuration (US 5.3 / Issue #22) (code 5).
+  - `v1.3.1`: Patch release unifying `applicationId = "com.lockerlift"` across `:mobile` and `:wear` modules and registering modern `wear_capabilities.xml` manifest declarations, fixing Google Play Services Wearable Data Layer companion discovery and sync isolation (code 6).
 - [x] **Issue #21: Wear OS Tracking UX Enhancements (:wear)**
   - Workout Pause & Resume in ActiveWorkoutScreen with foreground service persistence (Invariant 5), pause state management, and active session duration adjustment.
   - Intuitive Set Logging -> Rest Timer -> Next Set sequence with labeled step (Set X logged), Next Set continuation preselecting the next set, and Next Exercise navigation.
