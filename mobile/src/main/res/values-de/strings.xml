@@ -1,101 +1,111 @@
 <resources>
     <string name="app_name">LockerLift</string>
 
-    <!-- Navigation -->
-    <string name="nav_catalog">Geräte</string>
-    <string name="nav_templates">Pläne</string>
-    <string name="nav_history">Verlauf</string>
-    <string name="nav_track">Training</string>
+    <!-- Navigation Tabs -->
+    <string name="tab_catalog">Maschinen</string>
+    <string name="tab_templates">Vorlagen</string>
+    <string name="tab_history">Historie</string>
+    <string name="tab_tracking">Tracking</string>
     <string name="tab_settings">Einstellungen</string>
 
     <!-- Catalog Screen -->
-    <string name="catalog_title">Gerätekatalog</string>
-    <string name="add_machine">Gerät hinzufügen</string>
-    <string name="edit_machine">Gerät bearbeiten</string>
-    <string name="machine_name">Gerätename</string>
-    <string name="target_muscle">Zielmuskelgruppe</string>
-    <string name="settings_note">Geräte-Setup (Sitz, Pin, etc.)</string>
-    <string name="increment_kg">Schrittweite (kg)</string>
-    <string name="cadence_hint">Standard-Kadenz (z.B. 2-0-2-0)</string>
-    <string name="save">Speichern</string>
-    <string name="cancel">Abbrechen</string>
-    <string name="delete">Löschen</string>
-    <string name="error_required_fields">Name und Schrittweite sind erforderlich.</string>
-    <string name="error_machine_exists">Ein Gerät mit diesem Namen existiert bereits.</string>
-    <string name="search_catalog">Geräte durchsuchen...</string>
+    <string name="catalog_title">Maschinenkatalog</string>
+    <string name="add_machine">Maschine hinzufügen</string>
+    <string name="muscle_group_format">Muskelgruppe: %1$s</string>
+    <string name="setup_format">Setup: %1$s</string>
+    <string name="increment_format">Schrittweite: %1$s kg</string>
+    <string name="dialog_new_machine_title">Neue Maschine anlegen</string>
+    <string name="hint_machine_name">Name (z.B. Latzug)</string>
+    <string name="hint_muscle_group">Zielmuskelgruppe (z.B. Rücken)</string>
+    <string name="hint_settings_note">Geräteeinstellungen (optional)</string>
+    <string name="hint_increment">Schrittweite in kg (z.B. 2.5)</string>
+    <string name="error_required_fields">Name und Muskelgruppe sind Pflichtfelder.</string>
+    <string name="error_machine_exists">Eine Maschine mit diesem Namen existiert bereits.</string>
+    <string name="dialog_edit_machine_title">Maschine bearbeiten</string>
+    <string name="btn_save">Speichern</string>
+    <string name="btn_cancel">Abbrechen</string>
+    <string name="btn_delete">Löschen</string>
 
-    <!-- Template List Screen -->
-    <string name="templates_title">Trainingspläne</string>
-    <string name="add_template">Plan erstellen</string>
-    <string name="template_name">Planname</string>
-    <string name="template_description">Beschreibung (Optional)</string>
-    <string name="exercises_count">%1$d Übungen</string>
-    <string name="delete_template_confirm">Diesen Trainingsplan löschen?</string>
-    <string name="no_templates">Noch keine Trainingspläne vorhanden. Erstelle deinen ersten Split!</string>
-    <string name="edit_exercises">Übungen verwalten</string>
-    <string name="add_exercise">Übung hinzufügen</string>
-    <string name="move_up">Nach oben</string>
-    <string name="move_down">Nach unten</string>
-    <string name="remove_exercise">Entfernen</string>
+    <!-- Template Screen -->
+    <string name="templates_title">Trainingsvorlagen</string>
+    <string name="add_template">Vorlage hinzufügen</string>
+    <string name="exercises_assigned_format">%1$d Übungen zugewiesen</string>
+    <string name="dialog_new_template_title">Neue Trainingsvorlage anlegen</string>
+    <string name="dialog_edit_template_title">Trainingsvorlage bearbeiten</string>
+    <string name="hint_template_name">Name (z.B. Push, Pull, Beine)</string>
+    <string name="hint_template_desc">Beschreibung (optional)</string>
+    <string name="btn_create">Erstellen</string>
+    <string name="section_assigned_exercises">Zugewiesene Übungen</string>
+    <string name="no_exercises_in_template">Noch keine Übungen zugewiesen.</string>
+    <string name="btn_add_exercise">Übung hinzufügen</string>
+    <string name="action_move_up">Nach oben</string>
+    <string name="action_move_down">Nach unten</string>
+    <string name="action_remove">Entfernen</string>
+    <string name="dialog_select_machine_title">Übung aus Katalog auswählen</string>
+    <string name="no_machines_in_catalog">Keine Maschinen im Katalog vorhanden. Bitte lege zuerst welche an.</string>
 
+    <!-- History Screen -->
     <string name="history_title">Trainingshistorie</string>
     <string name="history_empty">Noch keine absolvierten Einheiten vorhanden.</string>
     <string name="no_history">Noch keine absolvierten Workouts vorhanden.</string>
     <string name="workout_free">Freies Training</string>
     <string name="history_no_sets">Keine Sätze</string>
+    <string name="session_duration">%1$d Min.</string>
+    <string name="total_volume">Volumen: %1$s kg</string>
+    <string name="origin_wear">Wear OS</string>
+    <string name="origin_phone">Smartphone</string>
+
+    <!-- History Edit & Delete (Issue #20) -->
     <string name="history_edit_workout">Training bearbeiten</string>
     <string name="history_delete_workout">Training löschen</string>
-    <string name="history_delete_dialog_title">Trainingseinheit löschen</string>
-    <string name="history_delete_dialog_confirm">Möchtest du diese Trainingseinheit wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="history_delete_dialog_title">Training löschen</string>
+    <string name="history_delete_dialog_confirm">Möchtest du dieses Training wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="history_edit_title">Training bearbeiten</string>
     <string name="history_add_set">Satz hinzufügen</string>
     <string name="history_delete_set">Satz löschen</string>
     <string name="history_remove_exercise">Übung entfernen</string>
-    <string name="history_remove_exercise_confirm">Möchtest du diese Übung wirklich aus dieser Einheit entfernen?</string>
+    <string name="history_remove_exercise_confirm">Möchtest du diese Übung wirklich aus dem Training entfernen?</string>
     <string name="history_set_format">Satz %1$d</string>
     <string name="history_weight_kg">Gewicht (kg)</string>
     <string name="history_reps">Wiederholungen</string>
     <string name="history_save_changes">Änderungen speichern</string>
     <string name="history_discard_changes">Änderungen verwerfen</string>
     <string name="history_notes">Trainingsnotizen</string>
-    <string name="session_duration">%1$d Min.</string>
-    <string name="total_volume">Volumen: %1$s kg</string>
-    <string name="origin_wear">Wear OS</string>
-    <string name="origin_phone">Smartphone</string>
 
-    <!-- Mobile Workout Tracking Screen (US 4.2) -->
-    <string name="track_workout_title">Workout aufzeichnen</string>
-    <string name="start_workout">Training starten</string>
-    <string name="select_template">Vorlage auswählen</string>
-    <string name="free_workout">Freies Training</string>
-    <string name="active_workout_title">Aktives Workout</string>
+    <!-- Mobile Tracking Screen -->
+    <string name="tracking_title">Trainingstracking</string>
+    <string name="start_workout_title">Training starten</string>
+    <string name="start_free_workout">Freies Training starten</string>
+    <string name="start_free_workout_desc">Ungeführtes Training mit spontanen Übungen erfassen</string>
+    <string name="start_from_template_title">Aus Vorlage starten</string>
+    <string name="btn_start">Starten</string>
+    <string name="active_workout_title">Aktives Training</string>
     <string name="finish_workout">Training beenden</string>
     <string name="station_number_format">Station %1$d</string>
-    <string name="btn_log_set">Satz erfassen</string>
+    <string name="btn_log_set">Satz eintragen</string>
     <string name="btn_skip">Überspringen</string>
     <string name="btn_resume">Fortsetzen</string>
     <string name="btn_replace">Ersetzen</string>
     <string name="historical_last_format">Zuletzt: %1$s</string>
     <string name="set_format">Satz %1$d: %2$s kg × %3$d</string>
-    <string name="log_set_dialog_title">Satz %1$d • %2$s</string>
+    <string name="log_set_dialog_title">Satz %1$d eintragen • %2$s</string>
     <string name="weight_label">Gewicht (kg)</string>
     <string name="reps_label">Wiederholungen</string>
     <string name="progression_suggestion_format">Doppelte Progression: Ziel erreicht! Gewicht auf %1$s kg steigern?</string>
-    <string name="btn_apply_overload">+%1$s kg übernehmen</string>
+    <string name="btn_apply_overload">+%1$s kg anwenden</string>
     <string name="rest_timer_label">Satzpause</string>
     <string name="rest_timer_seconds_format">Pause: %1$02d:%2$02d</string>
     <string name="finish_workout_dialog_title">Training abschließen</string>
-    <string name="workout_notes_hint">Notizen zum Workout (optional)</string>
+    <string name="workout_notes_hint">Notizen zum Training (optional)</string>
     <string name="consolidate_template_title">Vorlage aktualisieren?</string>
-    <string name="consolidate_template_desc">Änderungen (hinzugefügte, ersetzte oder übersprungene Übungen) in Vorlage übernehmen?</string>
+    <string name="consolidate_template_desc">Sollen die Änderungen (hinzugefügte, ersetzte oder übersprungene Übungen) in der Trainingsvorlage gespeichert werden?</string>
     <string name="btn_save_and_finish">Speichern &amp; Abschließen</string>
     <string name="workout_finished_success">Training erfolgreich gespeichert und zur Synchronisation eingereiht!</string>
     <string name="sets_completed_format">%1$d Sätze absolviert</string>
     <string name="discard_workout">Training abbrechen</string>
     <string name="discard_workout_confirm">Möchtest du dieses Training wirklich verwerfen? Alle erfassten Sätze gehen verloren.</string>
 
-    <!-- Settings Screen (US 7.2 & US 5.3) -->
-    <string name="settings_title">Einstellungen</string>
+    <!-- Wear OS Companion & Sync (US 5.3) -->
     <string name="settings_companion_sync_section">Wear OS Companion &amp; Synchronisation</string>
     <string name="settings_companion_connected_format">Verbunden: %1$s</string>
     <string name="settings_companion_disconnected">Keine Smartwatch verbunden / Getrennt</string>
@@ -116,6 +126,8 @@
     <string name="settings_sync_no_companion">Synchronisation nicht möglich: Keine Smartwatch verbunden</string>
     <string name="settings_sync_error_format">Synchronisation fehlgeschlagen: %1$s</string>
 
+    <!-- Settings Screen (US 7.2) -->
+    <string name="settings_title">Einstellungen</string>
     <string name="settings_backup_folder_section">Sicherungsordner</string>
     <string name="settings_backup_folder_not_set">Kein Ordner ausgewählt</string>
     <string name="settings_btn_choose_folder">Ordner auswählen</string>
