@@ -207,8 +207,9 @@ flowchart TD
   - Wear OS `MainActivity`: navigation state and entry point button in `TemplateSelectionScreen`.
   - Localization: full English (`values/strings.xml`) and German (`values-de/strings.xml`) strings across `:mobile` and `:wear`.
   - Unit Tests: `CompanionStatusResolverTest.kt` (node state resolution, fallback behavior, timestamp formatting, `SyncResult` contracts), `WearSettingsLogicTest.kt` (formatting for connection and queue status, fallbacks), and `EntityMappingTest.kt` (`SyncQueueDao` pending count query contract).
-- [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
+- [x] **CI/CD Pipeline & Build Remediation (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
+  - Remediation for Issues #20-#22: Restored full localized strings schema across mobile screens (`values/strings.xml` and `values-de/strings.xml`) and fixed unescaped format specifier dollar signs in `WearSettingsLogicTest.kt`. Full pipeline green (`#34879524027`).
 - [x] **16 KB Page-Size Compatibility Remediation**
   - Upgraded the Compose BOM to `2025.08.01` and pinned `androidx.graphics:graphics-path` to `1.1.0` for the current native graphics artifact while retaining SDK 35 compatibility.
   - Upgraded `net.zetetic:sqlcipher-android` from `4.5.5` to `4.17.0`, the latest SDK 35-compatible release.
