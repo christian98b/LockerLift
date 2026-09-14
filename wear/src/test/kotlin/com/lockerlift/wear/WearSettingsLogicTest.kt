@@ -19,7 +19,7 @@ class WearSettingsLogicTest {
 
         val text = WearSettingsLogic.formatConnectionStatus(
             status = status,
-            connectedFmt = "Connected: %1$s",
+            connectedFmt = "Connected: %1\$s",
             disconnectedStr = "Disconnected",
             checkingStr = "Checking..."
         )
@@ -37,7 +37,7 @@ class WearSettingsLogicTest {
 
         val text = WearSettingsLogic.formatConnectionStatus(
             status = status,
-            connectedFmt = "Connected to %1$s",
+            connectedFmt = "Connected to %1\$s",
             disconnectedStr = "Disconnected",
             checkingStr = "Checking..."
         )
@@ -53,7 +53,7 @@ class WearSettingsLogicTest {
 
         val text = WearSettingsLogic.formatConnectionStatus(
             status = status,
-            connectedFmt = "Connected: %1$s",
+            connectedFmt = "Connected: %1\$s",
             disconnectedStr = "Phone Disconnected / In Locker",
             checkingStr = "Checking..."
         )
@@ -65,7 +65,7 @@ class WearSettingsLogicTest {
     fun testFormatConnectionStatus_null() {
         val text = WearSettingsLogic.formatConnectionStatus(
             status = null,
-            connectedFmt = "Connected: %1$s",
+            connectedFmt = "Connected: %1\$s",
             disconnectedStr = "Disconnected",
             checkingStr = "Checking phone..."
         )
@@ -77,7 +77,7 @@ class WearSettingsLogicTest {
     fun testFormatQueueStatus_withPending() {
         val text = WearSettingsLogic.formatQueueStatus(
             pendingCount = 4,
-            pendingFmt = "Pending Workouts: %1$d",
+            pendingFmt = "Pending Workouts: %1\$d",
             allSyncedStr = "All workouts synced"
         )
 
@@ -88,7 +88,7 @@ class WearSettingsLogicTest {
     fun testFormatQueueStatus_zeroPending() {
         val text = WearSettingsLogic.formatQueueStatus(
             pendingCount = 0,
-            pendingFmt = "Pending Workouts: %1$d",
+            pendingFmt = "Pending Workouts: %1\$d",
             allSyncedStr = "All workouts synced"
         )
 
@@ -99,7 +99,7 @@ class WearSettingsLogicTest {
     fun testFormatQueueStatus_negativePending() {
         val text = WearSettingsLogic.formatQueueStatus(
             pendingCount = -1,
-            pendingFmt = "Pending Workouts: %1$d",
+            pendingFmt = "Pending Workouts: %1\$d",
             allSyncedStr = "All workouts synced"
         )
 
