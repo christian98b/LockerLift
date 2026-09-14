@@ -10,7 +10,11 @@ object SyncConstants {
 
     // MessageClient paths (RPC & Acknowledgment)
     const val PATH_WORKOUT_ACK = "/workout_ack"
+    const val PATH_WORKOUT_DELETE = "/workout_delete"
     const val PATH_PING = "/sync_ping"
+
+    // Sync queue action constants
+    const val ACTION_DELETE = "DELETE"
 
     // Wearable Data Layer Capabilities (Node verification)
     const val CAPABILITY_WEAR = "lockerlift_wear_app"

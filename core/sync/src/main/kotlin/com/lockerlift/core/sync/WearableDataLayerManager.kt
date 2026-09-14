@@ -69,4 +69,15 @@ class WearableDataLayerManager(private val context: Context) {
             true
         }.getOrDefault(false)
     }
+
+    suspend fun sendWorkoutDelete(nodeId: String, sessionId: String): Boolean {
+        return runCatching {
+            messageClient.sendMessage(
+                nodeId,
+                SyncConstants.PATH_WORKOUT_DELETE,
+                sessionId.toByteArray(StandardCharsets.UTF_8)
+            ).await()
+            true
+        }.getOrDefault(false)
+    }
 }

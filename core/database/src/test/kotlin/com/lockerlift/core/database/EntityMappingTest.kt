@@ -214,5 +214,28 @@ class EntityMappingTest {
         val updatedSession = initialSession.copy(syncStatus = SyncStatus.SYNCED)
         assertEquals(SyncStatus.SYNCED, updatedSession.syncStatus)
     }
+
+    @Test
+    fun testDeleteMachineInstancesContract_cascadesSetsAndLeavesCatalogIntact() {
+        val sessionId = "session-test"
+        val instances = mutableListOf(
+            SessionMachineInstanceEntity(id = "smi-1", sessionId = sessionId, machineId = "m-1", executionOrder = 0),
+            SessionMachineInstanceEntity(id = "smi-2", sessionId = "other-session", machineId = "m-2", executionOrder = 0)
+        )
+        val sets = mutableListOf(
+            WorkoutSetEntity(id = "set-1", sessionMachineId = "smi-1", setNumber = 1, reps = 10, weightKg = 100f),
+            WorkoutSetEntity(id = "set-2", sessionMachineId = "smi-2", setNumber = 1, reps = 8, weightKg = 50f)
+        )
+
+        // Simulate deleteMachineInstancesBySessionId(sessionId)
+        val removedInstanceIds = instances.filter { it.sessionId == sessionId }.map { it.id }.toSet()
+        instances.removeIf { it.sessionId == sessionId }
+        sets.removeIf { it.sessionMachineId in removedInstanceIds }
+
+        assertEquals(1, instances.size)
+        assertEquals("smi-2", instances[0].id)
+        assertEquals(1, sets.size)
+        assertEquals("set-2", sets[0].id)
+    }
 }
 

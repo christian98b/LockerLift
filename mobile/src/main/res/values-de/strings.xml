@@ -48,6 +48,21 @@
     <string name="history_empty">Noch keine absolvierten Einheiten vorhanden.</string>
     <string name="workout_free">Freies Training</string>
     <string name="history_no_sets">Keine Sätze</string>
+    <string name="history_edit_workout">Training bearbeiten</string>
+    <string name="history_delete_workout">Training löschen</string>
+    <string name="history_delete_dialog_title">Trainingseinheit löschen</string>
+    <string name="history_delete_dialog_confirm">Möchtest du diese Trainingseinheit wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="history_edit_title">Training bearbeiten</string>
+    <string name="history_add_set">Satz hinzufügen</string>
+    <string name="history_delete_set">Satz löschen</string>
+    <string name="history_remove_exercise">Übung entfernen</string>
+    <string name="history_remove_exercise_confirm">Möchtest du diese Übung wirklich aus dieser Einheit entfernen?</string>
+    <string name="history_set_format">Satz %1$d</string>
+    <string name="history_weight_kg">Gewicht (kg)</string>
+    <string name="history_reps">Wiederholungen</string>
+    <string name="history_save_changes">Änderungen speichern</string>
+    <string name="history_discard_changes">Änderungen verwerfen</string>
+    <string name="history_notes">Trainingsnotizen</string>
 
     <!-- Mobile Tracking Screen -->
     <string name="tracking_title">Trainingstracking</string>

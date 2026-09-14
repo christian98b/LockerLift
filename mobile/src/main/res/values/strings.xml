@@ -49,6 +49,21 @@
     <string name="history_empty">No completed workouts yet.</string>
     <string name="workout_free">Free Workout</string>
     <string name="history_no_sets">No sets</string>
+    <string name="history_edit_workout">Edit Workout</string>
+    <string name="history_delete_workout">Delete Workout</string>
+    <string name="history_delete_dialog_title">Delete Workout</string>
+    <string name="history_delete_dialog_confirm">Are you sure you want to delete this workout? This action cannot be undone.</string>
+    <string name="history_edit_title">Edit Workout</string>
+    <string name="history_add_set">Add Set</string>
+    <string name="history_delete_set">Delete Set</string>
+    <string name="history_remove_exercise">Remove Exercise</string>
+    <string name="history_remove_exercise_confirm">Are you sure you want to remove this exercise from the workout?</string>
+    <string name="history_set_format">Set %1$d</string>
+    <string name="history_weight_kg">Weight (kg)</string>
+    <string name="history_reps">Reps</string>
+    <string name="history_save_changes">Save Changes</string>
+    <string name="history_discard_changes">Discard Changes</string>
+    <string name="history_notes">Workout Notes</string>
 
     <!-- Mobile Tracking Screen -->
     <string name="tracking_title">Workout Tracking</string>

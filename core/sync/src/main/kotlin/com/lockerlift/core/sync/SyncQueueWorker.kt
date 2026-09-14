@@ -31,10 +31,16 @@ class SyncQueueWorker(
 
         for (item in pendingItems) {
             syncQueueDao.updateAttemptStatus(item.id, QueueStatus.IN_TRANSIT, System.currentTimeMillis())
-            val success = dataLayerManager.sendWorkoutPayloadViaChannel(targetNodeId, item.payloadJson)
-            if (success) {
-                // Acknowledgment from phone will remove or mark item as ACKNOWLEDGED
+            val success = if (item.payloadJson == SyncConstants.ACTION_DELETE) {
+                val delSuccess = dataLayerManager.sendWorkoutDelete(targetNodeId, item.sessionId)
+                if (delSuccess) {
+                    syncQueueDao.deleteQueueItemById(item.id)
+                }
+                delSuccess
             } else {
+                dataLayerManager.sendWorkoutPayloadViaChannel(targetNodeId, item.payloadJson)
+            }
+            if (!success) {
                 syncQueueDao.updateAttemptStatus(item.id, QueueStatus.ERROR, System.currentTimeMillis())
             }
         }

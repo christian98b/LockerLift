@@ -96,4 +96,20 @@ class HealthConnectManager(
             true
         }.getOrDefault(false)
     }
+
+    suspend fun deleteWorkoutSession(sessionId: String): Boolean {
+        val client = healthConnectClient ?: return false
+        return runCatching {
+            val granted = client.permissionController.getGrantedPermissions()
+            if (!granted.contains(sessionPermission)) {
+                return false
+            }
+            client.deleteRecords(
+                recordType = ExerciseSessionRecord::class,
+                recordIdsList = emptyList(),
+                clientRecordIdsList = listOf(sessionId)
+            )
+            true
+        }.getOrDefault(false)
+    }
 }

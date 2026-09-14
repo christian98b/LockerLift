@@ -58,6 +58,27 @@ class MobileDataLayerListenerService : WearableListenerService() {
                 database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
                 Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
             }
+        } else if (messageEvent.path == SyncConstants.PATH_WORKOUT_DELETE) {
+            val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
+            serviceScope.launch {
+                // Verify sender node capability if available (SEC-05)
+                runCatching {
+                    val capabilityInfo = Wearable.getCapabilityClient(this@MobileDataLayerListenerService)
+                        .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
+                        .await()
+                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+                        Log.w(TAG, "Rejected delete from unauthorized watch node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                }
+
+                database.workoutSessionDao().deleteSession(sessionId)
+                database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
+                    healthConnectManager.deleteWorkoutSession(sessionId)
+                }
+                Log.i(TAG, "Workout session $sessionId deleted on phone via sync.")
+            }
         }
     }
 

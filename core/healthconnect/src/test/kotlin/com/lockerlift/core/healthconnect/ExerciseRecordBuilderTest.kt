@@ -36,6 +36,7 @@ class ExerciseRecordBuilderTest {
         assertEquals(ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, record.exerciseType)
         assertEquals("Push Day A", record.title)
         assertEquals("Chest and Triceps focus", record.notes)
+        assertEquals("session-1", record.metadata.clientRecordId)
     }
 
     @Test

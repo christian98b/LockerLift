@@ -168,6 +168,24 @@ class WearDataLayerListenerService : WearableListenerService() {
                 database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
                 Log.i(TAG, "Workout session $sessionId successfully acknowledged and removed from queue.")
             }
+        } else if (messageEvent.path == SyncConstants.PATH_WORKOUT_DELETE) {
+            val sessionId = String(messageEvent.data, Charsets.UTF_8)
+            serviceScope.launch {
+                // Verify sender node capability if available (SEC-05)
+                runCatching {
+                    val capabilityInfo = Wearable.getCapabilityClient(this@WearDataLayerListenerService)
+                        .getCapability(SyncConstants.CAPABILITY_MOBILE, CapabilityClient.FILTER_ALL)
+                        .await()
+                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+                        Log.w(TAG, "Rejected delete from unauthorized node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                }
+
+                database.workoutSessionDao().deleteSession(sessionId)
+                database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                Log.i(TAG, "Workout session $sessionId deleted on watch via sync.")
+            }
         }
     }
 

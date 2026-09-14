@@ -78,8 +78,11 @@ interface WorkoutSessionDao {
     """)
     suspend fun getLastCompletedSetsForMachine(machineId: String): List<WorkoutSetEntity>
 
+    @Query("DELETE FROM session_machine_instances WHERE session_id = :sessionId")
+    suspend fun deleteMachineInstancesBySessionId(sessionId: String)
+
     /**
-     * Atomically inserts or updates a full workout session graph (used by sync receiver).
+     * Atomically inserts or updates a full workout session graph (used by sync receiver and history editor).
      */
     @Transaction
     suspend fun upsertFullSession(
@@ -88,6 +91,7 @@ interface WorkoutSessionDao {
         sets: List<WorkoutSetEntity>
     ) {
         insertSession(session)
+        deleteMachineInstancesBySessionId(session.id)
         insertMachineInstances(instances)
         insertSets(sets)
     }

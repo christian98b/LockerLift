@@ -176,6 +176,18 @@ flowchart TD
   - `LocalBackupManagerTest.kt`: 8 pure JVM unit tests (GZip roundtrip, SHA-256 checksum consistency, filename pattern, schema version, `BackupResult.Success/Error`, empty GZip, distinct hash collision resistance).
   - All user-facing strings in EN (`values/strings.xml`) and DE (`values-de/strings.xml`): `tab_settings`, `settings_title`, and 22 `settings_*` keys.
   - Covers AK 7.2.1 (SAF directory picker), AK 7.2.2 (manual backup), AK 7.2.3 (scheduled backups + retention), AK 7.2.4 (restore + integrity validation), AK 7.2.5 (sharesheet).
+- [x] **Issue #20: Edit and Delete Past Workouts in Mobile History (`:mobile`, `:core:database`, `:core:sync`, `:core:healthconnect`, `:wear`)**
+  - `HistoryScreen` (`:mobile`): Edit affordance opening full modal dialog (`EditWorkoutSessionDialog`), set value editing (weight in kg, reps) with steppers and clamping (`WorkoutTrackingLogic.clampWeight` [0.0-1000.0 kg], `clampReps` [1-999]), adding new sets, deleting sets with contiguous re-indexing, removing entire machine instances leaving catalog intact, delete affordance with confirmation dialog.
+  - `WorkoutSessionDao` (`:core:database`): Added `deleteMachineInstancesBySessionId(sessionId)` and updated `upsertFullSession` transaction to cleanly purge old instances/sets before inserting updated graphs, preventing orphaned records.
+  - `SyncConstants` & `WearableDataLayerManager` (`:core:sync`): Added `PATH_WORKOUT_DELETE = "/workout_delete"`, `ACTION_DELETE = "DELETE"`, and `sendWorkoutDelete(nodeId, sessionId)`.
+  - `SyncQueueWorker` (`:core:sync`): Added background dispatch for `ACTION_DELETE` items via `sendWorkoutDelete`.
+  - `WearDataLayerListenerService` (`:wear`) & `MobileDataLayerListenerService` (`:mobile`): Added bidirectional handling for `PATH_WORKOUT_DELETE` to delete local session, cascade instances/sets, remove queue items, and trigger Health Connect deletion.
+  - `ExerciseRecordBuilder` & `HealthConnectManager` (`:core:healthconnect`): Set `clientRecordId = session.id` in `ExerciseSessionRecord` metadata; added `deleteWorkoutSession(sessionId)` deleting matching records via `clientRecordIdsList = listOf(sessionId)`.
+  - Localization (`:mobile`): Added all EN (`values/strings.xml`) and DE (`values-de/strings.xml`) string resources with 1:1 parity (`history_edit_workout`, `history_delete_workout`, `history_delete_dialog_title`, `history_delete_dialog_confirm`, `history_edit_title`, `history_add_set`, `history_delete_set`, `history_remove_exercise`, `history_remove_exercise_confirm`, `history_set_format`, `history_weight_kg`, `history_reps`, `history_save_changes`, `history_discard_changes`, `history_notes`).
+  - Unit tests added:
+    - `MobileWorkoutHistoryTest.kt` (`:mobile`): 8 tests covering updating past session sets with validation and clamping, adding sets, deleting sets with contiguous re-indexing, removing machine instances leaving catalog intact, deleting workout session with cascade simulation, re-sync payload generation, Health Connect record ID matching, and localization keys parity across EN and DE.
+    - `EntityMappingTest.kt` (`:core:database`): Added `testDeleteMachineInstancesContract_cascadesSetsAndLeavesCatalogIntact`.
+    - `ExerciseRecordBuilderTest.kt` (`:core:healthconnect`): Added assertion for `clientRecordId == session.id`.
 - [x] **CI/CD Pipeline (`.github/workflows/build-and-test.yml`)**
   - Automated GitHub Actions pipeline with `test` stage (unit tests) and `build-apks` stage (debug APKs for Mobile & Wear OS ready for download).
 - [x] **16 KB Page-Size Compatibility Remediation**
