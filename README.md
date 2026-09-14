@@ -1,10 +1,13 @@
 <div align="center">
 
+<img src="documentation/assets/lockerlift_app_icon.jpg" alt="LockerLift App Icon" width="128" height="128" style="border-radius: 28px;" />
+
 # 🏋️‍♂️ LockerLift
 
 ### **Local-First, Open-Source Gym Tracker for Android & Wear OS**
 *The smartphone stays in the locker – full autonomy on your smartwatch.*
 
+[![Release](https://img.shields.io/github/v/release/christian98b/LockerLift?style=for-the-badge&color=blue)](https://github.com/christian98b/LockerLift/releases)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg?style=for-the-badge&logo=kotlin)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/Android-API%2028+-3DDC84.svg?style=for-the-badge&logo=android)](https://developer.android.com)
 [![Wear OS](https://img.shields.io/badge/Wear%20OS-API%2030+-4285F4.svg?style=for-the-badge&logo=google)](https://developer.android.com/wear)
@@ -67,16 +70,21 @@ sequenceDiagram
 ### 📱 Smartphone App (`:mobile`)
 * 📋 **Global Machine & Exercise Catalog:** Equipment configured with target muscle groups, customized weight increments (e.g., 2.5 kg), and equipment setup notes (e.g., *"Seat height setting 4"*).
 * 📑 **$n$-Template Management:** Unlimited training plans (Push, Pull, Legs, etc.) – including cold-start templates (create empty plans and fill on the fly).
-* 📈 **Workout History:** Detailed insights into past sessions with set-by-set breakdowns.
-* 🌉 **Health Connect Bridge:** Seamless export to Google Fit, Samsung Health, and third-party fitness ecosystems.
+* 📈 **Workout History with Full Editing:** Detailed insights into past sessions; edit logged weights and reps with steppers, add new sets, delete sets with contiguous re-indexing, or remove mistaken sessions with cascade database cleanup.
+* 🔄 **Wear OS Companion & Sync Hub:** Monitor live smartwatch connectivity, view pending offline queue counts, and trigger manual synchronization for master data and workout history.
+* 💾 **Local Backup & Restore:** Privacy-first export/import via Android Storage Access Framework (SAF) with GZip/JSON schema validation and SHA-256 integrity checks.
+* 🌉 **Health Connect Bridge:** Seamless export and synchronized deletion with Google Fit, Samsung Health, and third-party fitness ecosystems.
 * 🌐 **Multi-Language Support:** Localized in English (default) and German (`values-de/`).
 
 ### ⌚ Standalone Wear OS App (`:wear`)
 * 🚀 **100% Autonomous Tracking:** Fully operational with zero smartphone connectivity.
 * ⚙️ **Rotary Input Support:** Lightning-fast rep and weight adjustments using the physical watch bezel or touch controls.
-* 🔄 **Cold-Start & Ad-Hoc Modification:** Add, substitute, or skip machines in the middle of a workout session.
+* ⏸️ **Workout Pause & Resume:** Pause active workouts seamlessly during interruptions; keeps the foreground service active while tracking true elapsed workout duration.
+* ⏱️ **Configurable Rest Timer & Steppers:** Real-time `+15s` / `-15s` buttons without resetting countdowns; customizable default rest duration; explicit *"Set X logged — resting"* flow with one-tap continuation to the next set.
+* 📝 **In-Workout Set Correction & Deletion:** Correct logged weights and reps or delete mistaken sets directly from machine cards with automatic sequential renumbering.
+* 🔄 **Cold-Start & Ad-Hoc Modification:** Add, substitute, or skip machines in the middle of a workout session with clear *"Skip exercise"* labeling.
+* ⚙️ **Wear OS Settings Screen:** Check phone connectivity, view offline sync queue items, trigger manual syncs to the phone, and inspect build info.
 * 💡 **Template Consolidation:** Varied your routine during the workout? The app prompts on completion: *"Save variations into template?"*.
-* ⏱️ **Rest Timer with Haptics:** Automatic countdown timer between sets with discrete vibration upon expiration.
 * 🛡️ **Ongoing Activity Foreground Service:** Prevents Wear OS from terminating active tracking during ambient mode or under memory pressure.
 * 📊 **Progressive Overload Guidance:** Displays previous performance at each station with visual suggestions for weight increases (Double Progression).
 

@@ -4,7 +4,7 @@
 
 ---
 
-[🚀 Starting a Workout](#-starting-a-workout) • [⚙️ Rotary Dial & Controls](#-rotary-dial--bezel-controls) • [📈 Double Progression](#-progressive-overload--double-progression) • [⏱️ Rest Timer & Haptics](#️-rest-timer--haptic-alerts) • [🔄 Ad-Hoc Exercises & Skipping](#-ad-hoc-exercises--skipping) • [💾 Finishing & Consolidation](#-finishing-the-workout--template-consolidation)
+[🚀 Starting a Workout](#-starting-a-workout) • [⏸️ Pause & Resume](#️-workout-pause--resume) • [⚙️ Rotary Dial & Controls](#-rotary-dial--bezel-controls) • [📈 Double Progression](#-progressive-overload--double-progression) • [⏱️ Rest Timer & Haptics](#️-rest-timer--haptic-alerts) • [📝 In-Workout Set Correction](#-in-workout-set-correction--deletion) • [🔄 Station Management](#-in-workout-station-management-replace-skip--create) • [⚙️ Companion Settings](#️-wear-os-companion-settings--sync) • [💾 Finishing](#-finishing-the-workout--template-consolidation)
 
 ---
 
@@ -31,6 +31,16 @@ flowchart TD
 
 > [!NOTE]
 > Starting an active workout automatically initiates LockerLift's **`WorkoutForegroundService`**. This registers an ongoing activity notification and keeps the tracking engine active even when the screen enters low-power Ambient Mode.
+
+---
+
+## ⏸️ Workout Pause & Resume
+
+Gym sessions are occasionally interrupted by water breaks, spotter requests, or detours:
+
+* **Pausing the Session:** Tap the **Pause** button on the active workout overview screen. The countdown timer stops, tracking state pauses, and a prominent **Resume** banner appears.
+* **Ongoing Activity Preserved:** Pausing does **not** terminate the foreground service or ongoing notification (Invariant 5). Your workout remains safely in memory and will not be killed by the OS.
+* **Accurate Workout Duration:** When you tap **Resume**, the time spent paused is excluded from your active workout duration, guaranteeing accurate duration and pacing metrics in Health Connect.
 
 ---
 
@@ -73,28 +83,6 @@ Instead of adding weight every workout, you first progress in repetitions within
 * **One-Tap Overload:** Tapping this suggestion card automatically increases the working weight by the machine's exact increment for your next set.
 * If you feel fatigued or choose not to increase yet, simply ignore the card.
 
----
-
-## ⏱️ Rest Timer & Haptic Alerts
-
-Recovery between heavy sets is critical for strength development:
-
-```mermaid
-flowchart LR
-    A["Tap 'Complete Set'"] --> B["Automatic 90s Rest Timer"]
-    B --> C["Haptic Vibration Sequence"]
-    B -.->|"Optional"| D["Tap 'Skip' to Lift Early"]
-    C --> E["Return to Station Overview"]
-    D --> E
-```
-
-### Rest Timer Features:
-1. **Automatic Activation:** Immediately upon tapping **Complete Set**, the rest countdown screen appears.
-2. **Multi-Pulse Haptic Vibration:** When the timer reaches `00:00`, your watch vibrates with a distinct multi-burst waveform. You don't need to look at your watch or listen for beeps over loud gym music.
-3. **Skip Button:** Feeling ready earlier? Tap **Skip** at any time to return directly to your exercise list.
-
----
-
 ### Historical Reference Data & Intelligent Prefilling
 Never wonder what weight you lifted last week:
 * **Automatic Performance Recall:** Whenever you select an exercise, LockerLift queries your local database and prominently displays your past performance at the top of the input dialog:
@@ -107,23 +95,34 @@ Never wonder what weight you lifted last week:
 
 ---
 
-## ⏱️ Rest Timer & Haptic Alerts
+## ⏱️ Rest Timer & Intuitive Set Flow
 
-Recovery between heavy sets is critical for strength development:
+Recovery between heavy sets is critical for hypertrophy and strength development:
 
 ```mermaid
 flowchart LR
-    A["Tap 'Complete Set'"] --> B["Automatic 90s Rest Timer"]
-    B --> C["Haptic Vibration Sequence"]
-    B -.->|"Optional"| D["Tap 'Skip' to Lift Early"]
-    C --> E["Return to Station Overview"]
+    A["Log Set (Weight & Reps)"] --> B["'Set X logged — resting'"]
+    B --> C["Live Rest Timer (+/- 15s)"]
+    C --> D["Multi-Pulse Haptic Vibration"]
+    C -.->|"Tap 'Skip Rest'"| E["Next Set / Next Exercise"]
     D --> E
 ```
 
-### Rest Timer Features:
-1. **Automatic Activation:** Immediately upon tapping **Complete Set**, the rest countdown screen appears.
-2. **Multi-Pulse Haptic Vibration:** When the timer reaches `00:00`, your watch vibrates with a distinct multi-burst waveform. You don't need to look at your watch or listen for beeps over loud gym music.
-3. **Skip Button:** Feeling ready earlier? Tap **Skip** at any time to return directly to your exercise list.
+### Key Rest Timer Capabilities:
+1. **Configurable Default Rest Duration:** Configure your standard rest duration (e.g., 60s, 90s, 120s, or custom seconds). Your preference is saved locally on the watch.
+2. **Real-Time +/- 15s Adjustments:** Need a little more recovery after a grueling PR set? Or feeling ready early? Tap the **+15s** or **-15s** buttons while the timer is running to dynamically adjust the countdown without resetting or restarting.
+3. **Seamless "Next Set" Continuation:** After logging a set, the screen explicitly indicates *"Set X logged — resting"*. Tapping the primary button advances directly to the next set of the same machine, so you can keep logging with minimal taps.
+4. **Multi-Pulse Haptic Vibration:** When the timer hits `00:00`, distinct tactile vibration pulses alert your wrist. You never need to look at your watch or listen for quiet beeps over gym music.
+
+---
+
+## 📝 In-Workout Set Correction & Deletion
+
+Mistakes happen when entering weights with sweaty fingers. In LockerLift v1.3.0+, you can easily fix mistakes during the workout:
+
+* **Editing a Logged Set:** Tap on any previously completed set on the exercise card. An edit dialog opens allowing you to adjust weight and reps with rotary bezel scrolling or quick stepper buttons. Clamping rules (`0.0–1000.0 kg`, `1–999 reps`) ensure clean data.
+* **Deleting a Set:** If you accidentally logged a phantom set, tap the **Delete Set** button. LockerLift automatically renumbers remaining sets sequentially (`1..N`), ensuring a clean, unbroken workout log.
+* **Store-and-Forward Fidelity:** Any in-workout edits or deletions are fully reflected in the final session payload transferred to your phone.
 
 ---
 
@@ -149,8 +148,10 @@ If a barbell bench or cable station is occupied:
 3. The selected machine replaces the station in your active workout without altering the original template.
 
 ### 2. Skipping & Resuming Stations (US 3.3)
-* Tap **Skip** on any station to bypass it. The card dims (`surfaceContainerLow`) and displays a **Skipped** badge.
-* If the machine becomes free later, tap **Resume** to reactivate and log your sets.
+* Tap **Skip exercise** (*"Übung überspringen"*) on any station card to bypass the machine for this workout session.
+* The station card dims (`surfaceContainerLow`) and displays an explanatory **Skipped** badge.
+* **Important distinction:** Skipping a station bypasses the exercise in your workout order; it does **not** delete any previously logged sets.
+* If the machine becomes free later, tap **Resume** to reactivate the station and continue logging.
 
 ### 3. Creating New Machines on the Watch (Cold-Start US 1.1 & US 3.2)
 Don't have a machine in your catalog yet?
@@ -166,6 +167,28 @@ Changed your seat height or peg position?
 3. Choose:
    * **Workout Only:** Saves the note for today's workout.
    * **Save to Catalog:** Updates your permanent machine catalog so you remember it next time!
+
+---
+
+## ⚙️ Wear OS Companion Settings & Sync (US 5.3)
+
+Need to check whether your phone is reachable or force an immediate upload after leaving the gym floor?
+
+```mermaid
+flowchart TD
+    Main["Template Selection Screen"] --> Gear["Tap Settings (Gear Icon)"]
+    Gear --> Screen["Wear OS Settings Screen"]
+    Screen --> Status["Live Companion Status (Connected / Disconnected)"]
+    Screen --> Queue["Offline Queue Counter (Pending Workouts)"]
+    Screen --> Sync["'Sync Now' Trigger (Immediate Upload)"]
+    Screen --> Version["App Version & Build Details"]
+```
+
+* **Entry Point:** Tap the gear icon at the top of the **Template Selection Screen**.
+* **Live Smartphone Status:** Shows whether your phone is currently connected via Wearable Data Layer (`"Connected: Pixel 8"`) or disconnected (`"Phone Disconnected / In Locker"`).
+* **Offline Queue Counter:** Displays the exact count of completed workout sessions waiting in local storage to be transferred to your phone.
+* **Sync Now Button:** Tapping **Sync Now** enqueues an immediate background transfer job (`SyncQueueWorker`) with tactile haptic feedback confirming transmission.
+* **Last Sync Timestamp:** Shows the exact time of the last successful synchronization.
 
 ---
 

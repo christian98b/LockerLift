@@ -4,7 +4,7 @@
 
 ---
 
-[📋 Machine Catalog](#-machine-catalog-management) • [📑 Template Management](#-workout-template-management) • [📈 Workout History](#-workout-history--session-analysis) • [🌉 Health Connect Integration](#-health-connect-bridge) • [🌐 Language Settings](#-language-settings)
+[📋 Machine Catalog](#-machine-catalog-management) • [📑 Template Management](#-workout-template-management) • [📈 Workout History & Editing](#-workout-history--editing) • [⚙️ Companion Settings & Backup](#️-companion-settings-sync--backup) • [🌉 Health Connect Integration](#-health-connect-bridge) • [🌐 Language Settings](#-language-settings)
 
 ---
 
@@ -78,14 +78,14 @@ Don't have time to configure all exercises before heading to the gym?
 
 ---
 
-## 📈 Workout History & Session Analysis
+## 📈 Workout History & Editing (US 4.1 & Issue #20)
 
-The **History** tab (`HistoryScreen`) provides a clear, chronological archive of all completed workout sessions:
+The **History** tab (`HistoryScreen`) provides a clear, chronological archive of all completed workout sessions, with full post-workout editing and deletion capabilities:
 
 ```text
 ┌────────────────────────────────────────────────────────┐
 │ Upper Body A                           WEAR_OS (Watch) │
-│ 13.09.2026 18:30                                       │
+│ 13.09.2026 18:30                         [Edit] [Delete]│
 │ ────────────────────────────────────────────────────── │
 │ • Lat Pulldown: 60.0kg × 12, 62.5kg × 10, 62.5kg × 8   │
 │ • Incline Dumbbell Press: 32.0kg × 10, 32.0kg × 9      │
@@ -93,11 +93,39 @@ The **History** tab (`HistoryScreen`) provides a clear, chronological archive of
 └────────────────────────────────────────────────────────┘
 ```
 
-### Key Historical Details:
-* **Template Title:** Name of the routine performed (or *Free Workout* if run ad-hoc).
-* **Device Origin Badge:** Displays whether the session was logged on your Wear OS watch (`WEAR_OS`) or directly on your phone (`MOBILE`).
-* **Session Date & Time:** Formatted according to your phone's locale.
-* **Set Breakdown:** Every completed set with exact weight in kg and completed repetitions.
+### 1. Editing Past Sessions (Issue #20)
+Tap the **Edit** icon on any past session card to open the **Session Detail Editor**:
+* **Adjusting Weights & Reps:** Edit any logged set using stepper buttons or manual entry. Identical domain boundary clamping is enforced (`0.0–1000.0 kg`, `1–999 reps`).
+* **Adding Sets:** Tap **+ Add Set** under any exercise to record an additional completed set.
+* **Deleting Sets:** Remove erroneous sets with the delete icon. Remaining sets are automatically renumbered with contiguous indexing (`1..N`).
+* **Removing Machine Instances:** Remove an entire exercise from the session. The global machine catalog remains untouched (Invariant 2).
+* **Automatic Convergence:** Saving changes re-streams the updated session payload to your Wear OS watch via `ChannelClient`, ensuring past performance reference data is identical on your wrist.
+
+### 2. Deleting Workouts & Health Connect Cleanup
+* Tap the **Delete** icon on any session card to permanently remove it.
+* A confirmation dialog protects against accidental deletions.
+* **Database Cascade:** Removing a session automatically purges child machine instances and sets via Room `CASCADE`.
+* **Health Connect Purge:** The corresponding Health Connect session (and telemetry) is automatically deleted via `HealthConnectManager.deleteWorkoutSession(sessionId)`.
+* **Sync Tombstone:** A deletion notification (`/workout_delete`) is dispatched to your Wear OS watch to purge the session from the watch history.
+
+---
+
+## ⚙️ Companion Settings, Sync & Backup (US 5.3 & US 7.2)
+
+The **Settings** tab provides control over companion smartwatch synchronization and local data protection:
+
+### 1. Wear OS Companion & Sync Hub (US 5.3)
+* **Live Connection Status:** Shows whether your smartwatch is connected via Bluetooth/Wi-Fi (`"Connected: Galaxy Watch 6"`) or disconnected (`"No watch connected / Disconnected"`).
+* **Last Sync Timestamp:** Displays the exact date and time of the last successful synchronization.
+* **Pending Sync Queue:** Shows how many items are waiting to be sent to the watch.
+* **Sync Master Data Now:** Immediately pushes the entire machine catalog and all templates to your smartwatch via Google Play Services `DataClient`.
+* **Sync Workouts Now:** Immediately triggers the background sync worker to process and flush pending queue items.
+
+### 2. Local Storage Backup & Restore (US 7.2)
+* **Privacy-First Storage:** Export your entire database to any folder on your device or SD card via the Android Storage Access Framework (SAF).
+* **GZip & SHA-256 Integrity:** Backups are compressed with GZip and validated against cryptographic SHA-256 checksums to guarantee zero corruption upon restore.
+* **Automated Periodic Backups:** Configure automated daily or weekly backups with customizable retention policies (keep 3, 5, or 10 backups).
+* **Android Sharesheet:** Directly export and share backup archives via Google Drive, Nextcloud, email, or messaging apps.
 
 ---
 

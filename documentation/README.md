@@ -1,5 +1,9 @@
 # 📖 LockerLift Documentation Portal
 
+<div align="center">
+<img src="assets/lockerlift_app_icon.jpg" alt="LockerLift App Icon" width="100" height="100" style="border-radius: 20px;" />
+</div>
+
 Welcome to the official user and technical documentation for **LockerLift**, the privacy-first, local-first strength training tracker for Android and Wear OS.
 
 > **LockerLift Core Philosophy:**  
