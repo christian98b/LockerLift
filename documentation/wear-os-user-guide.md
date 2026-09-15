@@ -30,7 +30,7 @@ flowchart TD
 * You can add stations on the fly as you move around the gym floor.
 
 > [!NOTE]
-> Starting an active workout automatically initiates LockerLift's **`WorkoutForegroundService`**. This registers an ongoing activity notification and keeps the tracking engine active even when the screen enters low-power Ambient Mode.
+> **Always-In-Foreground Tracking:** Starting an active workout initiates LockerLift's **`WorkoutForegroundService`** and locks the tracking activity to the foreground (`singleTask`, `showWhenLocked`, `turnScreenOn`). Even if your watch screen turns off or dims during a set or rest interval, LockerLift remains the active foreground app—raising your wrist or touching the screen wakes directly back to your workout, exactly like native fitness apps.
 
 ---
 

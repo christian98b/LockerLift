@@ -78,6 +78,46 @@ Don't have time to configure all exercises before heading to the gym?
 
 ---
 
+## 🏋️‍♂️ Live Workout Tracking & Set Table
+
+The **Tracking** tab (`MobileTrackingScreen`) provides full standalone active workout tracking parity with Wear OS, designed for high usability during demanding training sessions:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Bench Press                                      [ ⋮ ]   │
+│ Chest • ⚙️ Seat height 4                                     │
+├──────┬─────────────────┬──────────┬──────────┬──────────────┤
+│ SET  │ PREVIOUS        │ KG       │ REPS     │ STATUS       │
+├──────┼─────────────────┼──────────┼──────────┼──────────────┤
+│  1   │ 80.0 kg × 10    │ 80.0     │ 10       │   ✓ Logged   │  <-- Tap to edit/delete
+│  2   │ 80.0 kg × 9     │ 80.0     │ 9        │   ✓ Logged   │
+├──────┴─────────────────┴──────────┴──────────┴──────────────┤
+│  [+ Add Set]                                                │
+│  👉 Next: Incline Dumbbell Press          [Go to Exercise]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1. Intuitive Set Table with Previous Performance
+* **At-a-Glance History:** Each set displays your past performance for that exact set (`PREVIOUS`) side-by-side with today's target.
+* **Instant Visual Confirmation:** Logging a set immediately appends the row with a `✓ Logged` badge and starts the rest timer—no lag or manual refresh required.
+* **Double Progression Banner:** If you hit or exceed your repetition goal, a suggestion card automatically calculates the recommended weight overload using the machine's configured increment.
+
+### 2. Live In-Workout Set Editing & Deletion
+Made a typo or need to adjust reps after resting?
+* **Tap Any Completed Set:** Tapping any row opens the **Set Editor**.
+* **Quick Adjustments:** Increment or decrement weight and reps with stepper chips or direct numeric input.
+* **Delete Set:** Remove accidental sets with **Delete Set**. All subsequent sets automatically re-index sequentially (`1..N`).
+
+### 3. Context Menu `[ ⋮ ]` & Station Flexibility
+Secondary actions are cleanly tucked behind the three-dots menu on each exercise card:
+* **🔄 Swap Exercise (Keep sets):** Selected the wrong equipment? Swap the machine on the fly—all your recorded sets and values remain 100% intact!
+* **⚙️ Edit Device Settings:** Update custom notes like seat height or cable pulley notches.
+* **⬆️ Move Up / ⬇️ Move Down:** Reorder stations freely during the workout to match gym floor availability.
+* **🗑️ Remove Exercise:** Remove an exercise from today's session without affecting your template.
+* **Smart Next Exercise Flow:** When sets are logged, LockerLift suggests the next planned exercise in your template. If that station is occupied, simply tap any other free machine in the list!
+
+---
+
 ## 📈 Workout History & Editing (US 4.1 & Issue #20)
 
 The **History** tab (`HistoryScreen`) provides a clear, chronological archive of all completed workout sessions, with full post-workout editing and deletion capabilities:

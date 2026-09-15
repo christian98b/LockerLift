@@ -1,6 +1,8 @@
 package com.lockerlift.wear
 
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -20,12 +22,31 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
         val app = application as LockerLiftWearApp
 
         setContent {
             MaterialTheme {
                 var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
                 var showSettings by remember { mutableStateOf(false) }
+
+                DisposableEffect(activeWorkoutParams != null) {
+                    if (activeWorkoutParams != null) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    onDispose {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
 
                 if (activeWorkoutParams != null) {
                     val (templateId, templateName) = activeWorkoutParams!!

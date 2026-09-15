@@ -68,6 +68,7 @@ sequenceDiagram
 ## ✨ Key Features
 
 ### 📱 Smartphone App (`:mobile`)
+* 🏋️ **Intuitive Live Workout Tracking & Set Table:** Full standalone tracking parity featuring a dedicated set table with side-by-side past performance comparisons, instant visual confirmation (`✓ Logged`), in-workout set editing and deletion, 3-dots actions (swap equipment while preserving sets, reorder stations), and smart next-exercise suggestions.
 * 📋 **Global Machine & Exercise Catalog:** Equipment configured with target muscle groups, customized weight increments (e.g., 2.5 kg), and equipment setup notes (e.g., *"Seat height setting 4"*).
 * 📑 **$n$-Template Management:** Unlimited training plans (Push, Pull, Legs, etc.) – including cold-start templates (create empty plans and fill on the fly).
 * 📈 **Workout History with Full Editing:** Detailed insights into past sessions; edit logged weights and reps with steppers, add new sets, delete sets with contiguous re-indexing, or remove mistaken sessions with cascade database cleanup.
@@ -78,6 +79,7 @@ sequenceDiagram
 
 ### ⌚ Standalone Wear OS App (`:wear`)
 * 🚀 **100% Autonomous Tracking:** Fully operational with zero smartphone connectivity.
+* 🛡️ **Always-In-Foreground Tracking & Wake Behavior:** Active tracking runs as an ongoing health foreground service with dedicated window management (`singleTask`, `showWhenLocked`, `turnScreenOn`); waking the watch or raising the wrist returns directly to the active workout without dropping back to the watch face.
 * ⚙️ **Rotary Input Support:** Lightning-fast rep and weight adjustments using the physical watch bezel or touch controls.
 * ⏸️ **Workout Pause & Resume:** Pause active workouts seamlessly during interruptions; keeps the foreground service active while tracking true elapsed workout duration.
 * ⏱️ **Configurable Rest Timer & Steppers:** Real-time `+15s` / `-15s` buttons without resetting countdowns; customizable default rest duration; explicit *"Set X logged — resting"* flow with one-tap continuation to the next set.
@@ -85,7 +87,6 @@ sequenceDiagram
 * 🔄 **Cold-Start & Ad-Hoc Modification:** Add, substitute, or skip machines in the middle of a workout session with clear *"Skip exercise"* labeling.
 * ⚙️ **Wear OS Settings Screen:** Check phone connectivity, view offline sync queue items, trigger manual syncs to the phone, and inspect build info.
 * 💡 **Template Consolidation:** Varied your routine during the workout? The app prompts on completion: *"Save variations into template?"*.
-* 🛡️ **Ongoing Activity Foreground Service:** Prevents Wear OS from terminating active tracking during ambient mode or under memory pressure.
 * 📊 **Progressive Overload Guidance:** Displays previous performance at each station with visual suggestions for weight increases (Double Progression).
 
 ---

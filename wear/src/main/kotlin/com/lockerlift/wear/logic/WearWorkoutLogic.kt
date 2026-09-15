@@ -120,22 +120,7 @@ object WearWorkoutLogic {
         weightKg: Float,
         reps: Int,
         cadence: String? = null
-    ): List<WorkoutSet> {
-        if (targetIndex !in sets.indices) return sets
-        val clampedWeight = clampWeight(weightKg)
-        val clampedReps = clampReps(reps)
-        return sets.mapIndexed { index, existingSet ->
-            if (index == targetIndex) {
-                existingSet.copy(
-                    weightKg = clampedWeight,
-                    reps = clampedReps,
-                    cadence = cadence ?: existingSet.cadence
-                )
-            } else {
-                existingSet
-            }
-        }
-    }
+    ): List<WorkoutSet> = WorkoutTrackingLogic.updateSetInList(sets, targetIndex, weightKg, reps, cadence)
 
     /**
      * Updates an existing set identified by ID with clamped weight and reps (AK 3.11).
@@ -158,13 +143,7 @@ object WearWorkoutLogic {
     fun deleteSetAndRenumber(
         sets: List<WorkoutSet>,
         targetIndex: Int
-    ): List<WorkoutSet> {
-        if (targetIndex !in sets.indices) return sets
-        val remaining = sets.toMutableList().apply { removeAt(targetIndex) }
-        return remaining.mapIndexed { index, set ->
-            set.copy(setNumber = index + 1)
-        }
-    }
+    ): List<WorkoutSet> = WorkoutTrackingLogic.deleteSetAndRenumber(sets, targetIndex)
 
     /**
      * Deletes a set identified by ID and renumbers subsequent sets sequentially (AK 3.12).
