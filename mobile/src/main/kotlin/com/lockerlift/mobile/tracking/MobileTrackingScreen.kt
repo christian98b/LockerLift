@@ -608,8 +608,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                     val nextMachine = machines.find { it.id == nextInst.machineId }
                                     val nextMachineName = nextMachine?.name ?: "Station ${nextStationIndex + 1}"
                                     Spacer(modifier = Modifier.height(10.dp))
-                                    FilledTonalCard(
+                                    Card(
                                         modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                        ),
                                         onClick = {
                                             selectedInstanceIndexForSet = nextStationIndex
                                         }
