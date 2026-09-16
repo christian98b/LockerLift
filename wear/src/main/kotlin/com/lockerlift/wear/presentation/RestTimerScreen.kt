@@ -31,6 +31,7 @@ fun RestTimerScreen(
     onNextSet: () -> Unit,
     onNextExercise: (() -> Unit)? = null,
     onSkipRest: () -> Unit,
+    onFinishExercise: (() -> Unit)? = null,
     onDefaultDurationChanged: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -155,13 +156,19 @@ fun RestTimerScreen(
             }
         }
 
-        // Action: Skip Rest / Overview (AK 3.10)
+        // Action: Finish Exercise / Overview
         item {
             CompactButton(
-                onClick = onSkipRest,
+                onClick = {
+                    if (onFinishExercise != null) {
+                        onFinishExercise()
+                    } else {
+                        onSkipRest()
+                    }
+                },
                 modifier = Modifier.padding(top = 2.dp)
             ) {
-                Text(stringResource(R.string.btn_skip_rest), fontSize = 11.sp)
+                Text(stringResource(R.string.btn_finish_exercise), fontSize = 11.sp)
             }
         }
 

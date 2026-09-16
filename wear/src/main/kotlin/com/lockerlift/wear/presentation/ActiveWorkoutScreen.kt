@@ -24,7 +24,10 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.SessionMachineInstancePayload
+import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncPayloadSerializer
+import com.lockerlift.core.sync.SyncQueueWorker
+import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
@@ -180,6 +183,10 @@ fun ActiveWorkoutScreen(
                 selectedInstanceIndex = if (nextIdx != -1) nextIdx else -1
             },
             onSkipRest = {
+                showRestTimer = false
+                selectedInstanceIndex = -1
+            },
+            onFinishExercise = {
                 showRestTimer = false
                 selectedInstanceIndex = -1
             },
@@ -1134,6 +1141,16 @@ private fun finishAndSaveWorkout(
             sets = allSets.map { it.toEntity() }
         )
         database.syncQueueDao().insertQueueItem(syncItem)
+
+        // Enqueue background sync worker (Store-and-Forward)
+        SyncQueueWorker.enqueue(app)
+
+        // Attempt immediate flush if phone is connected right now
+        runCatching {
+            val dataLayerManager = WearableDataLayerManager(app)
+            dataLayerManager.flushPendingQueue(database.syncQueueDao(), SyncConstants.CAPABILITY_MOBILE)
+        }
+
         WorkoutForegroundService.stopService(app)
         withContext(Dispatchers.Main) {
             onFinish()

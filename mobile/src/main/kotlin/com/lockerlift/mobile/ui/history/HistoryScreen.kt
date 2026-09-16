@@ -35,6 +35,8 @@ import com.lockerlift.core.sync.*
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
 import kotlinx.coroutines.launch
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import com.lockerlift.mobile.sync.MobileMasterDataSync
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,6 +52,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
     val syncQueueDao = remember { app.database.syncQueueDao() }
     val healthConnectManager = remember { HealthConnectManager(context) }
     val dataLayerManager = remember { WearableDataLayerManager(context) }
+    val syncCoordinator = remember { SyncPullRefreshCoordinator(dataLayerManager) }
 
     val sessionsState by sessionDao.getAllSessionsWithDetailsFlow().collectAsState(initial = emptyList())
     val allMachinesState by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
@@ -57,33 +60,72 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
 
     var sessionToDelete by remember { mutableStateOf<WorkoutSessionWithDetails?>(null) }
     var editingSession by remember { mutableStateOf<WorkoutSessionWithDetails?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    fun triggerRefresh() {
+        if (isRefreshing) return
+        isRefreshing = true
+        coroutineScope.launch {
+            val result = syncCoordinator.executeSync(
+                syncMasterDataAction = {
+                    MobileMasterDataSync.pushAllMasterData(app.database, dataLayerManager)
+                }
+            )
+            isRefreshing = false
+            when (result) {
+                is PullRefreshSyncResult.Success -> {
+                    val msg = if (result.itemsSyncedCount == 1) {
+                        context.getString(R.string.sync_success_single)
+                    } else {
+                        context.getString(R.string.sync_success_format, result.itemsSyncedCount)
+                    }
+                    snackbarHostState.showSnackbar(msg)
+                }
+                is PullRefreshSyncResult.UpToDate -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_up_to_date))
+                }
+                is PullRefreshSyncResult.WatchUnreachable -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_watch_unreachable))
+                }
+                is PullRefreshSyncResult.Error -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_error_format, result.message))
+                }
+            }
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.history_title)) })
         }
     ) { padding ->
-        if (sessionsState.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.history_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { triggerRefresh() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            if (sessionsState.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.history_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                 items(sessionsState, key = { it.session.id }) { item ->
                     val session = item.session.toDomainModel()
                     Card(

@@ -40,46 +40,56 @@ class MobileDataLayerListenerService : WearableListenerService() {
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
         super.onMessageReceived(messageEvent)
-        if (messageEvent.path == SyncConstants.PATH_WORKOUT_ACK) {
-            val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
-            serviceScope.launch {
-                // Verify sender node capability if available (SEC-05)
-                runCatching {
-                    val capabilityInfo = Wearable.getCapabilityClient(this@MobileDataLayerListenerService)
-                        .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
-                        .await()
-                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+        when (messageEvent.path) {
+            SyncConstants.PATH_WORKOUT_ACK -> {
+                val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
+                serviceScope.launch {
+                    if (!isAuthorizedWatchNode(messageEvent.sourceNodeId)) {
                         Log.w(TAG, "Rejected ACK from unauthorized watch node: ${messageEvent.sourceNodeId}")
                         return@launch
                     }
-                }
 
-                database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
-                database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
-                dataLayerManager.updateLastSyncTimestamp()
-                Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
+                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                    database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
+                    dataLayerManager.updateLastSyncTimestamp()
+                    Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
+                }
             }
-        } else if (messageEvent.path == SyncConstants.PATH_WORKOUT_DELETE) {
-            val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
-            serviceScope.launch {
-                // Verify sender node capability if available (SEC-05)
-                runCatching {
-                    val capabilityInfo = Wearable.getCapabilityClient(this@MobileDataLayerListenerService)
-                        .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
-                        .await()
-                    if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == messageEvent.sourceNodeId }) {
+            SyncConstants.PATH_WORKOUT_DELETE -> {
+                val sessionId = String(messageEvent.data, StandardCharsets.UTF_8)
+                serviceScope.launch {
+                    if (!isAuthorizedWatchNode(messageEvent.sourceNodeId)) {
                         Log.w(TAG, "Rejected delete from unauthorized watch node: ${messageEvent.sourceNodeId}")
                         return@launch
                     }
-                }
 
-                database.workoutSessionDao().deleteSession(sessionId)
-                database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
-                if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                    healthConnectManager.deleteWorkoutSession(sessionId)
+                    database.workoutSessionDao().deleteSession(sessionId)
+                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                    if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
+                        healthConnectManager.deleteWorkoutSession(sessionId)
+                    }
+                    dataLayerManager.updateLastSyncTimestamp()
+                    Log.i(TAG, "Workout session $sessionId deleted on phone via sync.")
                 }
-                dataLayerManager.updateLastSyncTimestamp()
-                Log.i(TAG, "Workout session $sessionId deleted on phone via sync.")
+            }
+            SyncConstants.PATH_WORKOUT_MESSAGE -> {
+                val payloadJson = String(messageEvent.data, StandardCharsets.UTF_8)
+                serviceScope.launch {
+                    if (!isAuthorizedWatchNode(messageEvent.sourceNodeId)) {
+                        Log.w(TAG, "Rejected workout message from unauthorized watch node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                    processWorkoutPayload(payloadJson, messageEvent.sourceNodeId)
+                }
+            }
+            SyncConstants.PATH_SYNC_FLUSH_COMPLETED -> {
+                val countString = String(messageEvent.data, StandardCharsets.UTF_8)
+                val count = countString.toIntOrNull() ?: 0
+                serviceScope.launch {
+                    SyncEventBus.notifyFlushCompleted(count)
+                    dataLayerManager.updateLastSyncTimestamp()
+                    Log.i(TAG, "Received sync flush completion notice from watch: $count workouts transferred.")
+                }
             }
         }
     }
@@ -89,16 +99,59 @@ class MobileDataLayerListenerService : WearableListenerService() {
         serviceScope.cancel()
     }
 
-    private suspend fun receiveWorkoutFromChannel(channel: ChannelClient.Channel) {
-        val channelClient = Wearable.getChannelClient(this)
-        try {
-            // Verify node capability if available (SEC-05)
+    private suspend fun isAuthorizedWatchNode(nodeId: String): Boolean {
+        return runCatching {
             val capabilityClient = Wearable.getCapabilityClient(this)
             val capabilityInfo = capabilityClient
                 .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
                 .await()
+            if (capabilityInfo.nodes.isEmpty()) {
+                // If capability registration is pending, fall back to checking connected nodes
+                val connectedNodes = Wearable.getNodeClient(this).connectedNodes.await()
+                return connectedNodes.any { it.id == nodeId }
+            }
+            capabilityInfo.nodes.any { it.id == nodeId }
+        }.getOrDefault(true)
+    }
 
-            if (capabilityInfo.nodes.isNotEmpty() && capabilityInfo.nodes.none { it.id == channel.nodeId }) {
+    private suspend fun processWorkoutPayload(payloadJson: String, sourceNodeId: String) {
+        val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
+        val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
+        val sessionDao = database.workoutSessionDao()
+        val machineDao = database.machineDao()
+
+        val instanceEntities = payload.machineInstances.map { it.instance.toEntity() }
+        val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
+        val machineEntities = payload.machineInstances.map { it.machine.toEntity() }
+
+        // Persist machines first in case ad-hoc machines were created on the watch
+        machineDao.insertMachines(machineEntities)
+
+        // Upsert session, instances and sets idempotently
+        sessionDao.upsertFullSession(
+            session = session.toEntity(),
+            instances = instanceEntities,
+            sets = setEntities
+        )
+
+        // Export to Health Connect
+        if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
+            healthConnectManager.exportWorkoutSession(
+                session = session,
+                templateName = payload.templateName
+            )
+        }
+
+        // Send Acknowledgment back to sender node
+        dataLayerManager.sendAcknowledgment(sourceNodeId, session.id)
+        dataLayerManager.updateLastSyncTimestamp()
+        Log.i(TAG, "Workout session ${session.id} successfully processed and synchronized.")
+    }
+
+    private suspend fun receiveWorkoutFromChannel(channel: ChannelClient.Channel) {
+        val channelClient = Wearable.getChannelClient(this)
+        try {
+            if (!isAuthorizedWatchNode(channel.nodeId)) {
                 Log.w(TAG, "Rejected workout payload from unauthorized node: ${channel.nodeId}")
                 channelClient.close(channel).await()
                 return
@@ -123,40 +176,9 @@ class MobileDataLayerListenerService : WearableListenerService() {
             }
 
             val payloadJson = outputStream.toString(StandardCharsets.UTF_8.name())
-
-            val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
-            val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
-            val sessionDao = database.workoutSessionDao()
-            val machineDao = database.machineDao()
-
-            val instanceEntities = payload.machineInstances.map { it.instance.toEntity() }
-            val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
-            val machineEntities = payload.machineInstances.map { it.machine.toEntity() }
-
-            // Persist machines first in case ad-hoc machines were created on the watch
-            machineDao.insertMachines(machineEntities)
-
-            // Upsert session, instances and sets
-            sessionDao.upsertFullSession(
-                session = session.toEntity(),
-                instances = instanceEntities,
-                sets = setEntities
-            )
-
-            // Export to Health Connect
-            if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                healthConnectManager.exportWorkoutSession(
-                    session = session,
-                    templateName = payload.templateName
-                )
-            }
-
-            // Send Acknowledgment back to sender node
-            dataLayerManager.sendAcknowledgment(channel.nodeId, session.id)
-            dataLayerManager.updateLastSyncTimestamp()
+            processWorkoutPayload(payloadJson, channel.nodeId)
 
             channelClient.close(channel).await()
-            Log.i(TAG, "Workout session ${session.id} successfully received and synchronized.")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to receive and process workout payload", e)
             runCatching { channelClient.close(channel).await() }

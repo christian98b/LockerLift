@@ -639,4 +639,30 @@ class WearWorkoutLogicTest {
         assertFalse(WearWorkoutLogic.hasNextStation(0, allNextSkipped))
         assertEquals(-1, WearWorkoutLogic.findNextStationIndex(0, allNextSkipped))
     }
+
+    // ==========================================
+    // Finish Exercise Button Tests
+    // ==========================================
+
+    @Test
+    fun testShouldShowFinishExerciseAction_whenEditing_returnsFalse() {
+        // When editing an existing set, user should see Cancel/Discard, not Finish Exercise
+        assertFalse(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = true, setNumber = 1))
+        assertFalse(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = true, setNumber = 2))
+        assertFalse(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = true, setNumber = 5))
+    }
+
+    @Test
+    fun testShouldShowFinishExerciseAction_firstSet_returnsFalse() {
+        // When logging the very first set, user can Cancel/Abort the exercise
+        assertFalse(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = false, setNumber = 1))
+    }
+
+    @Test
+    fun testShouldShowFinishExerciseAction_subsequentSets_returnsTrue() {
+        // When user has already logged at least 1 set, offer "Finish Exercise" instead of "Cancel"
+        assertTrue(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = false, setNumber = 2))
+        assertTrue(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = false, setNumber = 3))
+        assertTrue(WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing = false, setNumber = 10))
+    }
 }

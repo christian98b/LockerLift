@@ -37,6 +37,7 @@
     <string name="btn_finish_set">Complete Set</string>
     <string name="btn_save_changes">Save Changes</string>
     <string name="btn_delete_set">Delete Set</string>
+    <string name="btn_finish_exercise">Finish Exercise</string>
     <string name="btn_cancel">Cancel</string>
 
     <!-- Rest Timer Screen (AK 3.4, AK 3.5, AK 3.8, AK 3.9, AK 3.10) -->

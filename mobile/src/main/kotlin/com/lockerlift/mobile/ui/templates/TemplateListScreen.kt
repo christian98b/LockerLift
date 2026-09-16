@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,11 +24,14 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.database.model.WorkoutTemplateWithMachines
 import com.lockerlift.core.model.WorkoutTemplate
+import com.lockerlift.core.sync.PullRefreshSyncResult
 import com.lockerlift.core.sync.SyncPayloadSerializer
+import com.lockerlift.core.sync.SyncPullRefreshCoordinator
 import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.core.sync.WorkoutTemplatePayload
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
+import com.lockerlift.mobile.sync.MobileMasterDataSync
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -38,16 +42,21 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
     val templateDao = remember { app.database.workoutTemplateDao() }
     val templatesState by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
     val coroutineScope = rememberCoroutineScope()
+    val dataLayerManager = remember { WearableDataLayerManager(context) }
+    val syncCoordinator = remember { SyncPullRefreshCoordinator(dataLayerManager) }
 
-    var showNewDialog by remember { mutableStateOf(false) }
     var newTemplateName by remember { mutableStateOf("") }
     var newTemplateDesc by remember { mutableStateOf("") }
+    var showNewDialog by remember { mutableStateOf(false) }
 
     var editingTemplate by remember { mutableStateOf<WorkoutTemplateWithMachines?>(null) }
     var editTemplateName by remember { mutableStateOf("") }
     var editTemplateDesc by remember { mutableStateOf("") }
     var assignedMachines by remember { mutableStateOf<List<MachineEntity>>(emptyList()) }
     var showMachinePicker by remember { mutableStateOf(false) }
+
+    var isRefreshing by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(editingTemplate) {
         editingTemplate?.let { item ->
@@ -58,19 +67,43 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
     }
 
     suspend fun syncAllTemplatesToWear() {
-        val allActive = templateDao.getAllActiveTemplatesWithMachinesFlow().first()
-        val payloads = allActive.map { item ->
-            val orderedMachineIds = templateDao.getCrossRefsForTemplate(item.template.id).map { it.machineId }
-            WorkoutTemplatePayload(
-                template = item.template.toDomainModel(),
-                machineIdsInOrder = orderedMachineIds
+        MobileMasterDataSync.pushAllMasterData(app.database, dataLayerManager)
+    }
+
+    fun triggerRefresh() {
+        if (isRefreshing) return
+        isRefreshing = true
+        coroutineScope.launch {
+            val result = syncCoordinator.executeSync(
+                syncMasterDataAction = {
+                    syncAllTemplatesToWear()
+                }
             )
+            isRefreshing = false
+            when (result) {
+                is PullRefreshSyncResult.Success -> {
+                    val msg = if (result.itemsSyncedCount == 1) {
+                        context.getString(R.string.sync_success_single)
+                    } else {
+                        context.getString(R.string.sync_success_format, result.itemsSyncedCount)
+                    }
+                    snackbarHostState.showSnackbar(msg)
+                }
+                is PullRefreshSyncResult.UpToDate -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_up_to_date))
+                }
+                is PullRefreshSyncResult.WatchUnreachable -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_watch_unreachable))
+                }
+                is PullRefreshSyncResult.Error -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.sync_error_format, result.message))
+                }
+            }
         }
-        val json = SyncPayloadSerializer.encodeTemplates(payloads)
-        WearableDataLayerManager(context).syncTemplates(json)
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.templates_title)) })
         },
@@ -84,36 +117,43 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
             }
         }
     ) { padding ->
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { triggerRefresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(templatesState, key = { it.template.id }) { item ->
-                val template = item.template.toDomainModel()
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { editingTemplate = item },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = template.name, style = MaterialTheme.typography.titleMedium)
-                        if (!template.description.isNullOrBlank()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(templatesState, key = { it.template.id }) { item ->
+                    val template = item.template.toDomainModel()
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { editingTemplate = item },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = template.name, style = MaterialTheme.typography.titleMedium)
+                            if (!template.description.isNullOrBlank()) {
+                                Text(
+                                    text = template.description!!,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = template.description!!,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = stringResource(R.string.exercises_assigned_format, item.machines.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.exercises_assigned_format, item.machines.size),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }

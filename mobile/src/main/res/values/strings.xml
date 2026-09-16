@@ -167,4 +167,12 @@
     <string name="settings_restore_error">Restore failed: %1$s</string>
     <string name="settings_no_backup_to_share">No backup file found to share</string>
     <string name="settings_folder_selected_format">Folder: %1$s</string>
+
+    <!-- Pull-to-Refresh Sync (US 5.4) -->
+    <string name="sync_pull_refresh_started">Synchronizing with smartwatch…</string>
+    <string name="sync_success_single">1 new workout synchronized</string>
+    <string name="sync_success_format">%1$d new workouts synchronized</string>
+    <string name="sync_up_to_date">Everything is up to date</string>
+    <string name="sync_watch_unreachable">Smartwatch not reachable</string>
+    <string name="sync_error_format">Sync failed: %1$s</string>
 </resources>

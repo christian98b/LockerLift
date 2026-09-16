@@ -69,7 +69,23 @@
                     android:scheme="wear" />
                 <data
                     android:host="*"
+                    android:pathPrefix="/workout_delete"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
                     android:pathPrefix="/workout_payload_transfer"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/workout_payload_message"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/sync/request_flush"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/sync/request_master_data"
                     android:scheme="wear" />
             </intent-filter>
         </service>

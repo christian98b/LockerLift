@@ -37,6 +37,7 @@
     <string name="btn_finish_set">Satz abschließen</string>
     <string name="btn_save_changes">Änderungen speichern</string>
     <string name="btn_delete_set">Satz löschen</string>
+    <string name="btn_finish_exercise">Übung beenden</string>
     <string name="btn_cancel">Abbrechen</string>
 
     <!-- Rest Timer Screen (AK 3.4, AK 3.5, AK 3.8, AK 3.9, AK 3.10) -->

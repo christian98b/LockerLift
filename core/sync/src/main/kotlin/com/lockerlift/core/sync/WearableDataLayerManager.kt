@@ -12,7 +12,7 @@ import kotlinx.coroutines.tasks.await
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
-class WearableDataLayerManager(private val context: Context) {
+class WearableDataLayerManager(private val context: Context) : SyncFlushRequester {
 
     private val dataClient = Wearable.getDataClient(context)
     private val channelClient = Wearable.getChannelClient(context)
@@ -45,6 +45,53 @@ class WearableDataLayerManager(private val context: Context) {
 
     suspend fun getMobileCompanionStatus(): CompanionDeviceStatus =
         getCompanionStatus(SyncConstants.CAPABILITY_MOBILE)
+
+    override suspend fun isWearCompanionConnected(): Boolean =
+        getWearCompanionStatus().isConnected
+
+    override suspend fun requestWatchSyncFlush(): Boolean {
+        return runCatching {
+            val connectedNodes = getConnectedNodes()
+            if (connectedNodes.isEmpty()) return false
+
+            val capInfo = runCatching {
+                Wearable.getCapabilityClient(context)
+                    .getCapability(SyncConstants.CAPABILITY_WEAR, CapabilityClient.FILTER_ALL)
+                    .await()
+            }.getOrNull()
+
+            val targetNodes = if (capInfo != null && capInfo.nodes.isNotEmpty()) {
+                capInfo.nodes.toList()
+            } else {
+                connectedNodes
+            }
+
+            var anySent = false
+            for (node in targetNodes) {
+                val sent = runCatching {
+                    messageClient.sendMessage(
+                        node.id,
+                        SyncConstants.PATH_SYNC_REQUEST_FLUSH,
+                        ByteArray(0)
+                    ).await()
+                    true
+                }.getOrDefault(false)
+                if (sent) anySent = true
+            }
+            anySent
+        }.getOrDefault(false)
+    }
+
+    suspend fun sendSyncFlushCompleted(nodeId: String, count: Int): Boolean {
+        return runCatching {
+            messageClient.sendMessage(
+                nodeId,
+                SyncConstants.PATH_SYNC_FLUSH_COMPLETED,
+                count.toString().toByteArray(StandardCharsets.UTF_8)
+            ).await()
+            true
+        }.getOrDefault(false)
+    }
 
     fun getLastSyncTimestamp(): Long {
         return runCatching {
@@ -86,6 +133,26 @@ class WearableDataLayerManager(private val context: Context) {
         }.getOrDefault(false)
     }
 
+    suspend fun sendWorkoutPayload(nodeId: String, payloadJson: String): Boolean {
+        // Fast atomic message transfer for payloads within MessageClient capacity
+        if (payloadJson.length < 60_000) {
+            val messageSent = runCatching {
+                messageClient.sendMessage(
+                    nodeId,
+                    SyncConstants.PATH_WORKOUT_MESSAGE,
+                    payloadJson.toByteArray(StandardCharsets.UTF_8)
+                ).await()
+                updateLastSyncTimestamp()
+                true
+            }.getOrDefault(false)
+
+            if (messageSent) return true
+        }
+
+        // Fall back to ChannelClient streaming for large payloads
+        return sendWorkoutPayloadViaChannel(nodeId, payloadJson)
+    }
+
     suspend fun sendWorkoutPayloadViaChannel(nodeId: String, payloadJson: String): Boolean {
         return runCatching {
             val channel = channelClient.openChannel(nodeId, SyncConstants.PATH_WORKOUT_CHANNEL).await()
@@ -94,7 +161,8 @@ class WearableDataLayerManager(private val context: Context) {
                 writer.write(payloadJson)
                 writer.flush()
             }
-            channelClient.close(channel).await()
+            // Closing outputStream sends EOF across the channel.
+            // Channel closure is handled by the receiver upon full read to prevent aborting in-flight data.
             updateLastSyncTimestamp()
             true
         }.getOrDefault(false)
@@ -121,6 +189,7 @@ class WearableDataLayerManager(private val context: Context) {
             true
         }.getOrDefault(false)
     }
+
     suspend fun flushPendingQueue(
         syncQueueDao: SyncQueueDao,
         targetCapability: String? = null
@@ -161,7 +230,7 @@ class WearableDataLayerManager(private val context: Context) {
                     }
                     delSuccess
                 } else {
-                    sendWorkoutPayloadViaChannel(targetNodeInfo.id, item.payloadJson)
+                    sendWorkoutPayload(targetNodeInfo.id, item.payloadJson)
                 }
 
                 if (success) {

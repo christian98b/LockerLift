@@ -3,6 +3,13 @@ package com.lockerlift.mobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -13,14 +20,13 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.lockerlift.mobile.tracking.MobileTrackingScreen
 import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
 import com.lockerlift.mobile.ui.settings.SettingsScreen
 import com.lockerlift.mobile.ui.templates.TemplateListScreen
-
-import androidx.annotation.StringRes
-import androidx.compose.ui.res.stringResource
+import com.lockerlift.mobile.ui.theme.LockerLiftTheme
 
 enum class MobileTab(@StringRes val labelRes: Int) {
     CATALOG(R.string.tab_catalog),
@@ -33,14 +39,16 @@ enum class MobileTab(@StringRes val labelRes: Int) {
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as LockerLiftMobileApp
 
         setContent {
-            MaterialTheme {
+            LockerLiftTheme {
                 var selectedTab by remember { mutableStateOf(MobileTab.CATALOG) }
 
                 Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
@@ -76,7 +84,12 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    Surface(modifier = Modifier.padding(innerPadding)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = innerPadding.calculateBottomPadding())
+                            .consumeWindowInsets(PaddingValues(bottom = innerPadding.calculateBottomPadding()))
+                    ) {
                         when (selectedTab) {
                             MobileTab.CATALOG -> CatalogScreen(app)
                             MobileTab.TEMPLATES -> TemplateListScreen(app)

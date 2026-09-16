@@ -224,6 +224,14 @@ object WearWorkoutLogic {
     ): Boolean {
         return findNextStationIndex(currentIndex, instances) != -1
     }
+
+    /**
+     * Returns true if the set input screen should offer "Finish Exercise" instead of "Cancel".
+     * Shown when logging an uncompleted set for a station that already has at least one logged set (setNumber > 1).
+     */
+    fun shouldShowFinishExerciseAction(isEditing: Boolean, setNumber: Int): Boolean {
+        return !isEditing && setNumber > 1
+    }
 }
 
 /**

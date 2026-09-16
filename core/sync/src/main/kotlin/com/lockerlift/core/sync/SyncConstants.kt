@@ -11,6 +11,10 @@ object SyncConstants {
     // MessageClient paths (RPC & Acknowledgment)
     const val PATH_WORKOUT_ACK = "/workout_ack"
     const val PATH_WORKOUT_DELETE = "/workout_delete"
+    const val PATH_WORKOUT_MESSAGE = "/workout_payload_message"
+    const val PATH_SYNC_REQUEST_FLUSH = "/sync/request_flush"
+    const val PATH_SYNC_FLUSH_COMPLETED = "/sync/flush_completed"
+    const val PATH_REQUEST_MASTER_DATA = "/sync/request_master_data"
     const val PATH_PING = "/sync_ping"
 
     // Sync queue action constants

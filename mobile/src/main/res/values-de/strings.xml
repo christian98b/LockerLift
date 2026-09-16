@@ -167,4 +167,12 @@
     <string name="settings_restore_error">Wiederherstellung fehlgeschlagen: %1$s</string>
     <string name="settings_no_backup_to_share">Keine Sicherungsdatei zum Teilen gefunden</string>
     <string name="settings_folder_selected_format">Ordner: %1$s</string>
+
+    <!-- Pull-to-Refresh Sync (US 5.4) -->
+    <string name="sync_pull_refresh_started">Synchronisiere mit Smartwatch…</string>
+    <string name="sync_success_single">1 neues Training synchronisiert</string>
+    <string name="sync_success_format">%1$d neue Trainings synchronisiert</string>
+    <string name="sync_up_to_date">Alles aktuell</string>
+    <string name="sync_watch_unreachable">Smartwatch nicht erreichbar</string>
+    <string name="sync_error_format">Synchronisation fehlgeschlagen: %1$s</string>
 </resources>

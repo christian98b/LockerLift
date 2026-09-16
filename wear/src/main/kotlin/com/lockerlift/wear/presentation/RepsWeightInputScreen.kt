@@ -243,11 +243,24 @@ fun RepsWeightInputScreen(
         }
 
         item {
-            CompactButton(
-                onClick = onCancel,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Text(stringResource(R.string.btn_cancel))
+            if (WearWorkoutLogic.shouldShowFinishExerciseAction(isEditing, setNumber)) {
+                Button(
+                    onClick = onCancel,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.9f).padding(top = 4.dp)
+                ) {
+                    Text(stringResource(R.string.btn_finish_exercise))
+                }
+            } else {
+                CompactButton(
+                    onClick = onCancel,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
             }
         }
     }
