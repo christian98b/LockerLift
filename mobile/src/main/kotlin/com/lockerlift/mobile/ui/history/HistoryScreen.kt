@@ -209,6 +209,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
             }
         }
     }
+}
 
     // --- DELETE CONFIRMATION DIALOG (AK 2.5, AK 2.8) ---
     sessionToDelete?.let { target ->
