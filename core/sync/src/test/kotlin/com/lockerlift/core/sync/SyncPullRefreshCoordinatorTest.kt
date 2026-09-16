@@ -9,7 +9,8 @@ class SyncPullRefreshCoordinatorTest {
 
     private class FakeSyncFlushRequester(
         var isConnected: Boolean = true,
-        var requestFlushResult: Boolean = true
+        var requestFlushResult: Boolean = true,
+        var onFlushRequested: (() -> Unit)? = null
     ) : SyncFlushRequester {
         var requestFlushCalledCount = 0
 
@@ -17,6 +18,7 @@ class SyncPullRefreshCoordinatorTest {
 
         override suspend fun requestWatchSyncFlush(): Boolean {
             requestFlushCalledCount++
+            onFlushRequested?.invoke()
             return requestFlushResult
         }
     }
@@ -49,11 +51,14 @@ class SyncPullRefreshCoordinatorTest {
 
     @Test
     fun executeSync_whenFlushSucceedsWithWorkouts_returnsSuccess() = runBlocking {
-        val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = true)
+        val fakeRequester = FakeSyncFlushRequester(
+            isConnected = true,
+            requestFlushResult = true,
+            onFlushRequested = {
+                SyncEventBus.notifyFlushCompleted(2)
+            }
+        )
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 2000L)
-
-        // Trigger flush completed event
-        SyncEventBus.notifyFlushCompleted(2)
 
         val result = coordinator.executeSync()
 
@@ -64,10 +69,14 @@ class SyncPullRefreshCoordinatorTest {
 
     @Test
     fun executeSync_whenFlushSucceedsWithZeroWorkouts_returnsUpToDate() = runBlocking {
-        val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = true)
+        val fakeRequester = FakeSyncFlushRequester(
+            isConnected = true,
+            requestFlushResult = true,
+            onFlushRequested = {
+                SyncEventBus.notifyFlushCompleted(0)
+            }
+        )
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 2000L)
-
-        SyncEventBus.notifyFlushCompleted(0)
 
         val result = coordinator.executeSync()
 
