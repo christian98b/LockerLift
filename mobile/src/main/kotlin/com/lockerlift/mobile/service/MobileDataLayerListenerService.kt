@@ -11,6 +11,7 @@ import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
+import com.lockerlift.core.sync.SyncEventBus
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.WearableDataLayerManager
 import kotlinx.coroutines.CoroutineScope

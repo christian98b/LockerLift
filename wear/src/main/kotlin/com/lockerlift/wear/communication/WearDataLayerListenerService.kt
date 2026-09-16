@@ -18,6 +18,7 @@ import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.SyncQueueWorker
+import com.lockerlift.core.sync.SyncResult
 import com.lockerlift.core.sync.WearableDataLayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
