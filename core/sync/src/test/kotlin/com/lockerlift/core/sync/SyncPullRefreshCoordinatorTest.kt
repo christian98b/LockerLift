@@ -1,12 +1,10 @@
 package com.lockerlift.core.sync
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncPullRefreshCoordinatorTest {
 
     private class FakeSyncFlushRequester(
@@ -24,7 +22,7 @@ class SyncPullRefreshCoordinatorTest {
     }
 
     @Test
-    fun executeSync_whenWatchDisconnected_returnsWatchUnreachable() = runTest {
+    fun executeSync_whenWatchDisconnected_returnsWatchUnreachable() = runBlocking {
         val fakeRequester = FakeSyncFlushRequester(isConnected = false)
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 1000L)
 
@@ -39,7 +37,7 @@ class SyncPullRefreshCoordinatorTest {
     }
 
     @Test
-    fun executeSync_whenRequestFlushFails_returnsWatchUnreachable() = runTest {
+    fun executeSync_whenRequestFlushFails_returnsWatchUnreachable() = runBlocking {
         val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = false)
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 1000L)
 
@@ -50,7 +48,7 @@ class SyncPullRefreshCoordinatorTest {
     }
 
     @Test
-    fun executeSync_whenFlushSucceedsWithWorkouts_returnsSuccess() = runTest {
+    fun executeSync_whenFlushSucceedsWithWorkouts_returnsSuccess() = runBlocking {
         val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = true)
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 2000L)
 
@@ -65,7 +63,7 @@ class SyncPullRefreshCoordinatorTest {
     }
 
     @Test
-    fun executeSync_whenFlushSucceedsWithZeroWorkouts_returnsUpToDate() = runTest {
+    fun executeSync_whenFlushSucceedsWithZeroWorkouts_returnsUpToDate() = runBlocking {
         val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = true)
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 2000L)
 
@@ -78,7 +76,7 @@ class SyncPullRefreshCoordinatorTest {
     }
 
     @Test
-    fun executeSync_whenTimeoutOccurs_returnsWatchUnreachable() = runTest {
+    fun executeSync_whenTimeoutOccurs_returnsWatchUnreachable() = runBlocking {
         val fakeRequester = FakeSyncFlushRequester(isConnected = true, requestFlushResult = true)
         // Set a very short timeout (50ms) to trigger timeout without waiting
         val coordinator = SyncPullRefreshCoordinator(fakeRequester, timeoutMillis = 50L)
