@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.asSharedFlow
  */
 object SyncEventBus {
 
-    private val _flushCompletedEvents = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    private val _flushCompletedEvents = MutableSharedFlow<Int>(replay = 1, extraBufferCapacity = 1)
     val flushCompletedEvents: SharedFlow<Int> = _flushCompletedEvents.asSharedFlow()
 
     fun notifyFlushCompleted(count: Int) {
         _flushCompletedEvents.tryEmit(count)
+    }
+
+    fun reset() {
+        _flushCompletedEvents.resetReplayCache()
     }
 }

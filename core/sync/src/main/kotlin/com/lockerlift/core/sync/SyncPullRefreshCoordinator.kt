@@ -1,7 +1,5 @@
 package com.lockerlift.core.sync
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -25,9 +23,9 @@ interface SyncFlushRequester {
  * Coordinates on-demand synchronization initiated via Pull-to-Refresh on the smartphone.
  *
  * Flow:
- * 1. Pushes master data (machine catalog and workout templates) if provided.
- * 2. Verifies smartwatch companion connectivity.
- * 3. Subscribes to the completion event bus before dispatching the request.
+ * 1. Resets the sync event bus replay cache.
+ * 2. Pushes master data (machine catalog and workout templates) if provided.
+ * 3. Verifies smartwatch companion connectivity.
  * 4. Sends wake-up queue-flush request to the watch via MessageClient.
  * 5. Awaits flush completion response with timeout.
  * 6. Returns structured result for user feedback.
@@ -41,6 +39,9 @@ class SyncPullRefreshCoordinator(
         syncMasterDataAction: (suspend () -> Unit)? = null
     ): PullRefreshSyncResult {
         return runCatching {
+            // Reset completion event cache before new sync attempt
+            SyncEventBus.reset()
+
             // Push master data first if provided (AK 5.4.4)
             syncMasterDataAction?.invoke()
 
@@ -49,30 +50,26 @@ class SyncPullRefreshCoordinator(
                 return PullRefreshSyncResult.WatchUnreachable
             }
 
-            // Subscribe BEFORE sending request to avoid missing immediate responses (AK 5.4.5, AK 5.4.10)
-            coroutineScope {
-                val eventAsync = async {
-                    SyncEventBus.flushCompletedEvents.first()
-                }
+            // Send wake-up flush request (AK 5.4.3)
+            val requestSent = requester.requestWatchSyncFlush()
+            if (!requestSent) {
+                return PullRefreshSyncResult.WatchUnreachable
+            }
 
-                val requestSent = requester.requestWatchSyncFlush()
-                if (!requestSent) {
-                    eventAsync.cancel()
-                    return@coroutineScope PullRefreshSyncResult.WatchUnreachable
-                }
+            // Await flush completion from watch with timeout (AK 5.4.5, AK 5.4.10)
+            val flushCount = withTimeoutOrNull(timeoutMillis) {
+                SyncEventBus.flushCompletedEvents.first()
+            }
 
-                val flushCount = withTimeoutOrNull(timeoutMillis) {
-                    eventAsync.await()
-                }
+            // Clear cache after reading
+            SyncEventBus.reset()
 
-                if (flushCount == null) {
-                    eventAsync.cancel()
-                    PullRefreshSyncResult.WatchUnreachable
-                } else if (flushCount > 0) {
-                    PullRefreshSyncResult.Success(flushCount)
-                } else {
-                    PullRefreshSyncResult.UpToDate
-                }
+            if (flushCount == null) {
+                PullRefreshSyncResult.WatchUnreachable
+            } else if (flushCount > 0) {
+                PullRefreshSyncResult.Success(flushCount)
+            } else {
+                PullRefreshSyncResult.UpToDate
             }
         }.getOrElse { e ->
             PullRefreshSyncResult.Error(e.message ?: "Unknown sync error")
