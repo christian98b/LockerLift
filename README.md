@@ -14,6 +14,7 @@
 [![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4.svg?style=for-the-badge&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 [![Health Connect](https://img.shields.io/badge/Health%20Connect-Integrated-00C853.svg?style=for-the-badge)](https://developer.android.com/health-and-fitness/guides/health-connect)
 [![Local-First](https://img.shields.io/badge/Database-Room%20%2F%20Offline--First-orange.svg?style=for-the-badge)](https://developer.android.com/training/data-storage/room)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/christian98b/LockerLift/build-and-test.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI%2FCD)](https://github.com/christian98b/LockerLift/actions)
 
 ---
@@ -24,7 +25,8 @@
 [🏗️ Architecture & Modules](#-system-architecture--module-structure) •
 [🔄 Sync Protocol](#-synchronization-protocol-wearable-data-layer) •
 [🧪 Testing & Quality](#-unit-testing--quality-mandate) •
-[🛠️ Setup & Build](#-getting-started--build)
+[🛠️ Setup & Build](#-getting-started--build) •
+[📄 License](#-license)
 
 ---
 
@@ -322,6 +324,28 @@ Comprehensive user documentation is available in the [`documentation/`](document
 
 # Build Wear OS Smartwatch APK
 ./gradlew :wear:assembleDebug
+```
+
+---
+
+## 📄 License
+
+LockerLift is open-source software licensed under the **[Apache License, Version 2.0](LICENSE)**.
+
+```
+Copyright 2026 Christian Bruns
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
 
 ---

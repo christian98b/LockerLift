@@ -85,6 +85,7 @@ flowchart TD
   - GitHub Issues #1–#23 (Epics 1–6 + US 7.1/7.2, UX & Sync enhancements #20, #21, #22, #23)
   - `ARCHITECTURE.md` (System design, ERD, Wearable Data Layer protocols, Health Connect)
   - `AGENTS.md` (Developer & agent guidelines with multi-agent orchestration, testing mandate & changelog)
+  - `LICENSE` (Apache License, Version 2.0 open-source license)
 - [x] **Internationalization (i18n)**
   - English (default) and German (`values-de/`) language support across `:mobile` and `:wear`.
   - All user-facing strings migrated to `res/values/strings.xml` and `res/values-de/strings.xml`.
