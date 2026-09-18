@@ -323,4 +323,35 @@ object WorkoutTrackingLogic {
      * Clamps reps to a valid non-zero training range [1, 999] (SEC-08).
      */
     fun clampReps(reps: Int): Int = reps.coerceIn(MIN_REPS, MAX_REPS)
+
+    /**
+     * Calculates weight stepper deltas based on the machine's [incrementKg].
+     * Returns a Pair of (minusDeltas, plusDeltas).
+     * Minus deltas are sorted ascending (e.g. [-5f, -2.5f, -1.25f]),
+     * and plus deltas are sorted ascending (e.g. [1.25f, 2.5f, 5f]).
+     */
+    fun calculateWeightSteppers(incrementKg: Float = 2.5f): Pair<List<Float>, List<Float>> {
+        val inc = if (incrementKg > 0f) incrementKg else 2.5f
+        val steps = when {
+            inc == 1.25f -> listOf(1.25f, 2.5f, 5.0f)
+            inc == 1.0f -> listOf(1.0f, 2.0f, 5.0f)
+            inc == 0.5f -> listOf(0.5f, 1.0f, 2.0f)
+            else -> listOf(inc * 0.5f, inc * 1.0f, inc * 2.0f)
+        }
+        val minusSteps = steps.map { -it }.sorted()
+        val plusSteps = steps.sorted()
+        return Pair(minusSteps, plusSteps)
+    }
+
+    /**
+     * Formats a delta weight value with explicit sign and clean precision (e.g. +5, -2.5, +1.25).
+     */
+    fun formatDelta(delta: Float): String {
+        val absFormatted = formatWeight(kotlin.math.abs(delta))
+        return when {
+            delta > 0f -> "+$absFormatted"
+            delta < 0f -> "-$absFormatted"
+            else -> absFormatted
+        }
+    }
 }

@@ -3,7 +3,9 @@ package com.lockerlift.mobile.tracking
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.work.OneTimeWorkRequestBuilder
@@ -706,7 +709,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 Text(stringResource(R.string.log_set_dialog_title, nextSetNumber, machineName))
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     // Double progression proposal banner
                     if (showProgressionSuggestion) {
                         Card(
@@ -747,23 +753,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        listOf(-5f, -2.5f, -1.25f, 1.25f, 2.5f, 5f).forEach { delta ->
-                            OutlinedButton(
-                                onClick = {
-                                    val newW = WorkoutTrackingLogic.clampWeight((weightInput.toFloatOrNull() ?: 0f) + delta)
-                                    weightInput = WorkoutTrackingLogic.formatWeight(newW)
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(if (delta > 0) "+$delta" else "$delta", fontSize = 11.sp)
-                            }
-                        }
-                    }
+                    WeightStepperControls(
+                        weightInput = weightInput,
+                        incrementKg = increment,
+                        onWeightChanged = { weightInput = it }
+                    )
 
                     // Reps Input & quick buttons
                     Text(text = stringResource(R.string.reps_label), fontWeight = FontWeight.Bold)
@@ -773,22 +767,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(-5, -1, 1, 5).forEach { delta ->
-                            OutlinedButton(
-                                onClick = {
-                                    val newR = WorkoutTrackingLogic.clampReps((repsInput.toIntOrNull() ?: 0) + delta)
-                                    repsInput = newR.toString()
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(if (delta > 0) "+$delta" else "$delta")
-                            }
-                        }
-                    }
+                    RepsStepperControls(
+                        repsInput = repsInput,
+                        onRepsChanged = { repsInput = it }
+                    )
                 }
             },
             confirmButton = {
@@ -834,6 +816,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val targetInstance = sessionInstances.find { it.id == editingInstanceId }
         val machine = machines.find { it.id == targetInstance?.machineId }
         val machineName = machine?.name ?: ""
+        val increment = machine?.defaultIncrementKg ?: 2.5f
 
         if (setToEdit != null) {
             var editWeightInput by remember(setToEdit) { mutableStateOf(WorkoutTrackingLogic.formatWeight(setToEdit.weightKg)) }
@@ -848,7 +831,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     Text(stringResource(R.string.edit_set_dialog_title, setToEdit.setNumber, machineName))
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         // Weight input & quick steppers
                         Text(text = stringResource(R.string.weight_label), fontWeight = FontWeight.Bold)
                         OutlinedTextField(
@@ -857,23 +843,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            listOf(-5f, -2.5f, -1.25f, 1.25f, 2.5f, 5f).forEach { delta ->
-                                OutlinedButton(
-                                    onClick = {
-                                        val newW = WorkoutTrackingLogic.clampWeight((editWeightInput.toFloatOrNull() ?: 0f) + delta)
-                                        editWeightInput = WorkoutTrackingLogic.formatWeight(newW)
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(if (delta > 0) "+$delta" else "$delta", fontSize = 11.sp)
-                                }
-                            }
-                        }
+                        WeightStepperControls(
+                            weightInput = editWeightInput,
+                            incrementKg = increment,
+                            onWeightChanged = { editWeightInput = it }
+                        )
 
                         // Reps input & quick steppers
                         Text(text = stringResource(R.string.reps_label), fontWeight = FontWeight.Bold)
@@ -883,22 +857,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(-5, -1, 1, 5).forEach { delta ->
-                                OutlinedButton(
-                                    onClick = {
-                                        val newR = WorkoutTrackingLogic.clampReps((editRepsInput.toIntOrNull() ?: 0) + delta)
-                                        editRepsInput = newR.toString()
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(if (delta > 0) "+$delta" else "$delta")
-                                }
-                            }
-                        }
+                        RepsStepperControls(
+                            repsInput = editRepsInput,
+                            onRepsChanged = { editRepsInput = it }
+                        )
 
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
@@ -1300,5 +1262,101 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun WeightStepperControls(
+    weightInput: String,
+    incrementKg: Float,
+    onWeightChanged: (String) -> Unit
+) {
+    val (minusSteps, plusSteps) = remember(incrementKg) {
+        WorkoutTrackingLogic.calculateWeightSteppers(incrementKg)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Minus row: e.g. -5, -2.5, -1.25
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            minusSteps.forEach { delta ->
+                OutlinedButton(
+                    onClick = {
+                        val current = weightInput.toFloatOrNull() ?: 0f
+                        val newW = WorkoutTrackingLogic.clampWeight(current + delta)
+                        onWeightChanged(WorkoutTrackingLogic.formatWeight(newW))
+                    },
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = WorkoutTrackingLogic.formatDelta(delta),
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+            }
+        }
+
+        // Plus row: e.g. +1.25, +2.5, +5
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            plusSteps.forEach { delta ->
+                OutlinedButton(
+                    onClick = {
+                        val current = weightInput.toFloatOrNull() ?: 0f
+                        val newW = WorkoutTrackingLogic.clampWeight(current + delta)
+                        onWeightChanged(WorkoutTrackingLogic.formatWeight(newW))
+                    },
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = WorkoutTrackingLogic.formatDelta(delta),
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepsStepperControls(
+    repsInput: String,
+    onRepsChanged: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf(-5, -1, 1, 5).forEach { delta ->
+            OutlinedButton(
+                onClick = {
+                    val current = repsInput.toIntOrNull() ?: 0
+                    val newR = WorkoutTrackingLogic.clampReps(current + delta)
+                    onRepsChanged(newR.toString())
+                },
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = if (delta > 0) "+$delta" else "$delta",
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip
+                )
+            }
+        }
     }
 }

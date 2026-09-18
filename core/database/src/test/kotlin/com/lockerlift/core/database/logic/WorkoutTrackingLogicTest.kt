@@ -216,4 +216,48 @@ class WorkoutTrackingLogicTest {
         val none = WorkoutTrackingLogic.findNextUnfinishedStationIndex(currentIndex = 0, instances = instances, loggedSets = allFinishedSets)
         assertNull(none)
     }
+
+    @Test
+    fun testCalculateWeightSteppers() {
+        // Default 2.5 kg increment
+        val (minus25, plus25) = WorkoutTrackingLogic.calculateWeightSteppers(2.5f)
+        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minus25)
+        assertEquals(listOf(1.25f, 2.5f, 5.0f), plus25)
+
+        // 1.25 kg increment (plate loaded / microplates)
+        val (minus125, plus125) = WorkoutTrackingLogic.calculateWeightSteppers(1.25f)
+        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minus125)
+        assertEquals(listOf(1.25f, 2.5f, 5.0f), plus125)
+
+        // 5.0 kg increment (heavy stacks)
+        val (minus5, plus5) = WorkoutTrackingLogic.calculateWeightSteppers(5.0f)
+        assertEquals(listOf(-10.0f, -5.0f, -2.5f), minus5)
+        assertEquals(listOf(2.5f, 5.0f, 10.0f), plus5)
+
+        // 1.0 kg increment (dumbbells)
+        val (minus1, plus1) = WorkoutTrackingLogic.calculateWeightSteppers(1.0f)
+        assertEquals(listOf(-5.0f, -2.0f, -1.0f), minus1)
+        assertEquals(listOf(1.0f, 2.0f, 5.0f), plus1)
+
+        // 0.5 kg increment
+        val (minus05, plus05) = WorkoutTrackingLogic.calculateWeightSteppers(0.5f)
+        assertEquals(listOf(-2.0f, -1.0f, -0.5f), minus05)
+        assertEquals(listOf(0.5f, 1.0f, 2.0f), plus05)
+
+        // Zero or negative fallback to 2.5 kg
+        val (minusFallback, plusFallback) = WorkoutTrackingLogic.calculateWeightSteppers(0f)
+        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minusFallback)
+        assertEquals(listOf(1.25f, 2.5f, 5.0f), plusFallback)
+    }
+
+    @Test
+    fun testFormatDelta() {
+        assertEquals("+5", WorkoutTrackingLogic.formatDelta(5.0f))
+        assertEquals("-5", WorkoutTrackingLogic.formatDelta(-5.0f))
+        assertEquals("+2.5", WorkoutTrackingLogic.formatDelta(2.5f))
+        assertEquals("-2.5", WorkoutTrackingLogic.formatDelta(-2.5f))
+        assertEquals("+1.25", WorkoutTrackingLogic.formatDelta(1.25f))
+        assertEquals("-1.25", WorkoutTrackingLogic.formatDelta(-1.25f))
+        assertEquals("0", WorkoutTrackingLogic.formatDelta(0.0f))
+    }
 }

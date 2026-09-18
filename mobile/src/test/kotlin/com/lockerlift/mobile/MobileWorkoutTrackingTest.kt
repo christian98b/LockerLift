@@ -270,4 +270,38 @@ class MobileWorkoutTrackingTest {
         val nextFromA2 = WorkoutTrackingLogic.findNextUnfinishedStationIndex(0, instances, loggedSets2)
         assertEquals(2, nextFromA2)
     }
+
+    @Test
+    fun testWeightStepperInteractionAndClamping() {
+        val increment = 2.5f
+        val (minusSteps, plusSteps) = WorkoutTrackingLogic.calculateWeightSteppers(increment)
+
+        var weight = 20.0f
+
+        // Apply +2.5
+        val plus25 = plusSteps.first { it == 2.5f }
+        weight = WorkoutTrackingLogic.clampWeight(weight + plus25)
+        assertEquals(22.5f, weight, 0.001f)
+
+        // Apply -5.0
+        val minus5 = minusSteps.first { it == -5.0f }
+        weight = WorkoutTrackingLogic.clampWeight(weight + minus5)
+        assertEquals(17.5f, weight, 0.001f)
+
+        // Apply negative stepping that goes below zero -> clamps to 0
+        weight = WorkoutTrackingLogic.clampWeight(weight - 50f)
+        assertEquals(0.0f, weight, 0.001f)
+
+        // Formatting of steps ensures no character wrapping issues
+        minusSteps.forEach { delta ->
+            val label = WorkoutTrackingLogic.formatDelta(delta)
+            assertTrue(label.startsWith("-"))
+            assertFalse(label.contains(" "))
+        }
+        plusSteps.forEach { delta ->
+            val label = WorkoutTrackingLogic.formatDelta(delta)
+            assertTrue(label.startsWith("+"))
+            assertFalse(label.contains(" "))
+        }
+    }
 }
