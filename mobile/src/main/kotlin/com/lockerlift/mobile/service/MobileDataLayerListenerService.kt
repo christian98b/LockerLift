@@ -4,21 +4,26 @@ import android.util.Log
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
 import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
+import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncEventBus
 import com.lockerlift.core.sync.SyncPayloadSerializer
+import com.lockerlift.core.sync.SyncQueueWorker
 import com.lockerlift.core.sync.WearableDataLayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
@@ -29,6 +34,16 @@ class MobileDataLayerListenerService : WearableListenerService() {
     private val database by lazy { LockerLiftDatabase.getInstance(this) }
     private val healthConnectManager by lazy { HealthConnectManager(this) }
     private val dataLayerManager by lazy { WearableDataLayerManager(this) }
+    private val activeIngestionMutex = Mutex()
+
+    override fun onPeerConnected(peer: Node) {
+        super.onPeerConnected(peer)
+        Log.i(TAG, "Wear companion reconnected (id=${peer.id}). Enqueueing sync flush.")
+        SyncQueueWorker.enqueue(this)
+        serviceScope.launch {
+            dataLayerManager.flushPendingQueue(database.syncQueueDao(), SyncConstants.CAPABILITY_WEAR)
+        }
+    }
 
     override fun onChannelOpened(channel: ChannelClient.Channel) {
         super.onChannelOpened(channel)
@@ -80,16 +95,23 @@ class MobileDataLayerListenerService : WearableListenerService() {
                         Log.w(TAG, "Rejected workout message from unauthorized watch node: ${messageEvent.sourceNodeId}")
                         return@launch
                     }
-                    processWorkoutPayload(payloadJson, messageEvent.sourceNodeId)
+                    runCatching {
+                        processWorkoutPayload(payloadJson, messageEvent.sourceNodeId)
+                    }.onFailure { e ->
+                        Log.e(TAG, "Failed to process workout message payload", e)
+                    }
                 }
             }
             SyncConstants.PATH_SYNC_FLUSH_COMPLETED -> {
                 val countString = String(messageEvent.data, StandardCharsets.UTF_8)
                 val count = countString.toIntOrNull() ?: 0
                 serviceScope.launch {
-                    SyncEventBus.notifyFlushCompleted(count)
-                    dataLayerManager.updateLastSyncTimestamp()
-                    Log.i(TAG, "Received sync flush completion notice from watch: $count workouts transferred.")
+                    // Ensure active payload ingestion finishes writing to Room before notifying completion
+                    activeIngestionMutex.withLock {
+                        SyncEventBus.notifyFlushCompleted(count)
+                        dataLayerManager.updateLastSyncTimestamp()
+                        Log.i(TAG, "Received sync flush completion notice from watch: $count workouts transferred.")
+                    }
                 }
             }
         }
@@ -116,37 +138,70 @@ class MobileDataLayerListenerService : WearableListenerService() {
     }
 
     private suspend fun processWorkoutPayload(payloadJson: String, sourceNodeId: String) {
-        val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
-        val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
-        val sessionDao = database.workoutSessionDao()
-        val machineDao = database.machineDao()
+        activeIngestionMutex.withLock {
+            val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
+            val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
+            val sessionDao = database.workoutSessionDao()
+            val machineDao = database.machineDao()
 
-        val instanceEntities = payload.machineInstances.map { it.instance.toEntity() }
-        val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
-        val machineEntities = payload.machineInstances.map { it.machine.toEntity() }
+            // Zombie Prevention: If this session was deleted on this device and is pending deletion sync,
+            // do not resurrect it. Re-dispatch delete to the watch instead.
+            val pendingDelete = database.syncQueueDao().getQueueItemBySessionId(session.id)
+            if (pendingDelete != null && pendingDelete.payloadJson == SyncConstants.ACTION_DELETE) {
+                Log.i(TAG, "Rejecting incoming session ${session.id} because it was deleted locally. Dispatching delete ACK to watch.")
+                dataLayerManager.sendWorkoutDelete(sourceNodeId, session.id)
+                return@withLock
+            }
 
-        // Persist machines first in case ad-hoc machines were created on the watch
-        machineDao.insertMachines(machineEntities)
+            // Safe Machine Reconciliation: If a machine with the same name exists locally with a different ID,
+            // remap the session machine instance to the existing local machine ID to prevent unique name constraint
+            // collisions and SQLite FOREIGN KEY RESTRICT violations.
+            val machinesToInsert = mutableListOf<MachineEntity>()
+            val machineIdMapping = mutableMapOf<String, String>()
 
-        // Upsert session, instances and sets idempotently
-        sessionDao.upsertFullSession(
-            session = session.toEntity(),
-            instances = instanceEntities,
-            sets = setEntities
-        )
+            for (instPayload in payload.machineInstances) {
+                val incomingMachine = instPayload.machine
+                val existingMachine = machineDao.getMachineByName(incomingMachine.name)
+                if (existingMachine != null) {
+                    machineIdMapping[incomingMachine.id] = existingMachine.id
+                } else {
+                    machineIdMapping[incomingMachine.id] = incomingMachine.id
+                    if (machinesToInsert.none { it.id == incomingMachine.id }) {
+                        machinesToInsert.add(incomingMachine.toEntity())
+                    }
+                }
+            }
 
-        // Export to Health Connect
-        if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-            healthConnectManager.exportWorkoutSession(
-                session = session,
-                templateName = payload.templateName
+            if (machinesToInsert.isNotEmpty()) {
+                machineDao.insertMachines(machinesToInsert)
+            }
+
+            val instanceEntities = payload.machineInstances.map { instPayload ->
+                val resolvedMachineId = machineIdMapping[instPayload.machine.id] ?: instPayload.instance.machineId
+                instPayload.instance.copy(machineId = resolvedMachineId).toEntity()
+            }
+            val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
+
+            // Upsert session, instances and sets idempotently
+            sessionDao.upsertFullSession(
+                session = session.toEntity(),
+                instances = instanceEntities,
+                sets = setEntities
             )
-        }
 
-        // Send Acknowledgment back to sender node
-        dataLayerManager.sendAcknowledgment(sourceNodeId, session.id)
-        dataLayerManager.updateLastSyncTimestamp()
-        Log.i(TAG, "Workout session ${session.id} successfully processed and synchronized.")
+            // Export to Health Connect
+            if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
+                healthConnectManager.exportWorkoutSession(
+                    session = session,
+                    templateName = payload.templateName
+                )
+            }
+
+            // Send Acknowledgment back to sender node
+            dataLayerManager.sendAcknowledgment(sourceNodeId, session.id)
+            dataLayerManager.updateLastSyncTimestamp()
+            Log.i(TAG, "Workout session ${session.id} successfully processed and synchronized.")
+        }
     }
 
     private suspend fun receiveWorkoutFromChannel(channel: ChannelClient.Channel) {

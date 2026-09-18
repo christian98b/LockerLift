@@ -236,14 +236,8 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                                     payloadJson = SyncConstants.ACTION_DELETE
                                 )
                             )
-                            val syncRequest = OneTimeWorkRequestBuilder<SyncQueueWorker>().build()
-                            WorkManager.getInstance(context).enqueue(syncRequest)
-
-                            // Attempt immediate direct delete transmission if node connected
-                            val connectedNodes = dataLayerManager.getConnectedNodes()
-                            if (connectedNodes.isNotEmpty()) {
-                                dataLayerManager.sendWorkoutDelete(connectedNodes.first().id, sessionId)
-                            }
+                            SyncQueueWorker.enqueue(context)
+                            dataLayerManager.flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
 
                             // 4. Delete Health Connect record if previously exported (AK 2.8)
                             if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
@@ -291,14 +285,8 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                             payloadJson = payloadJson
                         )
                     )
-                    val syncRequest = OneTimeWorkRequestBuilder<SyncQueueWorker>().build()
-                    WorkManager.getInstance(context).enqueue(syncRequest)
-
-                    // Immediate stream attempt if connected
-                    val connectedNodes = dataLayerManager.getConnectedNodes()
-                    if (connectedNodes.isNotEmpty()) {
-                        dataLayerManager.sendWorkoutPayloadViaChannel(connectedNodes.first().id, payloadJson)
-                    }
+                    SyncQueueWorker.enqueue(context)
+                    dataLayerManager.flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
 
                     // 3. Update Health Connect if available
                     if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {

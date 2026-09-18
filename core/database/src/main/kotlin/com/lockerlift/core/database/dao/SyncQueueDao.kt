@@ -39,6 +39,12 @@ interface SyncQueueDao {
     @Query("UPDATE sync_queue SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: String, status: QueueStatus)
 
+    @Query("UPDATE sync_queue SET status = 'PENDING' WHERE status = 'IN_TRANSIT' AND (last_attempt_at IS NULL OR last_attempt_at < :staleThresholdMillis)")
+    suspend fun resetStaleInTransitItems(staleThresholdMillis: Long)
+
+    @Query("SELECT * FROM sync_queue WHERE session_id = :sessionId LIMIT 1")
+    suspend fun getQueueItemBySessionId(sessionId: String): SyncQueueEntity?
+
     @Query("DELETE FROM sync_queue WHERE id = :id")
     suspend fun deleteQueueItemById(id: String)
 

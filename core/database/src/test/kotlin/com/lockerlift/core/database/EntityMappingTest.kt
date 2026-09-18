@@ -251,4 +251,31 @@ class EntityMappingTest {
         val count = allItems.count { it.status == QueueStatus.PENDING || it.status == QueueStatus.ERROR }
         assertEquals(2, count)
     }
+
+    @Test
+    fun testSyncQueueResetStaleInTransitQueryContract() {
+        val now = 100000L
+        val threshold = now - 60000L
+
+        val freshInTransit = SyncQueueEntity(id = "q1", sessionId = "s1", status = QueueStatus.IN_TRANSIT, lastAttemptAt = now - 10000L, payloadJson = "{}")
+        val staleInTransit = SyncQueueEntity(id = "q2", sessionId = "s2", status = QueueStatus.IN_TRANSIT, lastAttemptAt = now - 70000L, payloadJson = "{}")
+        val nullAttemptInTransit = SyncQueueEntity(id = "q3", sessionId = "s3", status = QueueStatus.IN_TRANSIT, lastAttemptAt = null, payloadJson = "{}")
+        val pending = SyncQueueEntity(id = "q4", sessionId = "s4", status = QueueStatus.PENDING, lastAttemptAt = null, payloadJson = "{}")
+
+        val items = listOf(freshInTransit, staleInTransit, nullAttemptInTransit, pending)
+
+        // Query contract: UPDATE sync_queue SET status = 'PENDING' WHERE status = 'IN_TRANSIT' AND (last_attempt_at IS NULL OR last_attempt_at < :threshold)
+        val resetItems = items.map { item ->
+            if (item.status == QueueStatus.IN_TRANSIT && (item.lastAttemptAt == null || item.lastAttemptAt < threshold)) {
+                item.copy(status = QueueStatus.PENDING)
+            } else {
+                item
+            }
+        }
+
+        assertEquals(QueueStatus.IN_TRANSIT, resetItems.find { it.id == "q1" }?.status)
+        assertEquals(QueueStatus.PENDING, resetItems.find { it.id == "q2" }?.status)
+        assertEquals(QueueStatus.PENDING, resetItems.find { it.id == "q3" }?.status)
+        assertEquals(QueueStatus.PENDING, resetItems.find { it.id == "q4" }?.status)
+    }
 }

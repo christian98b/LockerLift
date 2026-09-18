@@ -8,6 +8,8 @@ import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.lockerlift.core.database.dao.SyncQueueDao
 import com.lockerlift.core.model.QueueStatus
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
@@ -134,13 +136,14 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
     }
 
     suspend fun sendWorkoutPayload(nodeId: String, payloadJson: String): Boolean {
-        // Fast atomic message transfer for payloads within MessageClient capacity
-        if (payloadJson.length < 60_000) {
+        val payloadBytes = payloadJson.toByteArray(StandardCharsets.UTF_8)
+        // Fast atomic message transfer for payloads within MessageClient capacity (under 60 KB)
+        if (payloadBytes.size < 60_000) {
             val messageSent = runCatching {
                 messageClient.sendMessage(
                     nodeId,
                     SyncConstants.PATH_WORKOUT_MESSAGE,
-                    payloadJson.toByteArray(StandardCharsets.UTF_8)
+                    payloadBytes
                 ).await()
                 updateLastSyncTimestamp()
                 true
@@ -194,61 +197,73 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
         syncQueueDao: SyncQueueDao,
         targetCapability: String? = null
     ): SyncResult {
-        return runCatching {
-            val connectedNodes = getConnectedNodes()
-            if (connectedNodes.isEmpty()) {
-                return SyncResult.NoCompanionFound()
-            }
+        return globalFlushMutex.withLock {
+            runCatching {
+                // Recover any stale in-transit items that timed out (e.g. lost ACK after 60s)
+                syncQueueDao.resetStaleInTransitItems(System.currentTimeMillis() - 60_000L)
 
-            val capNodeIds = if (targetCapability != null) {
-                runCatching {
-                    val capInfo = Wearable.getCapabilityClient(context)
-                        .getCapability(targetCapability, CapabilityClient.FILTER_ALL)
-                        .await()
-                    capInfo.nodes.map { it.id }.toSet()
-                }.getOrDefault(emptySet())
-            } else {
-                emptySet()
-            }
+                val connectedNodes = getConnectedNodes()
+                if (connectedNodes.isEmpty()) {
+                    return@runCatching SyncResult.NoCompanionFound()
+                }
 
-            val nodeInfos = connectedNodes.map { CompanionNodeInfo(it.id, it.displayName, it.isNearby) }
-            val targetNodeInfo = CompanionStatusResolver.findTargetNode(nodeInfos, capNodeIds)
-                ?: return SyncResult.NoCompanionFound()
+                val capNodeIds = if (targetCapability != null) {
+                    runCatching {
+                        val capInfo = Wearable.getCapabilityClient(context)
+                            .getCapability(targetCapability, CapabilityClient.FILTER_ALL)
+                            .await()
+                        capInfo.nodes.map { it.id }.toSet()
+                    }.getOrDefault(emptySet())
+                } else {
+                    emptySet()
+                }
 
-            val pendingItems = syncQueueDao.getPendingQueueItems()
-            if (pendingItems.isEmpty()) {
-                return SyncResult.Success(0)
-            }
+                val nodeInfos = connectedNodes.map { CompanionNodeInfo(it.id, it.displayName, it.isNearby) }
+                val targetNodeInfo = CompanionStatusResolver.findTargetNode(nodeInfos, capNodeIds)
+                    ?: return@runCatching SyncResult.NoCompanionFound()
 
-            var syncedCount = 0
-            for (item in pendingItems) {
-                syncQueueDao.updateAttemptStatus(item.id, QueueStatus.IN_TRANSIT, System.currentTimeMillis())
-                val success = if (item.payloadJson == SyncConstants.ACTION_DELETE) {
-                    val delSuccess = sendWorkoutDelete(targetNodeInfo.id, item.sessionId)
-                    if (delSuccess) {
-                        syncQueueDao.deleteQueueItemById(item.id)
+                val pendingItems = syncQueueDao.getPendingQueueItems()
+                if (pendingItems.isEmpty()) {
+                    return@runCatching SyncResult.Success(0)
+                }
+
+                var syncedCount = 0
+                var failedCount = 0
+                for (item in pendingItems) {
+                    syncQueueDao.updateAttemptStatus(item.id, QueueStatus.IN_TRANSIT, System.currentTimeMillis())
+                    val success = if (item.payloadJson == SyncConstants.ACTION_DELETE) {
+                        val delSuccess = sendWorkoutDelete(targetNodeInfo.id, item.sessionId)
+                        if (delSuccess) {
+                            syncQueueDao.deleteQueueItemById(item.id)
+                        }
+                        delSuccess
+                    } else {
+                        sendWorkoutPayload(targetNodeInfo.id, item.payloadJson)
                     }
-                    delSuccess
-                } else {
-                    sendWorkoutPayload(targetNodeInfo.id, item.payloadJson)
+
+                    if (success) {
+                        syncedCount++
+                    } else {
+                        failedCount++
+                        syncQueueDao.updateAttemptStatus(item.id, QueueStatus.ERROR, System.currentTimeMillis())
+                    }
                 }
 
-                if (success) {
-                    syncedCount++
+                updateLastSyncTimestamp()
+                if (failedCount > 0 && syncedCount == 0) {
+                    SyncResult.Error("Failed to transfer $failedCount pending item(s)")
                 } else {
-                    syncQueueDao.updateAttemptStatus(item.id, QueueStatus.ERROR, System.currentTimeMillis())
+                    SyncResult.Success(syncedCount)
                 }
+            }.getOrElse { e ->
+                SyncResult.Error(e.message ?: "Unknown sync error")
             }
-
-            updateLastSyncTimestamp()
-            SyncResult.Success(syncedCount)
-        }.getOrElse { e ->
-            SyncResult.Error(e.message ?: "Unknown sync error")
         }
     }
 
     companion object {
         const val PREFS_SYNC = "lockerlift_sync_prefs"
         const val KEY_LAST_SYNC_TIMESTAMP = "last_sync_timestamp"
+        private val globalFlushMutex = Mutex()
     }
 }

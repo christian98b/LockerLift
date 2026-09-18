@@ -26,8 +26,10 @@ import com.lockerlift.core.database.logic.WorkoutTrackingLogic
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.SessionMachineInstancePayload
+import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.SyncQueueWorker
+import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
@@ -1252,9 +1254,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 )
                             )
 
-                            // Trigger WorkManager sync
-                            val syncRequest = OneTimeWorkRequestBuilder<SyncQueueWorker>().build()
-                            WorkManager.getInstance(app).enqueue(syncRequest)
+                            // Trigger WorkManager sync (Store-and-Forward)
+                            SyncQueueWorker.enqueue(app)
+                            runCatching {
+                                WearableDataLayerManager(app).flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
+                            }
 
                             // Reset state
                             isWorkoutActive = false
