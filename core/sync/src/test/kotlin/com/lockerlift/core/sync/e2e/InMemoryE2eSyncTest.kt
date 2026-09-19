@@ -8,7 +8,6 @@ import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
 import com.lockerlift.core.database.entity.SyncQueueEntity
 import com.lockerlift.core.database.entity.WorkoutSessionEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
-import com.lockerlift.core.database.entity.WorkoutTemplateEntity
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.QueueStatus
@@ -34,6 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.UUID
 
 /**
  * In-Memory End-to-End Synchronization Test Suite.
@@ -98,16 +98,15 @@ class InMemoryE2eSyncTest {
             templateId = null,
             startTime = 10000L,
             endTime = 13600L,
-            rating = 5,
             notes = "Starkes Rückentraining auf der Watch",
-            syncStatus = SyncStatus.PENDING
+            syncStatus = SyncStatus.PENDING_SYNC
         )
 
         val instanceEntity = SessionMachineInstanceEntity(
             id = "inst-watch-1",
             sessionId = sessionId,
             machineId = machine.id,
-            orderInSession = 0
+            executionOrder = 0
         )
 
         val sets = listOf(
@@ -155,12 +154,13 @@ class InMemoryE2eSyncTest {
             templateName = null
         )
         val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
-        watchDb.syncQueueDao().enqueue(
+        watchDb.syncQueueDao().insertQueueItem(
             SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
                 sessionId = sessionId,
                 payloadJson = payloadJson,
                 status = QueueStatus.PENDING,
-                attemptCount = 0,
+                retryCount = 0,
                 createdAt = 13601L
             )
         )
@@ -173,9 +173,9 @@ class InMemoryE2eSyncTest {
         val phoneSessionWithDetails = phoneDb.workoutSessionDao().getSessionWithDetailsById(sessionId)
         assertNotNull("Phone should have ingested the session", phoneSessionWithDetails)
         assertEquals(SyncStatus.SYNCED, phoneSessionWithDetails!!.session.syncStatus)
-        assertEquals(1, phoneSessionWithDetails.instances.size)
+        assertEquals(1, phoneSessionWithDetails.machineInstances.size)
 
-        val phoneInstance = phoneSessionWithDetails.instances.first()
+        val phoneInstance = phoneSessionWithDetails.machineInstances.first()
         assertEquals("Latzug Kabel", phoneInstance.machine.name)
         assertEquals(3, phoneInstance.sets.size)
         assertEquals(50.0f, phoneInstance.sets[0].weightKg, 0.001f)
@@ -203,9 +203,9 @@ class InMemoryE2eSyncTest {
         phoneDb.machineDao().insertMachines(listOf(m1, m2))
 
         val sessionId = "session-phone-002"
-        val session = WorkoutSessionEntity(id = sessionId, startTime = 20000L, endTime = 23000L, rating = 4, syncStatus = SyncStatus.PENDING)
-        val inst1 = SessionMachineInstanceEntity(id = "inst-p1", sessionId = sessionId, machineId = m1.id, orderInSession = 0)
-        val inst2 = SessionMachineInstanceEntity(id = "inst-p2", sessionId = sessionId, machineId = m2.id, orderInSession = 1)
+        val session = WorkoutSessionEntity(id = sessionId, startTime = 20000L, endTime = 23000L, syncStatus = SyncStatus.PENDING_SYNC)
+        val inst1 = SessionMachineInstanceEntity(id = "inst-p1", sessionId = sessionId, machineId = m1.id, executionOrder = 0)
+        val inst2 = SessionMachineInstanceEntity(id = "inst-p2", sessionId = sessionId, machineId = m2.id, executionOrder = 1)
         val setsM1 = listOf(
             WorkoutSetEntity(id = "s-p1", sessionMachineId = inst1.id, setNumber = 1, weightKg = 80.0f, reps = 8, setType = SetType.NORMAL),
             WorkoutSetEntity(id = "s-p2", sessionMachineId = inst1.id, setNumber = 2, weightKg = 80.0f, reps = 7, setType = SetType.NORMAL)
@@ -225,7 +225,16 @@ class InMemoryE2eSyncTest {
             templateName = "Brust Hypertrophie"
         )
         val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
-        phoneDb.syncQueueDao().enqueue(SyncQueueEntity(sessionId = sessionId, payloadJson = payloadJson, status = QueueStatus.PENDING, createdAt = 23001L))
+        phoneDb.syncQueueDao().insertQueueItem(
+            SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                payloadJson = payloadJson,
+                status = QueueStatus.PENDING,
+                retryCount = 0,
+                createdAt = 23001L
+            )
+        )
 
         // 2. Act: Watch ingests payload
         val result = SyncIngestionEngine.ingestWorkoutPayload(watchDb, payloadJson, isMobile = false)
@@ -235,7 +244,7 @@ class InMemoryE2eSyncTest {
         val watchSessionWithDetails = watchDb.workoutSessionDao().getSessionWithDetailsById(sessionId)
         assertNotNull(watchSessionWithDetails)
         assertEquals(SyncStatus.SYNCED, watchSessionWithDetails!!.session.syncStatus)
-        assertEquals(2, watchSessionWithDetails.instances.size)
+        assertEquals(2, watchSessionWithDetails.machineInstances.size)
 
         // 4. Act (ACK loopback): Watch ACKs to phone
         SyncIngestionEngine.handleWorkoutAck(phoneDb, sessionId)
@@ -306,7 +315,7 @@ class InMemoryE2eSyncTest {
             id = "inst-reconcile",
             sessionId = session.id,
             machineId = watchMachine.id,
-            orderInSession = 0
+            executionOrder = 0
         )
         val sets = listOf(
             com.lockerlift.core.model.WorkoutSet(
@@ -339,8 +348,8 @@ class InMemoryE2eSyncTest {
         // Instance must be remapped to "phone-bp"
         val sessionWithDetails = phoneDb.workoutSessionDao().getSessionWithDetailsById(session.id)
         assertNotNull(sessionWithDetails)
-        assertEquals("phone-bp", sessionWithDetails!!.instances.first().instance.machineId)
-        assertEquals("phone-bp", sessionWithDetails.instances.first().machine.id)
+        assertEquals("phone-bp", sessionWithDetails!!.machineInstances.first().instance.machineId)
+        assertEquals("phone-bp", sessionWithDetails.machineInstances.first().machine.id)
     }
 
     @Test
@@ -349,8 +358,8 @@ class InMemoryE2eSyncTest {
         val machine = MachineEntity(id = "m-dp", name = "Schulterdrücken", targetMuscleGroup = "Schultern", updatedAt = 1L)
         watchDb.machineDao().insertMachine(machine)
 
-        val session = WorkoutSessionEntity(id = "s-dp", startTime = 100L, endTime = 500L, syncStatus = SyncStatus.PENDING)
-        val instance = SessionMachineInstanceEntity(id = "i-dp", sessionId = session.id, machineId = machine.id, orderInSession = 0)
+        val session = WorkoutSessionEntity(id = "s-dp", startTime = 100L, endTime = 500L, syncStatus = SyncStatus.PENDING_SYNC)
+        val instance = SessionMachineInstanceEntity(id = "i-dp", sessionId = session.id, machineId = machine.id, executionOrder = 0)
         val sets = listOf(
             WorkoutSetEntity(id = "s1", sessionMachineId = instance.id, setNumber = 1, weightKg = 40.0f, reps = 12, completedAt = 200L),
             WorkoutSetEntity(id = "s2", sessionMachineId = instance.id, setNumber = 2, weightKg = 40.0f, reps = 12, completedAt = 300L)
@@ -385,12 +394,13 @@ class InMemoryE2eSyncTest {
     fun testZombieWorkoutRejection_onMobileDoesNotResurrectDeletedSession() = runBlocking {
         // 1. Arrange: Session deleted on mobile, recorded in queue as ACTION_DELETE
         val deletedSessionId = "session-deleted-locally"
-        phoneDb.syncQueueDao().enqueue(
+        phoneDb.syncQueueDao().insertQueueItem(
             SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
                 sessionId = deletedSessionId,
                 payloadJson = SyncConstants.ACTION_DELETE,
                 status = QueueStatus.PENDING,
-                attemptCount = 0,
+                retryCount = 0,
                 createdAt = 1000L
             )
         )
@@ -400,7 +410,7 @@ class InMemoryE2eSyncTest {
             session = WorkoutSession(id = deletedSessionId, startTime = 100L, endTime = 200L),
             machineInstances = listOf(
                 SessionMachineInstancePayload(
-                    instance = com.lockerlift.core.model.SessionMachineInstance(id = "i-z", sessionId = deletedSessionId, machineId = machine.id, orderInSession = 0),
+                    instance = com.lockerlift.core.model.SessionMachineInstance(id = "i-z", sessionId = deletedSessionId, machineId = machine.id, executionOrder = 0),
                     machine = machine,
                     sets = emptyList()
                 )
@@ -426,7 +436,15 @@ class InMemoryE2eSyncTest {
         val sessionId = "session-to-delete"
         val session = WorkoutSessionEntity(id = sessionId, startTime = 100L, endTime = 200L, syncStatus = SyncStatus.SYNCED)
         watchDb.workoutSessionDao().insertSession(session)
-        watchDb.syncQueueDao().enqueue(SyncQueueEntity(sessionId = sessionId, payloadJson = "{}", status = QueueStatus.IN_TRANSIT, createdAt = 1L))
+        watchDb.syncQueueDao().insertQueueItem(
+            SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                payloadJson = "{}",
+                status = QueueStatus.IN_TRANSIT,
+                createdAt = 1L
+            )
+        )
 
         // 2. Act: Delete instruction arrives on Watch
         SyncIngestionEngine.handleWorkoutDelete(watchDb, sessionId)
