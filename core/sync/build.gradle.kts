@@ -20,6 +20,9 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -35,4 +38,19 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+}
+
+tasks.withType<Test>().configureEach {
+    val runE2e = (project.hasProperty("runE2eSync") && project.property("runE2eSync") == "true") ||
+                 System.getProperty("runE2eSync") == "true" ||
+                 System.getenv("RUN_E2E_SYNC") == "true"
+
+    if (runE2e) {
+        systemProperty("runE2eSync", "true")
+    } else {
+        exclude("**/e2e/**")
+        exclude("**/*E2eSyncTest*")
+    }
 }

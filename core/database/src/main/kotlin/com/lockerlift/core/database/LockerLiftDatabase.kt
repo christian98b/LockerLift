@@ -53,6 +53,15 @@ abstract class LockerLiftDatabase : RoomDatabase() {
             }
         }
 
+        fun createInMemory(context: Context): LockerLiftDatabase {
+            return Room.inMemoryDatabaseBuilder(
+                context.applicationContext,
+                LockerLiftDatabase::class.java
+            )
+                .allowMainThreadQueries()
+                .build()
+        }
+
         private fun buildDatabase(context: Context): LockerLiftDatabase {
             val appContext = context.applicationContext
             // The sqlcipher-android library requires the native library to be loaded

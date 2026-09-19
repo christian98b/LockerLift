@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_e2e_sync:
+        description: "In-Memory E2E Synchronisations-Testsuite explizit ausführen"
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   # 1. Test Stage: Execute unit tests across all modules
@@ -42,7 +48,18 @@ jobs:
           cache-read-only: false
 
       - name: Run Unit Tests
-        run: gradle test --no-daemon --stacktrace
+        run: |
+          if [ "${{ github.event.inputs.run_e2e_sync }}" = "true" ]; then
+            echo "=========================================================="
+            echo "==> EXPLICIT TRIGGER: In-Memory E2E Sync Suite ACTIVE <== "
+            echo "=========================================================="
+            gradle test -PrunE2eSync=true --no-daemon --stacktrace
+          else
+            echo "=========================================================="
+            echo "==> STANDARD RUN: In-Memory E2E Sync Suite SKIPPED <======"
+            echo "=========================================================="
+            gradle test --no-daemon --stacktrace
+          fi
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4

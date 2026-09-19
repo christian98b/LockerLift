@@ -16,6 +16,7 @@ import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
+import com.lockerlift.core.sync.SyncIngestionEngine
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.SyncQueueWorker
 import com.lockerlift.core.sync.SyncResult
@@ -65,49 +66,17 @@ class WearDataLayerListenerService : WearableListenerService() {
     }
 
     private suspend fun processWorkoutPayload(payloadJson: String, sourceNodeId: String) {
-        val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
-        val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
-
-        val sessionDao = database.workoutSessionDao()
-        val machineDao = database.machineDao()
-
-        // Safe Machine Reconciliation: Avoid unique name collision and foreign key violations
-        val machinesToInsert = mutableListOf<MachineEntity>()
-        val machineIdMapping = mutableMapOf<String, String>()
-
-        for (instPayload in payload.machineInstances) {
-            val incomingMachine = instPayload.machine
-            val existingMachine = machineDao.getMachineByName(incomingMachine.name)
-            if (existingMachine != null) {
-                machineIdMapping[incomingMachine.id] = existingMachine.id
-            } else {
-                machineIdMapping[incomingMachine.id] = incomingMachine.id
-                if (machinesToInsert.none { it.id == incomingMachine.id }) {
-                    machinesToInsert.add(incomingMachine.toEntity())
-                }
+        when (val result = SyncIngestionEngine.ingestWorkoutPayload(database, payloadJson, isMobile = false)) {
+            is SyncIngestionEngine.IngestionResult.Success -> {
+                // Send Acknowledgment back to phone
+                dataLayerManager.sendAcknowledgment(sourceNodeId, result.sessionId)
+                dataLayerManager.updateLastSyncTimestamp()
+                Log.i(TAG, "Workout session ${result.sessionId} synchronized from phone to watch.")
+            }
+            is SyncIngestionEngine.IngestionResult.RejectedZombie -> {
+                // Not applicable on watch
             }
         }
-
-        if (machinesToInsert.isNotEmpty()) {
-            machineDao.insertMachines(machinesToInsert)
-        }
-
-        val instanceEntities = payload.machineInstances.map { instPayload ->
-            val resolvedMachineId = machineIdMapping[instPayload.machine.id] ?: instPayload.instance.machineId
-            instPayload.instance.copy(machineId = resolvedMachineId).toEntity()
-        }
-        val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
-
-        sessionDao.upsertFullSession(
-            session = session.toEntity(),
-            instances = instanceEntities,
-            sets = setEntities
-        )
-
-        // Send Acknowledgment back to phone
-        dataLayerManager.sendAcknowledgment(sourceNodeId, session.id)
-        dataLayerManager.updateLastSyncTimestamp()
-        Log.i(TAG, "Workout session ${session.id} synchronized from phone to watch.")
     }
 
     private suspend fun receiveWorkoutFromChannel(channel: ChannelClient.Channel) {
@@ -168,10 +137,9 @@ class WearDataLayerListenerService : WearableListenerService() {
                 // 1. Process catalog updates first so machines exist before template cross-references
                 for (catalogPayload in catalogEvents) {
                     runCatching {
-                        val machines = SyncPayloadSerializer.decodeMachines(catalogPayload)
-                        database.machineDao().insertMachines(machines.map { it.toEntity() })
+                        val count = SyncIngestionEngine.ingestEquipmentCatalog(database, catalogPayload)
                         dataLayerManager.updateLastSyncTimestamp()
-                        Log.i(TAG, "Synchronized ${machines.size} machines from phone.")
+                        Log.i(TAG, "Synchronized $count machines from phone.")
                     }.onFailure { e ->
                         Log.e(TAG, "Failed to sync equipment catalog", e)
                     }
@@ -180,26 +148,9 @@ class WearDataLayerListenerService : WearableListenerService() {
                 // 2. Process templates sequentially after catalog updates have completed
                 for (templatePayload in templateEvents) {
                     runCatching {
-                        val payloads = SyncPayloadSerializer.decodeTemplates(templatePayload)
-                        val incomingIds = payloads.map { it.template.id }.toSet()
-
-                        // Archive local templates that are no longer active on the phone
-                        val localActiveTemplates = database.workoutTemplateDao().getAllActiveTemplatesWithMachinesFlow().first()
-                        for (local in localActiveTemplates) {
-                            if (local.template.id !in incomingIds) {
-                                database.workoutTemplateDao().archiveTemplate(local.template.id)
-                            }
-                        }
-
-                        // Upsert templates and machine cross-references
-                        for (payload in payloads) {
-                            database.workoutTemplateDao().saveTemplateWithMachines(
-                                template = payload.template.toEntity(),
-                                machineIdsInOrder = payload.machineIdsInOrder
-                            )
-                        }
+                        val count = SyncIngestionEngine.ingestWorkoutTemplates(database, templatePayload)
                         dataLayerManager.updateLastSyncTimestamp()
-                        Log.i(TAG, "Synchronized ${payloads.size} templates from phone.")
+                        Log.i(TAG, "Synchronized $count templates from phone.")
                     }.onFailure { e ->
                         Log.e(TAG, "Failed to sync workout templates", e)
                     }
@@ -219,8 +170,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                         return@launch
                     }
 
-                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
-                    database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
+                    SyncIngestionEngine.handleWorkoutAck(database, sessionId)
                     dataLayerManager.updateLastSyncTimestamp()
                     Log.i(TAG, "Workout session $sessionId successfully acknowledged and marked as SYNCED on watch.")
                 }
@@ -233,8 +183,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                         return@launch
                     }
 
-                    database.workoutSessionDao().deleteSession(sessionId)
-                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                    SyncIngestionEngine.handleWorkoutDelete(database, sessionId)
                     dataLayerManager.updateLastSyncTimestamp()
                     Log.i(TAG, "Workout session $sessionId deleted on watch via sync.")
                 }

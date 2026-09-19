@@ -14,6 +14,7 @@ import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncEventBus
+import com.lockerlift.core.sync.SyncIngestionEngine
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.SyncQueueWorker
 import com.lockerlift.core.sync.WearableDataLayerManager
@@ -65,8 +66,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
                         return@launch
                     }
 
-                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
-                    database.workoutSessionDao().updateSyncStatus(sessionId, SyncStatus.SYNCED)
+                    SyncIngestionEngine.handleWorkoutAck(database, sessionId)
                     dataLayerManager.updateLastSyncTimestamp()
                     Log.i(TAG, "Workout session $sessionId successfully acknowledged by watch and purged from mobile queue.")
                 }
@@ -79,8 +79,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
                         return@launch
                     }
 
-                    database.workoutSessionDao().deleteSession(sessionId)
-                    database.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+                    SyncIngestionEngine.handleWorkoutDelete(database, sessionId)
                     if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
                         healthConnectManager.deleteWorkoutSession(sessionId)
                     }
@@ -139,68 +138,26 @@ class MobileDataLayerListenerService : WearableListenerService() {
 
     private suspend fun processWorkoutPayload(payloadJson: String, sourceNodeId: String) {
         activeIngestionMutex.withLock {
-            val payload = SyncPayloadSerializer.decodeSessionPayload(payloadJson)
-            val session = payload.session.copy(syncStatus = SyncStatus.SYNCED)
-            val sessionDao = database.workoutSessionDao()
-            val machineDao = database.machineDao()
-
-            // Zombie Prevention: If this session was deleted on this device and is pending deletion sync,
-            // do not resurrect it. Re-dispatch delete to the watch instead.
-            val pendingDelete = database.syncQueueDao().getQueueItemBySessionId(session.id)
-            if (pendingDelete != null && pendingDelete.payloadJson == SyncConstants.ACTION_DELETE) {
-                Log.i(TAG, "Rejecting incoming session ${session.id} because it was deleted locally. Dispatching delete ACK to watch.")
-                dataLayerManager.sendWorkoutDelete(sourceNodeId, session.id)
-                return@withLock
-            }
-
-            // Safe Machine Reconciliation: If a machine with the same name exists locally with a different ID,
-            // remap the session machine instance to the existing local machine ID to prevent unique name constraint
-            // collisions and SQLite FOREIGN KEY RESTRICT violations.
-            val machinesToInsert = mutableListOf<MachineEntity>()
-            val machineIdMapping = mutableMapOf<String, String>()
-
-            for (instPayload in payload.machineInstances) {
-                val incomingMachine = instPayload.machine
-                val existingMachine = machineDao.getMachineByName(incomingMachine.name)
-                if (existingMachine != null) {
-                    machineIdMapping[incomingMachine.id] = existingMachine.id
-                } else {
-                    machineIdMapping[incomingMachine.id] = incomingMachine.id
-                    if (machinesToInsert.none { it.id == incomingMachine.id }) {
-                        machinesToInsert.add(incomingMachine.toEntity())
+            when (val result = SyncIngestionEngine.ingestWorkoutPayload(database, payloadJson, isMobile = true)) {
+                is SyncIngestionEngine.IngestionResult.Success -> {
+                    // Export to Health Connect
+                    if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
+                        healthConnectManager.exportWorkoutSession(
+                            session = result.payload.session,
+                            templateName = result.payload.templateName
+                        )
                     }
+
+                    // Send Acknowledgment back to sender node
+                    dataLayerManager.sendAcknowledgment(sourceNodeId, result.sessionId)
+                    dataLayerManager.updateLastSyncTimestamp()
+                    Log.i(TAG, "Workout session ${result.sessionId} successfully processed and synchronized.")
+                }
+                is SyncIngestionEngine.IngestionResult.RejectedZombie -> {
+                    Log.i(TAG, "Rejecting incoming session ${result.sessionId} because it was deleted locally. Dispatching delete ACK to watch.")
+                    dataLayerManager.sendWorkoutDelete(sourceNodeId, result.sessionId)
                 }
             }
-
-            if (machinesToInsert.isNotEmpty()) {
-                machineDao.insertMachines(machinesToInsert)
-            }
-
-            val instanceEntities = payload.machineInstances.map { instPayload ->
-                val resolvedMachineId = machineIdMapping[instPayload.machine.id] ?: instPayload.instance.machineId
-                instPayload.instance.copy(machineId = resolvedMachineId).toEntity()
-            }
-            val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
-
-            // Upsert session, instances and sets idempotently
-            sessionDao.upsertFullSession(
-                session = session.toEntity(),
-                instances = instanceEntities,
-                sets = setEntities
-            )
-
-            // Export to Health Connect
-            if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                healthConnectManager.exportWorkoutSession(
-                    session = session,
-                    templateName = payload.templateName
-                )
-            }
-
-            // Send Acknowledgment back to sender node
-            dataLayerManager.sendAcknowledgment(sourceNodeId, session.id)
-            dataLayerManager.updateLastSyncTimestamp()
-            Log.i(TAG, "Workout session ${session.id} successfully processed and synchronized.")
         }
     }
 
