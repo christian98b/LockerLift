@@ -52,8 +52,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.play.services.wearable)
@@ -62,7 +60,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.wear.compose.foundation)
-    implementation(libs.androidx.wear.compose.material)
+    implementation(libs.androidx.wear.compose.material3)
     implementation(libs.androidx.wear.compose.navigation)
 
     testImplementation(libs.junit)
