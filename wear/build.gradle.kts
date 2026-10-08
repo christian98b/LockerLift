@@ -52,6 +52,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.material)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.play.services.wearable)
