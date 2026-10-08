@@ -1,0 +1,50 @@
+name: Build PR
+
+# Workflow für Pull Requests - baut Debug APKs und führt Tests aus
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+      
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          sdk-version: '35'
+          packages: |
+            platforms;android-35
+            build-tools;35.0.0
+          accept-license: true
+      
+      - name: Gradle Cache
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: '8.10.2'
+      
+      - name: Run tests
+        run: ./gradlew test --no-daemon --stacktrace
+      
+      - name: Build Debug APKs
+        run: ./gradlew :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
+      
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-apks
+          path: |
+            mobile/build/outputs/apk/debug/
+            wear/build/outputs/apk/debug/
+          retention-days: 7
