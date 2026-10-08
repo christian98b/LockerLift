@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.compose.material3.*
-import androidx.wear.compose.material.*
+import androidx.compose.material3.*
+import androidx.wear.compose.material.CompactButton
 import com.lockerlift.wear.R
 import com.lockerlift.wear.logic.WearWorkoutLogic
 import kotlinx.coroutines.delay
