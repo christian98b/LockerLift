@@ -14,6 +14,7 @@ import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.toEntity
+import com.lockerlift.core.model.QueueStatus
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncIngestionEngine
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeoutException
 
 class WearDataLayerListenerService : WearableListenerService() {
 
@@ -92,6 +94,7 @@ class WearDataLayerListenerService : WearableListenerService() {
             val outputStream = ByteArrayOutputStream()
             val buffer = ByteArray(8192)
             var totalBytes = 0
+            val startTime = System.currentTimeMillis()
 
             inputStream.use { stream ->
                 var bytesRead: Int
@@ -99,6 +102,10 @@ class WearDataLayerListenerService : WearableListenerService() {
                     totalBytes += bytesRead
                     if (totalBytes > MAX_PAYLOAD_BYTES) {
                         throw IllegalStateException("Payload size exceeds maximum allowed limit ($MAX_PAYLOAD_BYTES bytes)")
+                    }
+                    // Check timeout every 8KB chunk
+                    if (System.currentTimeMillis() - startTime > SyncConstants.CHANNEL_READ_TIMEOUT_MS) {
+                        throw TimeoutException("Channel read timed out after ${SyncConstants.CHANNEL_READ_TIMEOUT_MS}ms")
                     }
                     outputStream.write(buffer, 0, bytesRead)
                 }
@@ -199,7 +206,58 @@ class WearDataLayerListenerService : WearableListenerService() {
                         processWorkoutPayload(payloadJson, messageEvent.sourceNodeId)
                     }.onFailure { e ->
                         Log.e(TAG, "Failed to process workout message on watch", e)
+                        // Send NACK with error code
+                        val errorCode = when (e) {
+                            is IllegalArgumentException -> SyncConstants.NACK_INVALID_PAYLOAD
+                            is android.database.sqlite.SQLiteException -> SyncConstants.NACK_DATABASE_ERROR
+                            else -> SyncConstants.NACK_UNKNOWN_ERROR
+                        }
+                        val sessionId = runCatching {
+                            SyncPayloadSerializer.decodeSessionPayload(payloadJson).session.id
+                        }.getOrNull() ?: "unknown"
+                        dataLayerManager.sendNack(messageEvent.sourceNodeId, sessionId, errorCode)
                     }
+                }
+            }
+            SyncConstants.PATH_WORKOUT_NACK -> {
+                val nackMessage = String(messageEvent.data, StandardCharsets.UTF_8)
+                serviceScope.launch {
+                    if (!isAuthorizedPhoneNode(messageEvent.sourceNodeId)) {
+                        Log.w(TAG, "Rejected NACK from unauthorized node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                    val parts = nackMessage.split(":", limit = 2)
+                    val sessionId = parts.getOrNull(0) ?: return@launch
+                    val errorCode = parts.getOrNull(1) ?: SyncConstants.NACK_UNKNOWN_ERROR
+                    Log.w(TAG, "Received NACK for session $sessionId with error: $errorCode")
+                    // Update queue item with error status
+                    runCatching {
+                        val queueItem = database.syncQueueDao().getQueueItemBySessionId(sessionId)
+                        if (queueItem != null) {
+                            database.syncQueueDao().updateQueueItem(
+                                queueItem.copy(
+                                    status = QueueStatus.ERROR,
+                                    errorMessage = "NACK: $errorCode",
+                                    lastAttemptAt = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }.onFailure { e ->
+                        Log.e(TAG, "Failed to update queue item with NACK status", e)
+                    }
+                }
+            }
+            SyncConstants.PATH_MASTER_DATA_ACK -> {
+                val ackMessage = String(messageEvent.data, StandardCharsets.UTF_8)
+                serviceScope.launch {
+                    if (!isAuthorizedPhoneNode(messageEvent.sourceNodeId)) {
+                        Log.w(TAG, "Rejected master data ACK from unauthorized node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                    val parts = ackMessage.split(":", limit = 2)
+                    val dataType = parts.getOrNull(0) ?: return@launch
+                    val version = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                    Log.i(TAG, "Received master data ACK for $dataType version $version")
                 }
             }
             SyncConstants.PATH_SYNC_REQUEST_FLUSH -> {

@@ -28,7 +28,16 @@ data class SyncQueueEntity(
     val createdAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "last_attempt_at")
-    val lastAttemptAt: Long? = null
+    val lastAttemptAt: Long? = null,
+
+    @ColumnInfo(name = "item_type")
+    val itemType: String = "WORKOUT", // WORKOUT, MASTER_CATALOG, MASTER_TEMPLATES
+
+    @ColumnInfo(name = "error_message")
+    val errorMessage: String? = null,
+
+    @ColumnInfo(name = "target_device_id")
+    val targetDeviceId: String? = null
 )
 
 fun SyncQueueEntity.toDomainModel() = SyncQueueItem(
@@ -38,7 +47,10 @@ fun SyncQueueEntity.toDomainModel() = SyncQueueItem(
     status = status,
     retryCount = retryCount,
     createdAt = createdAt,
-    lastAttemptAt = lastAttemptAt
+    lastAttemptAt = lastAttemptAt,
+    itemType = itemType,
+    errorMessage = errorMessage,
+    targetDeviceId = targetDeviceId
 )
 
 fun SyncQueueItem.toEntity() = SyncQueueEntity(
@@ -48,5 +60,8 @@ fun SyncQueueItem.toEntity() = SyncQueueEntity(
     status = status,
     retryCount = retryCount,
     createdAt = createdAt,
-    lastAttemptAt = lastAttemptAt
+    lastAttemptAt = lastAttemptAt,
+    itemType = itemType,
+    errorMessage = errorMessage,
+    targetDeviceId = targetDeviceId
 )

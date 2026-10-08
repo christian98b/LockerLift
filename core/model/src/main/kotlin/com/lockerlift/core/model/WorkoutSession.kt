@@ -44,5 +44,8 @@ data class SyncQueueItem(
     val status: QueueStatus = QueueStatus.PENDING,
     val retryCount: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val lastAttemptAt: Long? = null
+    val lastAttemptAt: Long? = null,
+    val itemType: String = "WORKOUT",
+    val errorMessage: String? = null,
+    val targetDeviceId: String? = null
 )

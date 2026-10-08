@@ -182,6 +182,30 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
         }.getOrDefault(false)
     }
 
+    suspend fun sendNack(nodeId: String, sessionId: String, errorCode: String): Boolean {
+        return runCatching {
+            val nackMessage = "$sessionId:${errorCode}"
+            messageClient.sendMessage(
+                nodeId,
+                SyncConstants.PATH_WORKOUT_NACK,
+                nackMessage.toByteArray(StandardCharsets.UTF_8)
+            ).await()
+            true
+        }.getOrDefault(false)
+    }
+
+    suspend fun sendMasterDataAck(nodeId: String, dataType: String, version: Int): Boolean {
+        return runCatching {
+            val ackMessage = "$dataType:$version"
+            messageClient.sendMessage(
+                nodeId,
+                SyncConstants.PATH_MASTER_DATA_ACK,
+                ackMessage.toByteArray(StandardCharsets.UTF_8)
+            ).await()
+            true
+        }.getOrDefault(false)
+    }
+
     suspend fun sendWorkoutDelete(nodeId: String, sessionId: String): Boolean {
         return runCatching {
             messageClient.sendMessage(

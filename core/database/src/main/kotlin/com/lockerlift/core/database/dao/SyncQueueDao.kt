@@ -15,6 +15,9 @@ interface SyncQueueDao {
     @Query("SELECT * FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR' ORDER BY created_at ASC")
     fun getPendingQueueItemsFlow(): Flow<List<SyncQueueEntity>>
 
+    @Query("SELECT * FROM sync_queue WHERE session_id = :sessionId AND item_type = :itemType LIMIT 1")
+    suspend fun getQueueItemBySessionIdAndType(sessionId: String, itemType: String): SyncQueueEntity?
+
     @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'PENDING' OR status = 'ERROR'")
     fun getPendingQueueCountFlow(): Flow<Int>
 
@@ -45,9 +48,21 @@ interface SyncQueueDao {
     @Query("SELECT * FROM sync_queue WHERE session_id = :sessionId LIMIT 1")
     suspend fun getQueueItemBySessionId(sessionId: String): SyncQueueEntity?
 
+    @Query("SELECT * FROM sync_queue WHERE session_id = :sessionId AND item_type = 'WORKOUT' LIMIT 1")
+    suspend fun getWorkoutQueueItemBySessionId(sessionId: String): SyncQueueEntity?
+
     @Query("DELETE FROM sync_queue WHERE id = :id")
     suspend fun deleteQueueItemById(id: String)
 
     @Query("DELETE FROM sync_queue WHERE session_id = :sessionId")
     suspend fun deleteQueueItemBySessionId(sessionId: String)
+
+    @Query("DELETE FROM sync_queue WHERE session_id = :sessionId AND item_type = :itemType")
+    suspend fun deleteQueueItemBySessionIdAndType(sessionId: String, itemType: String)
+
+    @Query("SELECT * FROM sync_queue WHERE item_type = 'MASTER_CATALOG' OR item_type = 'MASTER_TEMPLATES' ORDER BY created_at ASC")
+    suspend fun getPendingMasterDataItems(): List<SyncQueueEntity>
+
+    @Query("SELECT * FROM sync_queue WHERE item_type = :itemType ORDER BY created_at ASC")
+    suspend fun getPendingItemsByType(itemType: String): List<SyncQueueEntity>
 }

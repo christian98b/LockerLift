@@ -8,10 +8,12 @@ import androidx.room.TypeConverters
 import com.lockerlift.core.database.security.DatabaseKeyManager
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import com.lockerlift.core.database.dao.DeletedSessionDao
 import com.lockerlift.core.database.dao.MachineDao
 import com.lockerlift.core.database.dao.SyncQueueDao
 import com.lockerlift.core.database.dao.WorkoutSessionDao
 import com.lockerlift.core.database.dao.WorkoutTemplateDao
+import com.lockerlift.core.database.entity.DeletedSessionEntity
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
 import com.lockerlift.core.database.entity.SyncQueueEntity
@@ -28,9 +30,10 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         WorkoutSessionEntity::class,
         SessionMachineInstanceEntity::class,
         WorkoutSetEntity::class,
-        SyncQueueEntity::class
+        SyncQueueEntity::class,
+        DeletedSessionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -40,6 +43,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
     abstract fun workoutTemplateDao(): WorkoutTemplateDao
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun deletedSessionDao(): DeletedSessionDao
 
     companion object {
         private const val DATABASE_NAME = "lockerlift.db"
