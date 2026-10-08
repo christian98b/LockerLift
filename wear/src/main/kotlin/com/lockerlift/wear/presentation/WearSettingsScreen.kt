@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.compose.material3.*
-import androidx.compose.material3.*
 import androidx.wear.compose.material.CompactButton
 import com.lockerlift.core.sync.*
 import com.lockerlift.wear.LockerLiftWearApp
