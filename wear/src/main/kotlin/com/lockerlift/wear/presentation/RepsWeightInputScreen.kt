@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.compose.material3.*
+import androidx.wear.compose.material.*
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
