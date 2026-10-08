@@ -60,7 +60,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.wear.compose.foundation)
-    implementation(libs.androidx.wear.compose.material3)
+    implementation(libs.androidx.wear.compose.material)
     implementation(libs.androidx.wear.compose.navigation)
 
     testImplementation(libs.junit)

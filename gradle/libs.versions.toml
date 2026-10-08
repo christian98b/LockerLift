@@ -39,7 +39,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-graphics-path = { group = "androidx.graphics", name = "graphics-path", version.ref = "graphicsPath" }
 
 # Wear OS Compose & Horologist
-androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeWear" }
+androidx-wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeWear" }
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeWear" }
 androidx-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeWear" }
 horologist-composables = { group = "com.google.android.horologist", name = "horologist-composables", version.ref = "horologist" }
