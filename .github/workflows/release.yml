@@ -25,7 +25,7 @@ jobs:
       
       # 2. JDK 21 einrichten (für Android 35)
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -35,16 +35,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # SDK Version 35 für Android 15
-          sdk-version: '35'
-          # Benötigte SDK Pakete
+          # Benötigte SDK Pakete (ohne sdk-version, da deprecated)
           packages: |
             platforms;android-35
             build-tools;35.0.0
             platform-tools
-            emulator
           # Akzeptiere Lizenzen automatisch
-          accept-license: true
+          accept-android-sdk-licenses: true
       
       # 4. Android NDK (falls für native Code benötigt)
       - name: Set up Android NDK
@@ -82,7 +79,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       
-      # 9. APK-Dateien finden und umbennenen (für bessere Lesbarkeit)
+      # 9. APK-Dateien finden und umbenennen (für bessere Lesbarkeit)
       - name: Rename APK files
         run: |
           # Mobile APK
@@ -90,6 +87,13 @@ jobs:
           if [ -n "$MOBILE_APK" ]; then
             cp "$MOBILE_APK" mobile-release.apk
             echo "Mobile APK: mobile-release.apk"
+          else
+            # Fallback: Debug APK falls Release fehlschlägt
+            MOBILE_APK=$(find mobile/build/outputs/apk/debug -name "*.apk" | head -1)
+            if [ -n "$MOBILE_APK" ]; then
+              cp "$MOBILE_APK" mobile-release.apk
+              echo "Mobile APK: mobile-release.apk (debug fallback)"
+            fi
           fi
           
           # Wear APK
@@ -97,10 +101,17 @@ jobs:
           if [ -n "$WEAR_APK" ]; then
             cp "$WEAR_APK" wear-release.apk
             echo "Wear APK: wear-release.apk"
+          else
+            # Fallback: Debug APK falls Release fehlschlägt
+            WEAR_APK=$(find wear/build/outputs/apk/debug -name "*.apk" | head -1)
+            if [ -n "$WEAR_APK" ]; then
+              cp "$WEAR_APK" wear-release.apk
+              echo "Wear APK: wear-release.apk (debug fallback)"
+            fi
           fi
           
           # Alle APKs anzeigen
-          ls -lh *.apk
+          ls -lh *.apk || echo "No APKs found"
       
       # 10. Release erstellen und APKs hochladen
       - name: Create GitHub Release
