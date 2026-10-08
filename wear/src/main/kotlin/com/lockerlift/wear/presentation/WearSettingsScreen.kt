@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material3.*
+import androidx.wear.compose.material.*
 import com.lockerlift.core.sync.*
 import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
