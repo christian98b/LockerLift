@@ -67,7 +67,7 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
     }
 
     suspend fun syncAllTemplatesToWear() {
-        MobileMasterDataSync.pushAllMasterData(app.database, dataLayerManager)
+        MobileMasterDataSync.pushAllMasterData(context, app.database, dataLayerManager)
     }
 
     fun triggerRefresh() {

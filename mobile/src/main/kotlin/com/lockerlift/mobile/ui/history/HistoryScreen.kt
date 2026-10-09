@@ -69,7 +69,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
         coroutineScope.launch {
             val result = syncCoordinator.executeSync(
                 syncMasterDataAction = {
-                    MobileMasterDataSync.pushAllMasterData(app.database, dataLayerManager)
+                    MobileMasterDataSync.pushAllMasterData(context, app.database, dataLayerManager)
                 }
             )
             isRefreshing = false
