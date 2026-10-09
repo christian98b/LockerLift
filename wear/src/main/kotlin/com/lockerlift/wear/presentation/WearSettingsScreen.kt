@@ -165,7 +165,7 @@ fun WearSettingsScreen(
                             stringResource(R.string.settings_last_sync_format),
                             SyncUtils.formatSyncTimestamp(lastSyncTimestamp, strNever)
                         ),
-                        style = MaterialTheme.typography.bodyExtraSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
@@ -242,7 +242,7 @@ fun WearSettingsScreen(
             item {
                 Text(
                     text = syncStatusMessage!!,
-                    style = MaterialTheme.typography.bodyExtraSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -254,7 +254,7 @@ fun WearSettingsScreen(
         item {
             Text(
                 text = String.format(stringResource(R.string.settings_version_format), appVersion),
-                style = MaterialTheme.typography.bodyExtraSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 2.dp)
             )

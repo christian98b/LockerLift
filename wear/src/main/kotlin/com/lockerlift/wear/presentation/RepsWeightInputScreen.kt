@@ -101,7 +101,7 @@ fun RepsWeightInputScreen(
             item {
                 Text(
                     text = stringResource(R.string.tempo_format, cadence),
-                    style = MaterialTheme.typography.bodyExtraSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

@@ -360,7 +360,7 @@ fun ActiveWorkoutScreen(
                         if (!machine.targetMuscleGroup.isBlank()) {
                             Text(
                                 text = machine.targetMuscleGroup,
-                                style = MaterialTheme.typography.bodyExtraSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -433,7 +433,7 @@ fun ActiveWorkoutScreen(
                         if (!machine.targetMuscleGroup.isBlank()) {
                             Text(
                                 text = machine.targetMuscleGroup,
-                                style = MaterialTheme.typography.bodyExtraSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -570,7 +570,7 @@ fun ActiveWorkoutScreen(
                     Text(
                         text = errorMessage!!,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyExtraSmall
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
@@ -668,7 +668,7 @@ fun ActiveWorkoutScreen(
             item {
                 Text(
                     text = machine?.name ?: defaultStationName,
-                    style = MaterialTheme.typography.bodyExtraSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -916,7 +916,7 @@ fun ActiveWorkoutScreen(
                     if (!setupNote.isNullOrBlank()) {
                         Text(
                             text = stringResource(R.string.setup_format, setupNote),
-                            style = MaterialTheme.typography.bodyExtraSmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
@@ -930,7 +930,7 @@ fun ActiveWorkoutScreen(
                         )
                         Text(
                             text = stringResource(R.string.skipped_exercise_info),
-                            style = MaterialTheme.typography.bodyExtraSmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp)
                         )

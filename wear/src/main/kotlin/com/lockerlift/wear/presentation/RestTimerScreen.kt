@@ -198,7 +198,7 @@ fun RestTimerScreen(
                 item {
                     Text(
                         text = defaultSavedNotice!!,
-                        style = MaterialTheme.typography.bodyExtraSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(vertical = 2.dp)
                     )

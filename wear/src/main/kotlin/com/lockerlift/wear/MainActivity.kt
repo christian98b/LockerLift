@@ -127,7 +127,7 @@ fun TemplateSelectionScreen(
                     Text(text = template.name, style = MaterialTheme.typography.titleSmall)
                     Text(
                         text = androidx.compose.ui.res.stringResource(R.string.exercises_count_format, item.machines.size),
-                        style = MaterialTheme.typography.bodyExtraSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
