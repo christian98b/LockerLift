@@ -1178,9 +1178,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             )
 
                             // 2. Consolidate template if requested
-                            if (consolidateTemplate && currentTemplateId != null) {
+                            val templateIdForConsolidation = currentTemplateId
+                            if (consolidateTemplate && templateIdForConsolidation != null) {
                                 val activeMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-                                val templateWithMachines = templateDao.getTemplateWithMachinesById(currentTemplateId)
+                                val templateWithMachines = templateDao.getTemplateWithMachinesById(templateIdForConsolidation)
                                 val existingTemplate = templateWithMachines?.template
                                 if (existingTemplate != null) {
                                     templateDao.saveTemplateWithMachines(existingTemplate, activeMachineIds)
