@@ -1,6 +1,7 @@
 package com.lockerlift.core.sync
 
 import android.util.Log
+import androidx.room.withTransaction
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.DeletedSessionEntity
 import com.lockerlift.core.database.entity.MachineEntity
@@ -87,7 +88,7 @@ object SyncIngestionEngine {
 
         // Wrap machine inserts + session upsert in a single transaction so that
         // a failure in upsertFullSession doesn't leave orphaned machines behind.
-        database.runInTransaction {
+        database.withTransaction {
             if (machinesToInsert.isNotEmpty()) {
                 machineDao.insertMachines(machinesToInsert)
             }
