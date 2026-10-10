@@ -810,10 +810,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     }
 
     // --- EDIT EXISTING SET DIALOG ---
-    if (editingInstanceId != null && editingSetIndex >= 0) {
-        val currentList = loggedSets[editingInstanceId!!] ?: emptyList()
+    val currentEditingInstanceId = editingInstanceId
+    if (currentEditingInstanceId != null && editingSetIndex >= 0) {
+        val currentList = loggedSets[currentEditingInstanceId] ?: emptyList()
         val setToEdit = currentList.getOrNull(editingSetIndex)
-        val targetInstance = sessionInstances.find { it.id == editingInstanceId }
+        val targetInstance = sessionInstances.find { it.id == currentEditingInstanceId }
         val machine = machines.find { it.id == targetInstance?.machineId }
         val machineName = machine?.name ?: ""
         val increment = machine?.defaultIncrementKg ?: 2.5f
@@ -866,7 +867,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         OutlinedButton(
                             onClick = {
                                 val updated = WorkoutTrackingLogic.deleteSetAndRenumber(currentList, editingSetIndex)
-                                loggedSets[editingInstanceId!!] = updated
+                                loggedSets[currentEditingInstanceId] = updated
                                 editingInstanceId = null
                                 editingSetIndex = -1
                             },
@@ -891,7 +892,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 weightKg = finalWeight,
                                 reps = finalReps
                             )
-                            loggedSets[editingInstanceId!!] = updated
+                            loggedSets[currentEditingInstanceId] = updated
                             editingInstanceId = null
                             editingSetIndex = -1
                         }
@@ -996,7 +997,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (errorMessage != null) {
-                            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 } else {
@@ -1178,7 +1179,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             // 2. Consolidate template if requested
                             if (consolidateTemplate && currentTemplateId != null) {
                                 val activeMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-                                val templateWithMachines = templateDao.getTemplateWithMachinesById(currentTemplateId!!)
+                                val templateWithMachines = templateDao.getTemplateWithMachinesById(currentTemplateId)
                                 val existingTemplate = templateWithMachines?.template
                                 if (existingTemplate != null) {
                                     templateDao.saveTemplateWithMachines(existingTemplate, activeMachineIds)

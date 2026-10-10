@@ -197,7 +197,7 @@ class MobileDataLayerListenerService : WearableListenerService() {
                 return connectedNodes.any { it.id == nodeId }
             }
             capabilityInfo.nodes.any { it.id == nodeId }
-        }.getOrDefault(true)
+        }.getOrDefault(false)
     }
 
     private suspend fun processWorkoutPayload(payloadJson: String, sourceNodeId: String) {

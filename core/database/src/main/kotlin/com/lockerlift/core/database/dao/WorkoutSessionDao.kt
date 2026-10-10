@@ -80,6 +80,8 @@ interface WorkoutSessionDao {
 
     @Query("DELETE FROM session_machine_instances WHERE session_id = :sessionId")
     suspend fun deleteMachineInstancesBySessionId(sessionId: String)
+    @Query("SELECT id FROM workout_sessions ORDER BY start_time DESC")
+    suspend fun getAllSessionIds(): List<String>
 
     /**
      * Finds sessions that are marked PENDING_SYNC but have no corresponding entry

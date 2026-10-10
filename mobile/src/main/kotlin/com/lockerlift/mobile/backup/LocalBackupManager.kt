@@ -3,6 +3,7 @@ package com.lockerlift.mobile.backup
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import androidx.room.withTransaction
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.dao.WorkoutSessionDao
 import com.lockerlift.core.database.dao.WorkoutTemplateDao
@@ -160,31 +161,38 @@ class LocalBackupManager(
             val templateDao = database.workoutTemplateDao()
             val sessionDao = database.workoutSessionDao()
 
-            // -- Restore machines --
+            // Decode everything BEFORE touching the database so a malformed payload
+            // fails fast without leaving a half-restored state behind.
             val machines = SyncPayloadSerializer.decodeMachines(payload.machines)
-            machineDao.insertMachines(machines.map { it.toEntity() })
-
-            // -- Restore templates (entity + cross-refs) --
             val templatePayloads = SyncPayloadSerializer.decodeTemplates(payload.templates)
-            for (tp in templatePayloads) {
-                // saveTemplateWithMachines is @Transaction; handles insert + cross-refs atomically
-                templateDao.saveTemplateWithMachines(
-                    template = tp.template.toEntity(),
-                    machineIdsInOrder = tp.machineIdsInOrder
-                )
-            }
+            val sessionPayloads = payload.sessions.map { SyncPayloadSerializer.decodeSessionPayload(it) }
 
-            // -- Restore sessions (session + machine instances + sets) --
-            for (sessionJson in payload.sessions) {
-                val sp = SyncPayloadSerializer.decodeSessionPayload(sessionJson)
-                val instances = sp.machineInstances.map { it.instance.toEntity() }
-                val sets = sp.machineInstances.flatMap { mi -> mi.sets.map { it.toEntity() } }
-                // upsertFullSession is @Transaction; handles all three tables atomically
-                sessionDao.upsertFullSession(
-                    session = sp.session.toEntity(),
-                    instances = instances,
-                    sets = sets
-                )
+            // One transaction for the entire restore: either the full backup lands in the
+            // database or nothing changes at all.
+            database.withTransaction {
+                // -- Restore machines --
+                machineDao.insertMachines(machines.map { it.toEntity() })
+
+                // -- Restore templates (entity + cross-refs) --
+                for (tp in templatePayloads) {
+                    // saveTemplateWithMachines is @Transaction; handles insert + cross-refs atomically
+                    templateDao.saveTemplateWithMachines(
+                        template = tp.template.toEntity(),
+                        machineIdsInOrder = tp.machineIdsInOrder
+                    )
+                }
+
+                // -- Restore sessions (session + machine instances + sets) --
+                for (sp in sessionPayloads) {
+                    val instances = sp.machineInstances.map { it.instance.toEntity() }
+                    val sets = sp.machineInstances.flatMap { mi -> mi.sets.map { it.toEntity() } }
+                    // upsertFullSession is @Transaction; handles all three tables atomically
+                    sessionDao.upsertFullSession(
+                        session = sp.session.toEntity(),
+                        instances = instances,
+                        sets = sets
+                    )
+                }
             }
 
             BackupResult.Success("Restore complete")
@@ -254,16 +262,7 @@ class LocalBackupManager(
     private suspend fun buildTemplatePayloads(
         templateDao: WorkoutTemplateDao
     ): List<WorkoutTemplatePayload> {
-        val templateIds = mutableListOf<String>()
-        database.openHelper.readableDatabase
-            .query("SELECT id FROM workout_templates WHERE is_archived = 0")
-            .use { cursor ->
-                while (cursor.moveToNext()) {
-                    templateIds.add(cursor.getString(0))
-                }
-            }
-
-        return templateIds.mapNotNull { id ->
+        return templateDao.getActiveTemplateIds().mapNotNull { id ->
             val withMachines = templateDao.getTemplateWithMachinesById(id) ?: return@mapNotNull null
             val machineIds = templateDao.getCrossRefsForTemplate(id)
                 .sortedBy { it.sortOrder }
@@ -282,16 +281,7 @@ class LocalBackupManager(
     private suspend fun buildSessionPayloads(
         sessionDao: WorkoutSessionDao
     ): List<WorkoutSessionPayload> {
-        val sessionIds = mutableListOf<String>()
-        database.openHelper.readableDatabase
-            .query("SELECT id FROM workout_sessions ORDER BY start_time DESC")
-            .use { cursor ->
-                while (cursor.moveToNext()) {
-                    sessionIds.add(cursor.getString(0))
-                }
-            }
-
-        return sessionIds.mapNotNull { id ->
+        return sessionDao.getAllSessionIds().mapNotNull { id ->
             val details = sessionDao.getSessionWithDetailsById(id) ?: return@mapNotNull null
             WorkoutSessionPayload(
                 session = details.session.toDomainModel(),

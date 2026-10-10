@@ -51,6 +51,8 @@ interface WorkoutTemplateDao {
 
     @Query("DELETE FROM workout_templates WHERE id = :id")
     suspend fun deleteTemplateById(id: String)
+    @Query("SELECT id FROM workout_templates WHERE is_archived = 0 ORDER BY updated_at DESC")
+    suspend fun getActiveTemplateIds(): List<String>
 
     @Transaction
     suspend fun saveTemplateWithMachines(

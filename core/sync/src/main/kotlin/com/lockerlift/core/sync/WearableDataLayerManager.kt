@@ -304,11 +304,16 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
                 var failedCount = 0
                 var deadLetterCount = 0
                 for (item in pendingItems) {
-                    // Dead-letter: items that exceeded max retries are purged to prevent queue head blocking
+                    // Dead-letter: items that exceeded max retries are kept in the DB (status DEAD_LETTER)
+                    // so no completed workout data is ever silently lost. The queue no longer blocks
+                    // because DEAD_LETTER items are excluded from getPendingQueueItems().
                     if (item.retryCount >= SyncConstants.MAX_RETRY_ATTEMPTS) {
                         Log.w(TAG,
                             "Dead-lettering queue item ${item.id} (session=${item.sessionId}) after ${item.retryCount} retries")
-                        syncQueueDao.deleteQueueItemById(item.id)
+                        syncQueueDao.markAsDeadLetter(
+                            item.id,
+                            "Exceeded max retry attempts (${SyncConstants.MAX_RETRY_ATTEMPTS})"
+                        )
                         deadLetterCount++
                         continue
                     }
@@ -356,7 +361,7 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
                     failedCount > 0 && dispatchedCount == 0 && deadLetterCount == 0 ->
                         SyncResult.Error("Failed to transfer $failedCount pending item(s)")
                     deadLetterCount > 0 && dispatchedCount == 0 && failedCount == 0 ->
-                        SyncResult.Error("Purged $deadLetterCount item(s) after ${SyncConstants.MAX_RETRY_ATTEMPTS} retries")
+                        SyncResult.Error("Dead-lettered $deadLetterCount item(s) after ${SyncConstants.MAX_RETRY_ATTEMPTS} retries; data is retained for manual retry")
                     else ->
                         SyncResult.Success(dispatchedCount)
                 }

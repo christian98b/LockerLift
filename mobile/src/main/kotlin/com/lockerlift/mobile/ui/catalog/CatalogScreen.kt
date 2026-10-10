@@ -98,9 +98,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (!machine.machineSettingsNote.isNullOrBlank()) {
+                        val settingsNote = machine.machineSettingsNote
+                        if (!settingsNote.isNullOrBlank()) {
                             Text(
-                                text = stringResource(R.string.setup_format, machine.machineSettingsNote!!),
+                                text = stringResource(R.string.setup_format, settingsNote),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -148,7 +149,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (errorMessage != null) {
-                            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
@@ -221,7 +222,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (editErrorMessage != null) {
-                            Text(text = editErrorMessage!!, color = MaterialTheme.colorScheme.error)
+                            Text(text = editErrorMessage, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },

@@ -140,9 +140,10 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(text = template.name, style = MaterialTheme.typography.titleMedium)
-                            if (!template.description.isNullOrBlank()) {
+                            val templateDescription = template.description
+                            if (!templateDescription.isNullOrBlank()) {
                                 Text(
-                                    text = template.description!!,
+                                    text = templateDescription,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

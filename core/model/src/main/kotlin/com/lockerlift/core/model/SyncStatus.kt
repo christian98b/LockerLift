@@ -15,5 +15,6 @@ enum class QueueStatus {
     PENDING,
     IN_TRANSIT,
     ACKNOWLEDGED,
-    ERROR
+    ERROR,
+    DEAD_LETTER
 }

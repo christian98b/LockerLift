@@ -49,8 +49,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (activeWorkoutParams != null) {
-                    val (templateId, templateName) = activeWorkoutParams!!
+                val currentWorkoutParams = activeWorkoutParams
+                if (currentWorkoutParams != null) {
+                    val (templateId, templateName) = currentWorkoutParams
                     ActiveWorkoutScreen(
                         app = app,
                         templateId = templateId,

@@ -53,6 +53,12 @@ interface SyncQueueDao {
 
     @Query("DELETE FROM sync_queue WHERE id = :id")
     suspend fun deleteQueueItemById(id: String)
+    @Query("UPDATE sync_queue SET status = 'DEAD_LETTER', error_message = :errorMessage, last_attempt_at = :lastAttemptAt WHERE id = :id")
+    suspend fun markAsDeadLetter(id: String, errorMessage: String, lastAttemptAt: Long = System.currentTimeMillis())
+    @Query("SELECT * FROM sync_queue WHERE status = 'DEAD_LETTER' ORDER BY created_at ASC")
+    suspend fun getDeadLetterQueueItems(): List<SyncQueueEntity>
+    @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'DEAD_LETTER'")
+    fun getDeadLetterCountFlow(): Flow<Int>
 
     @Query("DELETE FROM sync_queue WHERE session_id = :sessionId")
     suspend fun deleteQueueItemBySessionId(sessionId: String)

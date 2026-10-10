@@ -570,7 +570,7 @@ fun ActiveWorkoutScreen(
             if (errorMessage != null) {
                 item {
                     Text(
-                        text = errorMessage!!,
+                        text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
