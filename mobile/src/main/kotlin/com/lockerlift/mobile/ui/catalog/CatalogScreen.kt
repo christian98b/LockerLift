@@ -148,8 +148,9 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_increment)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        if (errorMessage != null) {
-                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                        val currentErrorMessage = errorMessage
+                        if (currentErrorMessage != null) {
+                            Text(text = currentErrorMessage, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
@@ -221,8 +222,9 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_increment)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        if (editErrorMessage != null) {
-                            Text(text = editErrorMessage, color = MaterialTheme.colorScheme.error)
+                        val currentEditErrorMessage = editErrorMessage
+                        if (currentEditErrorMessage != null) {
+                            Text(text = currentEditErrorMessage, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },

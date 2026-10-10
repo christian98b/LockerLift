@@ -567,10 +567,11 @@ fun ActiveWorkoutScreen(
                 }
             }
 
-            if (errorMessage != null) {
+            val currentErrorMessage = errorMessage
+            if (currentErrorMessage != null) {
                 item {
                     Text(
-                        text = errorMessage,
+                        text = currentErrorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )

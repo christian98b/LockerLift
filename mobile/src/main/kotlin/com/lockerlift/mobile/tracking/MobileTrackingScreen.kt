@@ -996,8 +996,9 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth()
                         )
-                        if (errorMessage != null) {
-                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        val currentErrorMessage = errorMessage
+                        if (currentErrorMessage != null) {
+                            Text(text = currentErrorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 } else {
