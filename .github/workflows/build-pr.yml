@@ -37,10 +37,10 @@ jobs:
           gradle-version: '8.10.2'
       
       - name: Run tests
-        run: ./gradlew test --no-daemon --stacktrace
+        run: gradle test --no-daemon --stacktrace
       
       - name: Build Debug APKs
-        run: ./gradlew :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
+        run: gradle :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
       
       - name: Upload APKs
         uses: actions/upload-artifact@v4
