@@ -17,7 +17,6 @@ object SyncConstants {
     const val PATH_SYNC_FLUSH_COMPLETED = "/sync/flush_completed"
     const val PATH_REQUEST_MASTER_DATA = "/sync/request_master_data"
     const val PATH_MASTER_DATA_ACK = "/sync/master_data_ack"
-    const val PATH_PING = "/sync_ping"
 
     // Sync queue action constants
     const val ACTION_DELETE = "DELETE"
@@ -38,8 +37,8 @@ object SyncConstants {
     const val CAPABILITY_WEAR = "lockerlift_wear_app"
     const val CAPABILITY_MOBILE = "lockerlift_mobile_app"
 
-    // Timeouts
+    // Timeouts & retry policy
     const val CHANNEL_READ_TIMEOUT_MS = 30000L // 30 seconds
-    const val ACK_TIMEOUT_MS = 5000L // 5 seconds
-    const val MAX_RETRY_ATTEMPTS = 5
+    const val STALE_IN_TRANSIT_THRESHOLD_MS = 60_000L // 60s: reset IN_TRANSIT items that lost their ACK
+    const val MAX_RETRY_ATTEMPTS = 10 // Dead-letter threshold for permanently failing queue items
 }

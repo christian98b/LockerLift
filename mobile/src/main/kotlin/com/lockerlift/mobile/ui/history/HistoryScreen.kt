@@ -222,6 +222,12 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                     onClick = {
                         val sessionId = target.session.id
                         coroutineScope.launch {
+                            // 0. Record tombstone BEFORE deletion to prevent zombie resurrection
+                            //    if the delete sync message is lost and the watch re-sends the session
+                            SyncIngestionEngine.addDeletedSessionTombstone(
+                                app.database, sessionId, originDevice = "MOBILE"
+                            )
+
                             // 1. Delete session from Room (cascades to instances and sets)
                             sessionDao.deleteSession(sessionId)
 

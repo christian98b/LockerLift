@@ -59,10 +59,4 @@ interface SyncQueueDao {
 
     @Query("DELETE FROM sync_queue WHERE session_id = :sessionId AND item_type = :itemType")
     suspend fun deleteQueueItemBySessionIdAndType(sessionId: String, itemType: String)
-
-    @Query("SELECT * FROM sync_queue WHERE item_type = 'MASTER_CATALOG' OR item_type = 'MASTER_TEMPLATES' ORDER BY created_at ASC")
-    suspend fun getPendingMasterDataItems(): List<SyncQueueEntity>
-
-    @Query("SELECT * FROM sync_queue WHERE item_type = :itemType ORDER BY created_at ASC")
-    suspend fun getPendingItemsByType(itemType: String): List<SyncQueueEntity>
 }

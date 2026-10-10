@@ -453,4 +453,202 @@ class InMemoryE2eSyncTest {
         assertNull(watchDb.workoutSessionDao().getSessionWithDetailsById(sessionId))
         assertNull(watchDb.syncQueueDao().getQueueItemBySessionId(sessionId))
     }
+
+    @Test
+    fun testOrphanedSessionRecovery_pendingSyncWithoutQueueItem_isRequeued() = runBlocking {
+        // 1. Arrange: Session exists with PENDING_SYNC but NO queue item (simulates crash between write and queue insert)
+        val machine = MachineEntity(id = "m-orphan", name = "Rudern", targetMuscleGroup = "Rücken", updatedAt = 1L)
+        watchDb.machineDao().insertMachine(machine)
+
+        val sessionId = "session-orphaned"
+        val session = WorkoutSessionEntity(id = sessionId, startTime = 100L, endTime = 200L, syncStatus = SyncStatus.PENDING_SYNC)
+        val instance = SessionMachineInstanceEntity(id = "i-orphan", sessionId = sessionId, machineId = machine.id, executionOrder = 0)
+        val sets = listOf(
+            WorkoutSetEntity(id = "s-orphan", sessionMachineId = instance.id, setNumber = 1, weightKg = 50f, reps = 10)
+        )
+        watchDb.workoutSessionDao().upsertFullSession(session, listOf(instance), sets)
+        // NOTE: Deliberately NOT inserting a sync queue item — this is the orphan scenario
+
+        // 2. Assert pre-condition: session is orphaned
+        val orphanedBefore = watchDb.workoutSessionDao().getOrphanedPendingSyncSessions()
+        assertEquals("Session should be detected as orphaned", 1, orphanedBefore.size)
+        assertEquals(sessionId, orphanedBefore.first().id)
+
+        // 3. Act: Run recovery
+        val recoveredCount = SyncIngestionEngine.recoverOrphanedSessions(watchDb)
+
+        // 4. Assert: Recovery re-queued the session
+        assertEquals("One session should be recovered", 1, recoveredCount)
+
+        val queueItem = watchDb.syncQueueDao().getQueueItemBySessionId(sessionId)
+        assertNotNull("Queue item must be created by recovery", queueItem)
+        assertEquals(SyncConstants.ITEM_TYPE_WORKOUT, queueItem!!.itemType)
+        assertEquals(QueueStatus.PENDING, queueItem.status)
+
+        // Verify the payload can be decoded
+        val payload = SyncPayloadSerializer.decodeSessionPayload(queueItem.payloadJson)
+        assertEquals(sessionId, payload.session.id)
+        assertEquals(1, payload.machineInstances.size)
+        assertEquals("Rudern", payload.machineInstances.first().machine.name)
+
+        // 5. Assert post-condition: no more orphaned sessions
+        val orphanedAfter = watchDb.workoutSessionDao().getOrphanedPendingSyncSessions()
+        assertTrue("No orphaned sessions should remain after recovery", orphanedAfter.isEmpty())
+    }
+
+    @Test
+    fun testOrphanedSessionRecovery_syncedSessionWithQueueItem_isNotRequeued() = runBlocking {
+        // Session is SYNCED and has a queue item — should NOT be recovered
+        val machine = MachineEntity(id = "m-synced", name = "Bankdrücken", targetMuscleGroup = "Brust", updatedAt = 1L)
+        watchDb.machineDao().insertMachine(machine)
+
+        val sessionId = "session-synced"
+        val session = WorkoutSessionEntity(id = sessionId, startTime = 100L, endTime = 200L, syncStatus = SyncStatus.SYNCED)
+        watchDb.workoutSessionDao().insertSession(session)
+        watchDb.syncQueueDao().insertQueueItem(
+            SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                payloadJson = "{}",
+                status = QueueStatus.IN_TRANSIT
+            )
+        )
+
+        val recoveredCount = SyncIngestionEngine.recoverOrphanedSessions(watchDb)
+        assertEquals("SYNCED session must not be recovered", 0, recoveredCount)
+    }
+
+    @Test
+    fun testOrphanedSessionRecovery_pendingSyncWithQueueItem_isNotRequeued() = runBlocking {
+        // Session is PENDING_SYNC but already has a queue item — should NOT be recovered
+        val machine = MachineEntity(id = "m-queued", name = "Kniebeugen", targetMuscleGroup = "Beine", updatedAt = 1L)
+        watchDb.machineDao().insertMachine(machine)
+
+        val sessionId = "session-queued"
+        val session = WorkoutSessionEntity(id = sessionId, startTime = 100L, endTime = 200L, syncStatus = SyncStatus.PENDING_SYNC)
+        watchDb.workoutSessionDao().insertSession(session)
+        watchDb.syncQueueDao().insertQueueItem(
+            SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                payloadJson = "{}",
+                status = QueueStatus.PENDING
+            )
+        )
+
+        val recoveredCount = SyncIngestionEngine.recoverOrphanedSessions(watchDb)
+        assertEquals("PENDING_SYNC session with queue item must not be recovered", 0, recoveredCount)
+    }
+
+    @Test
+    fun testLocalDeleteTombstone_preventsZombieResurrection() = runBlocking {
+        // 1. Arrange: Session exists on phone, user deletes it locally
+        val machine = MachineEntity(id = "m-tomb", name = "Kreuzheben", targetMuscleGroup = "Rücken", updatedAt = 1L)
+        phoneDb.machineDao().insertMachine(machine)
+
+        val sessionId = "session-tombstone-local"
+        val session = WorkoutSessionEntity(id = sessionId, startTime = 100L, endTime = 200L, syncStatus = SyncStatus.SYNCED)
+        val instance = SessionMachineInstanceEntity(id = "i-tomb", sessionId = sessionId, machineId = machine.id, executionOrder = 0)
+        phoneDb.workoutSessionDao().upsertFullSession(session, listOf(instance), emptyList())
+
+        // 2. Act: Local deletion — add tombstone, delete session, queue delete message
+        SyncIngestionEngine.addDeletedSessionTombstone(phoneDb, sessionId, originDevice = "MOBILE")
+        phoneDb.workoutSessionDao().deleteSession(sessionId)
+        phoneDb.syncQueueDao().insertQueueItem(
+            SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                payloadJson = SyncConstants.ACTION_DELETE,
+                status = QueueStatus.PENDING
+            )
+        )
+
+        // 3. Assert: Tombstone exists
+        val tombstone = phoneDb.deletedSessionDao().getBySessionId(sessionId)
+        assertNotNull("Tombstone must exist after local deletion", tombstone)
+        assertEquals("MOBILE", tombstone!!.originDevice)
+
+        // 4. Simulate: Watch sends the same session payload (delete message was lost)
+        //    Purge the delete queue item to simulate ACK received (worst case: no legacy check possible)
+        phoneDb.syncQueueDao().deleteQueueItemBySessionId(sessionId)
+
+        val latePayload = WorkoutSessionPayload(
+            session = session.toDomainModel(),
+            machineInstances = listOf(
+                SessionMachineInstancePayload(
+                    instance = instance.toDomainModel(),
+                    machine = machine.toDomainModel(),
+                    sets = emptyList()
+                )
+            )
+        )
+        val latePayloadJson = SyncPayloadSerializer.encodeSessionPayload(latePayload)
+
+        // 5. Act: Late payload arrives — must be rejected by tombstone check
+        val result = SyncIngestionEngine.ingestWorkoutPayload(phoneDb, latePayloadJson, isMobile = true)
+
+        // 6. Assert: Rejected as zombie, session NOT resurrected
+        assertTrue("Late payload must be rejected as zombie", result is SyncIngestionEngine.IngestionResult.RejectedZombie)
+        assertNull("Deleted session must not be resurrected", phoneDb.workoutSessionDao().getSessionWithDetailsById(sessionId))
+    }
+
+    @Test
+    fun testTombstoneCleanup_expiredTombstonesAreRemoved() = runBlocking {
+        // 1. Arrange: Insert an expired tombstone (31 days old)
+        val expiredTombstone = com.lockerlift.core.database.entity.DeletedSessionEntity(
+            sessionId = "session-expired",
+            deletedAt = System.currentTimeMillis() - (31L * 24 * 60 * 60 * 1000),
+            originDevice = "MOBILE",
+            ttlDays = 30
+        )
+        phoneDb.deletedSessionDao().insert(expiredTombstone)
+
+        // Insert a fresh tombstone (1 day old)
+        val freshTombstone = com.lockerlift.core.database.entity.DeletedSessionEntity(
+            sessionId = "session-fresh",
+            deletedAt = System.currentTimeMillis() - (1L * 24 * 60 * 60 * 1000),
+            originDevice = "WEAR_OS",
+            ttlDays = 30
+        )
+        phoneDb.deletedSessionDao().insert(freshTombstone)
+
+        // 2. Act: Cleanup
+        val deletedCount = SyncIngestionEngine.cleanupExpiredTombstones(phoneDb)
+
+        // 3. Assert: Only expired tombstone removed
+        assertEquals("One expired tombstone should be removed", 1, deletedCount)
+        assertNull("Expired tombstone should be gone", phoneDb.deletedSessionDao().getBySessionId("session-expired"))
+        assertNotNull("Fresh tombstone should remain", phoneDb.deletedSessionDao().getBySessionId("session-fresh"))
+    }
+
+    @Test
+    fun testPayloadVersion_inSyncedSession_preservedThroughIngestion() = runBlocking {
+        // 1. Arrange: Create a payload with explicit version
+        val machine = MachineEntity(id = "m-ver", name = "Schulterdrücken", targetMuscleGroup = "Schultern", updatedAt = 1L)
+        watchDb.machineDao().insertMachine(machine)
+
+        val session = WorkoutSessionEntity(id = "s-version", startTime = 100L, endTime = 200L, syncStatus = SyncStatus.PENDING_SYNC)
+        val instance = SessionMachineInstanceEntity(id = "i-ver", sessionId = session.id, machineId = machine.id, executionOrder = 0)
+
+        val payload = WorkoutSessionPayload(
+            session = session.toDomainModel(),
+            machineInstances = listOf(
+                SessionMachineInstancePayload(
+                    instance = instance.toDomainModel(),
+                    machine = machine.toDomainModel(),
+                    sets = emptyList()
+                )
+            ),
+            payloadVersion = WorkoutSessionPayload.PAYLOAD_VERSION
+        )
+        val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
+
+        // 2. Act: Ingest
+        val result = SyncIngestionEngine.ingestWorkoutPayload(phoneDb, payloadJson, isMobile = true)
+
+        // 3. Assert: Success and payload version is accessible
+        assertTrue(result is SyncIngestionEngine.IngestionResult.Success)
+        val successResult = result as SyncIngestionEngine.IngestionResult.Success
+        assertEquals(WorkoutSessionPayload.PAYLOAD_VERSION, successResult.payload.payloadVersion)
+    }
 }

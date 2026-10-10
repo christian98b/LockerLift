@@ -70,6 +70,10 @@
                     android:scheme="wear" />
                 <data
                     android:host="*"
+                    android:pathPrefix="/workout_nack"
+                    android:scheme="wear" />
+                <data
+                    android:host="*"
                     android:pathPrefix="/workout_delete"
                     android:scheme="wear" />
                 <data
@@ -86,7 +90,7 @@
                     android:scheme="wear" />
                 <data
                     android:host="*"
-                    android:pathPrefix="/sync/request_master_data"
+                    android:pathPrefix="/sync/master_data_ack"
                     android:scheme="wear" />
             </intent-filter>
         </service>

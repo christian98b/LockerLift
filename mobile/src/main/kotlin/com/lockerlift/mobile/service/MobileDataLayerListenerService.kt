@@ -8,11 +8,8 @@ import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
-import com.lockerlift.core.database.entity.MachineEntity
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.QueueStatus
-import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncEventBus
 import com.lockerlift.core.sync.SyncIngestionEngine
@@ -164,6 +161,20 @@ class MobileDataLayerListenerService : WearableListenerService() {
                         dataLayerManager.updateLastSyncTimestamp()
                         Log.i(TAG, "Received sync flush completion notice from watch: $count workouts transferred.")
                     }
+                }
+            }
+            SyncConstants.PATH_REQUEST_MASTER_DATA -> {
+                serviceScope.launch {
+                    if (!isAuthorizedWatchNode(messageEvent.sourceNodeId)) {
+                        Log.w(TAG, "Rejected master data request from unauthorized watch node: ${messageEvent.sourceNodeId}")
+                        return@launch
+                    }
+                    Log.i(TAG, "Watch requested master data push. Dispatching catalog and templates.")
+                    com.lockerlift.mobile.sync.MobileMasterDataSync.pushAllMasterData(
+                        this@MobileDataLayerListenerService,
+                        database,
+                        dataLayerManager
+                    )
                 }
             }
         }

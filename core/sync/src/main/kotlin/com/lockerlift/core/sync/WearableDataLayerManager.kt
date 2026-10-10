@@ -1,6 +1,7 @@
 package com.lockerlift.core.sync
 
 import android.content.Context
+import android.util.Log
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
 import com.google.android.gms.wearable.Node
@@ -50,6 +51,43 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
 
     override suspend fun isWearCompanionConnected(): Boolean =
         getWearCompanionStatus().isConnected
+
+    /**
+     * Sends a master data pull request to the phone companion.
+     * The phone will respond by pushing the full equipment catalog and workout templates.
+     */
+    suspend fun requestMasterDataFromPhone(): Boolean {
+        return runCatching {
+            val connectedNodes = getConnectedNodes()
+            if (connectedNodes.isEmpty()) return false
+
+            val capInfo = runCatching {
+                Wearable.getCapabilityClient(context)
+                    .getCapability(SyncConstants.CAPABILITY_MOBILE, CapabilityClient.FILTER_ALL)
+                    .await()
+            }.getOrNull()
+
+            val targetNodes = if (capInfo != null && capInfo.nodes.isNotEmpty()) {
+                capInfo.nodes.toList()
+            } else {
+                connectedNodes
+            }
+
+            var anySent = false
+            for (node in targetNodes) {
+                val sent = runCatching {
+                    messageClient.sendMessage(
+                        node.id,
+                        SyncConstants.PATH_REQUEST_MASTER_DATA,
+                        ByteArray(0)
+                    ).await()
+                    true
+                }.getOrDefault(false)
+                if (sent) anySent = true
+            }
+            anySent
+        }.getOrDefault(false)
+    }
 
     override suspend fun requestWatchSyncFlush(): Boolean {
         return runCatching {
@@ -223,8 +261,10 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
     ): SyncResult {
         return globalFlushMutex.withLock {
             runCatching {
-                // Recover any stale in-transit items that timed out (e.g. lost ACK after 60s)
-                syncQueueDao.resetStaleInTransitItems(System.currentTimeMillis() - 60_000L)
+                // Recover any stale in-transit items that timed out (lost ACK)
+                syncQueueDao.resetStaleInTransitItems(
+                    System.currentTimeMillis() - SyncConstants.STALE_IN_TRANSIT_THRESHOLD_MS
+                )
 
                 val connectedNodes = getConnectedNodes()
                 if (connectedNodes.isEmpty()) {
@@ -243,30 +283,68 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
                 }
 
                 val nodeInfos = connectedNodes.map { CompanionNodeInfo(it.id, it.displayName, it.isNearby) }
-                val targetNodeInfo = CompanionStatusResolver.findTargetNode(nodeInfos, capNodeIds)
-                    ?: return@runCatching SyncResult.NoCompanionFound()
+                // Strict capability matching: if a target capability is specified, only send to nodes
+                // that actually have it. Falling back to arbitrary nodes risks data going to the wrong device.
+                val targetNodeInfo = if (targetCapability != null) {
+                    nodeInfos.firstOrNull { it.id in capNodeIds }
+                        ?: return@runCatching SyncResult.NoCompanionFound(
+                            "No connected node with capability $targetCapability"
+                        )
+                } else {
+                    CompanionStatusResolver.findTargetNode(nodeInfos, capNodeIds)
+                        ?: return@runCatching SyncResult.NoCompanionFound()
+                }
 
                 val pendingItems = syncQueueDao.getPendingQueueItems()
                 if (pendingItems.isEmpty()) {
                     return@runCatching SyncResult.Success(0)
                 }
 
-                var syncedCount = 0
+                var dispatchedCount = 0
                 var failedCount = 0
+                var deadLetterCount = 0
                 for (item in pendingItems) {
+                    // Dead-letter: items that exceeded max retries are purged to prevent queue head blocking
+                    if (item.retryCount >= SyncConstants.MAX_RETRY_ATTEMPTS) {
+                        Log.w(TAG,
+                            "Dead-lettering queue item ${item.id} (session=${item.sessionId}) after ${item.retryCount} retries")
+                        syncQueueDao.deleteQueueItemById(item.id)
+                        deadLetterCount++
+                        continue
+                    }
+
                     syncQueueDao.updateAttemptStatus(item.id, QueueStatus.IN_TRANSIT, System.currentTimeMillis())
-                    val success = if (item.payloadJson == SyncConstants.ACTION_DELETE) {
-                        val delSuccess = sendWorkoutDelete(targetNodeInfo.id, item.sessionId)
-                        if (delSuccess) {
-                            syncQueueDao.deleteQueueItemById(item.id)
+                    val success = when {
+                        item.payloadJson == SyncConstants.ACTION_DELETE -> {
+                            val delSuccess = sendWorkoutDelete(targetNodeInfo.id, item.sessionId)
+                            if (delSuccess) {
+                                syncQueueDao.deleteQueueItemById(item.id)
+                            }
+                            delSuccess
                         }
-                        delSuccess
-                    } else {
-                        sendWorkoutPayload(targetNodeInfo.id, item.payloadJson)
+                        item.itemType == SyncConstants.ITEM_TYPE_MASTER_CATALOG -> {
+                            // Master data items go via DataClient, not MessageClient/ChannelClient
+                            val dataSuccess = syncEquipmentCatalog(item.payloadJson)
+                            if (dataSuccess) {
+                                syncQueueDao.deleteQueueItemById(item.id)
+                            }
+                            dataSuccess
+                        }
+                        item.itemType == SyncConstants.ITEM_TYPE_MASTER_TEMPLATES -> {
+                            val dataSuccess = syncTemplates(item.payloadJson)
+                            if (dataSuccess) {
+                                syncQueueDao.deleteQueueItemById(item.id)
+                            }
+                            dataSuccess
+                        }
+                        else -> {
+                            // Workout session payload: stays IN_TRANSIT until ACK arrives
+                            sendWorkoutPayload(targetNodeInfo.id, item.payloadJson)
+                        }
                     }
 
                     if (success) {
-                        syncedCount++
+                        dispatchedCount++
                     } else {
                         failedCount++
                         syncQueueDao.updateAttemptStatus(item.id, QueueStatus.ERROR, System.currentTimeMillis())
@@ -274,10 +352,13 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
                 }
 
                 updateLastSyncTimestamp()
-                if (failedCount > 0 && syncedCount == 0) {
-                    SyncResult.Error("Failed to transfer $failedCount pending item(s)")
-                } else {
-                    SyncResult.Success(syncedCount)
+                when {
+                    failedCount > 0 && dispatchedCount == 0 && deadLetterCount == 0 ->
+                        SyncResult.Error("Failed to transfer $failedCount pending item(s)")
+                    deadLetterCount > 0 && dispatchedCount == 0 && failedCount == 0 ->
+                        SyncResult.Error("Purged $deadLetterCount item(s) after ${SyncConstants.MAX_RETRY_ATTEMPTS} retries")
+                    else ->
+                        SyncResult.Success(dispatchedCount)
                 }
             }.getOrElse { e ->
                 SyncResult.Error(e.message ?: "Unknown sync error")
@@ -286,6 +367,7 @@ class WearableDataLayerManager(private val context: Context) : SyncFlushRequeste
     }
 
     companion object {
+        private const val TAG = "WearableDataLayerManager"
         const val PREFS_SYNC = "lockerlift_sync_prefs"
         const val KEY_LAST_SYNC_TIMESTAMP = "last_sync_timestamp"
         private val globalFlushMutex = Mutex()

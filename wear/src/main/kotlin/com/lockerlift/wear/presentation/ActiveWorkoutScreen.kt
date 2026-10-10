@@ -142,19 +142,21 @@ fun ActiveWorkoutScreen(
             item {
                 CompactButton(
                     onClick = {
-                        finishAndSaveWorkout(
-                            app = app,
-                            sessionId = currentSessionId,
-                            startTimeMillis = workoutStartTimeMillis,
-                            totalPausedMillis = pauseState.totalPausedDurationMillis,
-                            templateId = templateId,
-                            templateName = templateName,
-                            sessionInstances = sessionInstances,
-                            loggedSets = loggedSets,
-                            catalogMachines = catalogMachines.map { it.toDomainModel() },
-                            initialMachines = initialMachines,
-                            onFinish = onFinishWorkout
-                        )
+                        coroutineScope.launch {
+                            finishAndSaveWorkout(
+                                app = app,
+                                sessionId = currentSessionId,
+                                startTimeMillis = workoutStartTimeMillis,
+                                totalPausedMillis = pauseState.totalPausedDurationMillis,
+                                templateId = templateId,
+                                templateName = templateName,
+                                sessionInstances = sessionInstances,
+                                loggedSets = loggedSets,
+                                catalogMachines = catalogMachines.map { it.toDomainModel() },
+                                initialMachines = initialMachines,
+                                onFinish = onFinishWorkout
+                            )
+                        }
                     },
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
@@ -832,19 +834,21 @@ fun ActiveWorkoutScreen(
             item {
                 Button(
                     onClick = {
-                        finishAndSaveWorkout(
-                            app = app,
-                            sessionId = currentSessionId,
-                            startTimeMillis = workoutStartTimeMillis,
-                            totalPausedMillis = pauseState.totalPausedDurationMillis,
-                            templateId = templateId,
-                            templateName = templateName,
-                            sessionInstances = sessionInstances,
-                            loggedSets = loggedSets,
-                            catalogMachines = catalogMachines.map { it.toDomainModel() },
-                            initialMachines = initialMachines,
-                            onFinish = onFinishWorkout
-                        )
+                        coroutineScope.launch {
+                            finishAndSaveWorkout(
+                                app = app,
+                                sessionId = currentSessionId,
+                                startTimeMillis = workoutStartTimeMillis,
+                                totalPausedMillis = pauseState.totalPausedDurationMillis,
+                                templateId = templateId,
+                                templateName = templateName,
+                                sessionInstances = sessionInstances,
+                                loggedSets = loggedSets,
+                                catalogMachines = catalogMachines.map { it.toDomainModel() },
+                                initialMachines = initialMachines,
+                                onFinish = onFinishWorkout
+                            )
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(0.9f)
                 ) {
@@ -1057,19 +1061,21 @@ fun ActiveWorkoutScreen(
                     if (isModified) {
                         currentSubScreen = ActiveWorkoutSubScreen.CONSOLIDATION_CONFIRM
                     } else {
-                        finishAndSaveWorkout(
-                            app = app,
-                            sessionId = currentSessionId,
-                            startTimeMillis = workoutStartTimeMillis,
-                            totalPausedMillis = pauseState.totalPausedDurationMillis,
-                            templateId = templateId,
-                            templateName = templateName,
-                            sessionInstances = sessionInstances,
-                            loggedSets = loggedSets,
-                            catalogMachines = catalogMachines.map { it.toDomainModel() },
-                            initialMachines = initialMachines,
-                            onFinish = onFinishWorkout
-                        )
+                        coroutineScope.launch {
+                            finishAndSaveWorkout(
+                                app = app,
+                                sessionId = currentSessionId,
+                                startTimeMillis = workoutStartTimeMillis,
+                                totalPausedMillis = pauseState.totalPausedDurationMillis,
+                                templateId = templateId,
+                                templateName = templateName,
+                                sessionInstances = sessionInstances,
+                                loggedSets = loggedSets,
+                                catalogMachines = catalogMachines.map { it.toDomainModel() },
+                                initialMachines = initialMachines,
+                                onFinish = onFinishWorkout
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
@@ -1080,7 +1086,7 @@ fun ActiveWorkoutScreen(
     }
 }
 
-private fun finishAndSaveWorkout(
+private suspend fun finishAndSaveWorkout(
     app: LockerLiftWearApp,
     sessionId: String,
     startTimeMillis: Long,
@@ -1135,26 +1141,27 @@ private fun finishAndSaveWorkout(
         status = QueueStatus.PENDING
     )
 
-    kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
-        database.workoutSessionDao().upsertFullSession(
-            session = session.toEntity(),
-            instances = sessionInstances.map { it.toEntity() },
-            sets = allSets.map { it.toEntity() }
-        )
-        database.syncQueueDao().insertQueueItem(syncItem)
+    // Persist session + queue item atomically-ish: DB write first, then queue insert.
+    // If the app crashes between these two calls, the startup recovery in
+    // SyncIngestionEngine.recoverOrphanedSessions() will re-queue the session.
+    database.workoutSessionDao().upsertFullSession(
+        session = session.toEntity(),
+        instances = sessionInstances.map { it.toEntity() },
+        sets = allSets.map { it.toEntity() }
+    )
+    database.syncQueueDao().insertQueueItem(syncItem)
 
-        // Enqueue background sync worker (Store-and-Forward)
-        SyncQueueWorker.enqueue(app)
+    // Enqueue background sync worker (Store-and-Forward)
+    SyncQueueWorker.enqueue(app)
 
-        // Attempt immediate flush if phone is connected right now
-        runCatching {
-            val dataLayerManager = WearableDataLayerManager(app)
-            dataLayerManager.flushPendingQueue(database.syncQueueDao(), SyncConstants.CAPABILITY_MOBILE)
-        }
+    // Attempt immediate flush if phone is connected right now
+    runCatching {
+        val dataLayerManager = WearableDataLayerManager(app)
+        dataLayerManager.flushPendingQueue(database.syncQueueDao(), SyncConstants.CAPABILITY_MOBILE)
+    }
 
-        WorkoutForegroundService.stopService(app)
-        withContext(Dispatchers.Main) {
-            onFinish()
-        }
+    WorkoutForegroundService.stopService(app)
+    withContext(Dispatchers.Main) {
+        onFinish()
     }
 }

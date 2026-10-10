@@ -82,6 +82,19 @@ interface WorkoutSessionDao {
     suspend fun deleteMachineInstancesBySessionId(sessionId: String)
 
     /**
+     * Finds sessions that are marked PENDING_SYNC but have no corresponding entry
+     * in the sync queue — these are "orphaned" sessions that would never be synced
+     * (e.g., app crashed between DB write and queue insert).
+     */
+    @Query("""
+        SELECT s.* FROM workout_sessions s
+        LEFT JOIN sync_queue q ON s.id = q.session_id
+        WHERE s.sync_status = 'PENDING_SYNC' AND q.id IS NULL
+        ORDER BY s.start_time ASC
+    """)
+    suspend fun getOrphanedPendingSyncSessions(): List<WorkoutSessionEntity>
+
+    /**
      * Atomically inserts or updates a full workout session graph (used by sync receiver and history editor).
      */
     @Transaction

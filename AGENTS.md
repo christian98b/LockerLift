@@ -286,6 +286,35 @@ flowchart TD
   - Unit tests added:
     - `WorkoutTrackingLogicTest.kt` (`:core:database`): `testCalculateWeightSteppers()` covering standard 2.5 kg increment, 1.25 kg microplates, 5.0 kg heavy stacks, 1.0 kg dumbbells, 0.5 kg, and fallback; `testFormatDelta()` covering signed integer and decimal formatting.
     - `MobileWorkoutTrackingTest.kt` (`:mobile`): `testWeightStepperInteractionAndClamping()` covering delta application, lower bound clamping at 0 kg, and whitespace/wrap-free string formatting.
+- [x] **Sync Reliability Hardening & Deep Audit Remediation (`:core:sync`, `:core:database`, `:mobile`, `:wear`)**
+  - **Critical Fixes:**
+    - Master Data Queue Routing Fix (`WearableDataLayerManager.flushPendingQueue`): Master data items (`ITEM_TYPE_MASTER_CATALOG`, `ITEM_TYPE_MASTER_TEMPLATES`) now route via `DataClient` (`syncEquipmentCatalog`/`syncTemplates`) instead of the broken `sendWorkoutPayload` path that tried to send catalog JSON as a workout session payload.
+    - Periodic Sync Safety Net (`SyncQueueWorker.enqueuePeriodic`): 15-minute `PeriodicWorkRequest` with `NetworkType.NOT_REQUIRED` ensures no sync queue item is stranded if all event-driven triggers fail or WorkManager retries exhaust. Enabled in both `LockerLiftMobileApp.onCreate()` and `LockerLiftWearApp.onCreate()`.
+    - Tombstone on Local Deletion (`HistoryScreen`): `SyncIngestionEngine.addDeletedSessionTombstone()` called before deleting a workout locally, preventing zombie resurrection when the delete sync message is lost and the delete queue item is ACKed/purged.
+    - Orphaned Session Recovery (`SyncIngestionEngine.recoverOrphanedSessions`): New `getOrphanedPendingSyncSessions()` DAO query finds `PENDING_SYNC` sessions without queue items (crash between DB write and queue insert). Recovery runs on app startup in both apps, re-queues orphaned sessions, and triggers an immediate sync flush.
+  - **High-Priority Fixes:**
+    - Manifest Intent-Filter Completeness: Added `/workout_nack` to both mobile and wear manifests (NACK messages were silently dropped). Added `/sync/request_master_data` to mobile manifest and `/sync/master_data_ack` to wear manifest.
+    - Watch-to-Phone Master Data Pull (`WearableDataLayerManager.requestMasterDataFromPhone` + `MobileDataLayerListenerService` handler): Watch can now request master data from phone via `PATH_REQUEST_MASTER_DATA`. Wired into `WearSettingsScreen` "Sync Now" button.
+    - Strict Capability Matching (`flushPendingQueue`): When `targetCapability` is specified, only nodes with that capability receive data. No more fallback to arbitrary connected nodes (e.g., Bluetooth speakers).
+    - Transactional Ingestion (`SyncIngestionEngine.ingestWorkoutPayload`): Machine inserts + session upsert wrapped in `database.runInTransaction { }` preventing orphaned machines on partial failure.
+    - GlobalScope Elimination (`ActiveWorkoutScreen.finishAndSaveWorkout`): Converted from `GlobalScope.launch(Dispatchers.IO)` to `suspend` function called via `coroutineScope.launch`. All 4 call sites updated.
+    - Master Data Queue Deduplication (`MobileMasterDataSync`): `deleteQueueItemBySessionIdAndType` called before inserting new master data queue items, preventing queue pollution from repeated pushes.
+  - **Medium-Priority Fixes:**
+    - Dead-Letter / Max Retry (`flushPendingQueue`): Items exceeding `MAX_RETRY_ATTEMPTS` (10) are purged with warning log, preventing infinite retry of corrupted payloads and queue head blocking.
+    - Tombstone Cleanup (`SyncQueueWorker.doWork`): `SyncIngestionEngine.cleanupExpiredTombstones()` called opportunistically during every sync flush.
+    - Payload Versioning (`WorkoutSessionPayload.payloadVersion`): Added `payloadVersion` field (default = `PAYLOAD_VERSION = 1`) for forward compatibility. Legacy payloads without the field decode with the default.
+    - Backoff Policy (`SyncQueueWorker.enqueue`): Added exponential backoff (30s initial) to one-time work requests.
+    - Named Constants: `STALE_IN_TRANSIT_THRESHOLD_MS` (60s) replaces hardcoded value. Removed dead constants `PATH_PING` and `ACK_TIMEOUT_MS`.
+    - Dead Code Cleanup: Removed unused DAO methods (`getPendingMasterDataItems`, `getPendingItemsByType`), unused imports in both listener services.
+  - **Files Modified:**
+    - `:core:sync`: `WearableDataLayerManager.kt`, `SyncQueueWorker.kt`, `SyncIngestionEngine.kt`, `SyncConstants.kt`, `WorkoutSessionPayload.kt`
+    - `:core:database`: `WorkoutSessionDao.kt` (added `getOrphanedPendingSyncSessions`), `SyncQueueDao.kt` (removed dead methods)
+    - `:mobile`: `LockerLiftMobileApp.kt`, `MobileDataLayerListenerService.kt`, `HistoryScreen.kt`, `MobileMasterDataSync.kt`, `AndroidManifest.xml`
+    - `:wear`: `LockerLiftWearApp.kt`, `WearDataLayerListenerService.kt`, `ActiveWorkoutScreen.kt`, `WearSettingsScreen.kt`, `AndroidManifest.xml`
+  - **Unit Tests Added:**
+    - `SyncReliabilityHardeningTest.kt` (`:core:sync`): 30 tests covering dead-letter logic, strict capability matching, item type routing, payload version round-trip & legacy compatibility, stale in-transit threshold, master data deduplication, tombstone lifecycle, orphaned session detection, result mapping with dead-letter, protocol path uniqueness, and worker name uniqueness.
+    - `InMemoryE2eSyncTest.kt` (`:core:sync`): 6 new E2E tests: orphaned session recovery (3 tests: orphaned re-queued, synced not re-queued, queued not re-queued), local delete tombstone prevents zombie resurrection, tombstone cleanup removes expired entries, payload version preserved through ingestion.
+    - `EntityMappingTest.kt` (`:core:database`): `testOrphanedPendingSyncSessionsQueryContract` verifying the SQL LEFT JOIN query logic.
 
 ---
 

@@ -18,8 +18,13 @@ data class SessionMachineInstancePayload(
 data class WorkoutSessionPayload(
     val session: WorkoutSession,
     val templateName: String? = null,
-    val machineInstances: List<SessionMachineInstancePayload>
-)
+    val machineInstances: List<SessionMachineInstancePayload>,
+    val payloadVersion: Int = PAYLOAD_VERSION
+) {
+    companion object {
+        const val PAYLOAD_VERSION = 1
+    }
+}
 
 @Serializable
 data class WorkoutTemplatePayload(

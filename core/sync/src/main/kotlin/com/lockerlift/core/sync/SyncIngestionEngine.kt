@@ -4,10 +4,13 @@ import android.util.Log
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.DeletedSessionEntity
 import com.lockerlift.core.database.entity.MachineEntity
+import com.lockerlift.core.database.entity.SyncQueueEntity
+import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
-import com.lockerlift.core.model.DeletedSession
+import com.lockerlift.core.model.QueueStatus
 import com.lockerlift.core.model.SyncStatus
 import kotlinx.coroutines.flow.first
+import java.util.UUID
 
 /**
  * Shared, unified synchronization ingestion engine.
@@ -76,21 +79,24 @@ object SyncIngestionEngine {
             }
         }
 
-        if (machinesToInsert.isNotEmpty()) {
-            machineDao.insertMachines(machinesToInsert)
-        }
-
         val instanceEntities = payload.machineInstances.map { instPayload ->
             val resolvedMachineId = machineIdMapping[instPayload.machine.id] ?: instPayload.instance.machineId
             instPayload.instance.copy(machineId = resolvedMachineId).toEntity()
         }
         val setEntities = payload.machineInstances.flatMap { it.sets.map { set -> set.toEntity() } }
 
-        sessionDao.upsertFullSession(
-            session = session.toEntity(),
-            instances = instanceEntities,
-            sets = setEntities
-        )
+        // Wrap machine inserts + session upsert in a single transaction so that
+        // a failure in upsertFullSession doesn't leave orphaned machines behind.
+        database.runInTransaction {
+            if (machinesToInsert.isNotEmpty()) {
+                machineDao.insertMachines(machinesToInsert)
+            }
+            sessionDao.upsertFullSession(
+                session = session.toEntity(),
+                instances = instanceEntities,
+                sets = setEntities
+            )
+        }
 
         return IngestionResult.Success(session.id, payload)
     }
@@ -225,5 +231,59 @@ object SyncIngestionEngine {
         val deletedSessionDao = database.deletedSessionDao()
         val cutoffTimestamp = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000) // 30 days
         return deletedSessionDao.deleteExpiredSessions(cutoffTimestamp)
+    }
+
+    /**
+     * Recovers orphaned sessions: finds workouts marked PENDING_SYNC that have no
+     * corresponding sync queue entry (e.g., app crashed between DB write and queue insert)
+     * and re-queues them for sync. Call on app startup.
+     *
+     * @return number of sessions re-queued
+     */
+    suspend fun recoverOrphanedSessions(database: LockerLiftDatabase): Int {
+        val sessionDao = database.workoutSessionDao()
+        val syncQueueDao = database.syncQueueDao()
+        val orphanedSessions = sessionDao.getOrphanedPendingSyncSessions()
+        if (orphanedSessions.isEmpty()) return 0
+
+        Log.i("SyncIngestionEngine", "Recovering ${orphanedSessions.size} orphaned PENDING_SYNC session(s)")
+
+        var recoveredCount = 0
+        for (sessionEntity in orphanedSessions) {
+            runCatching {
+                // Build full payload from DB graph
+                val sessionWithDetails = sessionDao.getSessionWithDetailsById(sessionEntity.id)
+                    ?: return@runCatching
+
+                val machineInstances = sessionWithDetails.machineInstances.map { instWithSets ->
+                    SessionMachineInstancePayload(
+                        instance = instWithSets.instance.toDomainModel(),
+                        machine = instWithSets.machine.toDomainModel(),
+                        sets = instWithSets.sets.map { it.toDomainModel() }
+                    )
+                }
+
+                val payload = WorkoutSessionPayload(
+                    session = sessionWithDetails.session.toDomainModel(),
+                    templateName = null, // Template name not stored in session entity
+                    machineInstances = machineInstances
+                )
+                val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
+
+                syncQueueDao.insertQueueItem(
+                    SyncQueueEntity(
+                        id = UUID.randomUUID().toString(),
+                        sessionId = sessionEntity.id,
+                        payloadJson = payloadJson,
+                        status = QueueStatus.PENDING,
+                        itemType = SyncConstants.ITEM_TYPE_WORKOUT
+                    )
+                )
+                recoveredCount++
+            }.onFailure { e ->
+                Log.e("SyncIngestionEngine", "Failed to recover orphaned session ${sessionEntity.id}", e)
+            }
+        }
+        return recoveredCount
     }
 }

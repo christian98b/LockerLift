@@ -278,4 +278,34 @@ class EntityMappingTest {
         assertEquals(QueueStatus.PENDING, resetItems.find { it.id == "q3" }?.status)
         assertEquals(QueueStatus.PENDING, resetItems.find { it.id == "q4" }?.status)
     }
+
+    @Test
+    fun testOrphanedPendingSyncSessionsQueryContract() {
+        // Simulate the SQL: SELECT s.* FROM workout_sessions s
+        //   LEFT JOIN sync_queue q ON s.id = q.session_id
+        //   WHERE s.sync_status = 'PENDING_SYNC' AND q.id IS NULL
+
+        val sessions = listOf(
+            WorkoutSessionEntity(id = "s-orphan", startTime = 100L, endTime = 200L, syncStatus = SyncStatus.PENDING_SYNC),
+            WorkoutSessionEntity(id = "s-queued", startTime = 100L, endTime = 200L, syncStatus = SyncStatus.PENDING_SYNC),
+            WorkoutSessionEntity(id = "s-synced", startTime = 100L, endTime = 200L, syncStatus = SyncStatus.SYNCED),
+            WorkoutSessionEntity(id = "s-local", startTime = 100L, endTime = 200L, syncStatus = SyncStatus.LOCAL_ONLY)
+        )
+
+        val queueItems = listOf(
+            SyncQueueEntity(id = "q1", sessionId = "s-queued", payloadJson = "{}", status = QueueStatus.PENDING)
+            // s-orphan has NO queue item → orphaned
+            // s-synced has NO queue item but is SYNCED → not orphaned
+            // s-local has NO queue item but is LOCAL_ONLY → not orphaned
+        )
+
+        val queueSessionIds = queueItems.map { it.sessionId }.toSet()
+
+        val orphaned = sessions.filter {
+            it.syncStatus == SyncStatus.PENDING_SYNC && it.id !in queueSessionIds
+        }
+
+        assertEquals("Only PENDING_SYNC sessions without queue items are orphaned", 1, orphaned.size)
+        assertEquals("s-orphan", orphaned.first().id)
+    }
 }

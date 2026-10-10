@@ -1,7 +1,6 @@
 package com.lockerlift.wear.communication
 
 import android.util.Log
-import androidx.work.WorkManager
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.ChannelClient
 import com.google.android.gms.wearable.DataEvent
@@ -12,10 +11,7 @@ import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.lockerlift.core.database.LockerLiftDatabase
-import com.lockerlift.core.database.entity.MachineEntity
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.QueueStatus
-import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncIngestionEngine
 import com.lockerlift.core.sync.SyncPayloadSerializer
@@ -26,7 +22,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream

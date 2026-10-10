@@ -191,6 +191,10 @@ fun WearSettingsScreen(
                             return@launch
                         }
 
+                        // Pull master data from phone (catalog + templates)
+                        dataLayerManager.requestMasterDataFromPhone()
+
+                        // Push any pending workout sessions to phone
                         val result = dataLayerManager.flushPendingQueue(
                             syncQueueDao,
                             SyncConstants.CAPABILITY_MOBILE

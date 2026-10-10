@@ -26,13 +26,14 @@ object MobileMasterDataSync {
         dataLayerManager: WearableDataLayerManager
     ) {
         val syncQueueDao = database.syncQueueDao()
-        
+
         // 1. Sync equipment catalog via DataClient (immediate)
         val allMachines = database.machineDao().getAllMachines()
         val catalogJson = SyncPayloadSerializer.encodeMachines(allMachines.map { it.toDomainModel() })
         dataLayerManager.syncEquipmentCatalog(catalogJson)
-        
-        // Queue catalog for reliable delivery
+
+        // Deduplicate: remove any pending catalog queue items before inserting a fresh one
+        syncQueueDao.deleteQueueItemBySessionIdAndType("MASTER_CATALOG", SyncConstants.ITEM_TYPE_MASTER_CATALOG)
         val catalogQueueItem = SyncQueueEntity(
             id = UUID.randomUUID().toString(),
             sessionId = "MASTER_CATALOG",
@@ -56,8 +57,9 @@ object MobileMasterDataSync {
         }
         val templatesJson = SyncPayloadSerializer.encodeTemplates(payloads)
         dataLayerManager.syncTemplates(templatesJson)
-        
-        // Queue templates for reliable delivery
+
+        // Deduplicate: remove any pending templates queue items before inserting a fresh one
+        syncQueueDao.deleteQueueItemBySessionIdAndType("MASTER_TEMPLATES", SyncConstants.ITEM_TYPE_MASTER_TEMPLATES)
         val templatesQueueItem = SyncQueueEntity(
             id = UUID.randomUUID().toString(),
             sessionId = "MASTER_TEMPLATES",
@@ -67,7 +69,7 @@ object MobileMasterDataSync {
             targetDeviceId = SyncConstants.CAPABILITY_WEAR
         )
         syncQueueDao.insertQueueItem(templatesQueueItem)
-        
+
         // Trigger sync worker to process queued master data
         com.lockerlift.core.sync.SyncQueueWorker.enqueue(context)
     }
@@ -84,7 +86,8 @@ object MobileMasterDataSync {
         val allMachines = database.machineDao().getAllMachines()
         val catalogJson = SyncPayloadSerializer.encodeMachines(allMachines.map { it.toDomainModel() })
         dataLayerManager.syncEquipmentCatalog(catalogJson)
-        
+
+        syncQueueDao.deleteQueueItemBySessionIdAndType("MASTER_CATALOG", SyncConstants.ITEM_TYPE_MASTER_CATALOG)
         val queueItem = SyncQueueEntity(
             id = UUID.randomUUID().toString(),
             sessionId = "MASTER_CATALOG",
@@ -118,7 +121,8 @@ object MobileMasterDataSync {
         }
         val templatesJson = SyncPayloadSerializer.encodeTemplates(payloads)
         dataLayerManager.syncTemplates(templatesJson)
-        
+
+        syncQueueDao.deleteQueueItemBySessionIdAndType("MASTER_TEMPLATES", SyncConstants.ITEM_TYPE_MASTER_TEMPLATES)
         val queueItem = SyncQueueEntity(
             id = UUID.randomUUID().toString(),
             sessionId = "MASTER_TEMPLATES",
