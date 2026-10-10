@@ -38,6 +38,11 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        // NullSafeMutableLiveData crashes lint under Kotlin 2.0 (KaCallableMemberCall
+        // analysis-api mismatch); disable the broken detector until AGP/lint is upgraded.
+        disable += "NullSafeMutableLiveData"
+    }
 }
 
 dependencies {
