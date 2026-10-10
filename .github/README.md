@@ -181,7 +181,7 @@ adb devices | grep -v "List of devices"
 
 - [GitHub Actions Dokumentation](https://docs.github.com/en/actions)
 - [Android Actions](https://github.com/android-actions)
-- [Setup Android SDK](https://github.com/android-actions/setup-android)
+- ~~Setup Android SDK~~ (entfernt — Action ist defekt, SDK wird manuell via sdkmanager installiert, siehe build-and-test.yml)
 - [Gradle Build Action](https://github.com/gradle/gradle-build-action)
 - [Softprops Release Action](https://github.com/softprops/action-gh-release)
 

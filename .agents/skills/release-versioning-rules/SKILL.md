@@ -103,7 +103,7 @@ When executing a release:
    * In `mobile/build.gradle.kts` and `wear/build.gradle.kts`:
      * Increment `versionCode` by 1.
      * Update `versionName` to `"X.Y.Z"`.
-3. **Verify All Unit Tests:** Ensure `./gradlew test` passes 100%.
+3. **Verify All Unit Tests:** Ensure `gradle test` (Gradle 8.10.2, no wrapper script in the repo) passes 100%.
 4. **Tag the Release:**
    ```bash
    git tag -a vX.Y.Z -m "Release vX.Y.Z: <Summary of changes>"

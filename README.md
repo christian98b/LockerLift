@@ -309,21 +309,21 @@ Comprehensive user documentation is available in the [`documentation/`](document
 ### Prerequisites
 * **Java Development Kit (JDK):** Version 21
 * **Android SDK:** Build-Tools 35, Compile SDK 35 (Min SDK: 28 for phone, 30 for Wear OS)
-* **Gradle:** 8.7+
+* **Gradle:** 8.10.2 (kein `gradlew`-Wrapper im Repo; `gradle`-Binary verwenden)
 
 ### Running Unit Tests
 ```bash
 # Run all unit tests across modules
-./gradlew test
+gradle test
 ```
 
 ### Building Application APKs
 ```bash
 # Build Mobile Smartphone APK
-./gradlew :mobile:assembleDebug
+gradle :mobile:assembleDebug
 
 # Build Wear OS Smartwatch APK
-./gradlew :wear:assembleDebug
+gradle :wear:assembleDebug
 ```
 
 ---
