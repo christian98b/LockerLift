@@ -7,6 +7,26 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.7.4] - 2026-10-10
+
+### 🔧 Korrekturen
+
+#### Synchronisation & Sicherheit
+- **Fail-closed Node-Autorisierung:** Ein fehlgeschlagener Capability-Check beim Nachrichteneingang (ACK, DELETE, Workout-Payloads) führte bisher dazu, dass Nachrichten von nicht autorisierten Geräten akzeptiert wurden. Die Prüfung schlägt jetzt sicherheitshalber fehl und lehnt ab.
+- **Kein stiller Datenverlust mehr in der Sync-Queue:** Queue-Items, die die maximale Anzahl an Übertragungsversuchen überschritten haben, werden nicht mehr gelöscht, sondern mit neuem Status `DEAD_LETTER` in der Datenbank behalten und für manuelle Wiederholung vorgehalten.
+
+#### Backup & Restore
+- **Atomarer Restore:** Das Wiederherstellen eines Backups dekodiert jetzt alle Daten vor dem Schreiben und läuft in einer einzigen Datenbank-Transaktion — ein Absturz mitten im Restore hinterlässt keinen halbfertigen Zustand mehr.
+- **Typsichere DB-Abfragen:** Raw-SQL-Cursor-Queries im Backup-Manager durch typsichere DAO-Methoden ersetzt.
+
+#### CI/CD
+- **Release-Pipeline repariert:** Die fehlerhafte `android-actions/setup-android@v3`-Action (sdkmanager exit 1) wurde durch das manuelle SDK-Setup ersetzt; außerdem wird die fehlende `./gradlew`-Wrapper-Datei durch die Gradle-Binary ersetzt. (v1.7.2 und v1.7.3 waren deshalb nie als APK veröffentlicht worden.)
+
+#### Code-Qualität
+- **`!!`-Assertionen entfernt:** Unsichere Not-Null-Assertions in Compose-Code (Mobile & Wear) durch lokale Smart-Cast-Werte ersetzt.
+
+---
+
 ## [1.7.0] - 2024-10-08
 
 ### 🚀 Wichtige Verbesserungen
