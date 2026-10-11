@@ -57,7 +57,7 @@ jobs:
       - name: Gradle Cache
         uses: gradle/gradle-build-action@v3
         with:
-          gradle-version: '8.10.2'  # Muss mit gradle-wrapper.properties übereinstimmen
+          gradle-version: '8.13'  # Muss mit gradle-wrapper.properties uebereinstimmen
       
       # 6. Abhängigkeiten herunterladen
       - name: Download dependencies
