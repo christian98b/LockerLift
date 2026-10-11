@@ -1,5 +1,5 @@
 ---
-name: Local Build & Test
+name: local-build
 description: Build and test LockerLift locally on the Ubuntu server (JDK 21, Gradle 8.10.2, Android SDK 35) with memory throttling for low-RAM machines
 ---
 
