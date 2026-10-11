@@ -51,3 +51,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 33 | Wear OS Material 3 Component Migration & Dynamic Color | [33-wear-material3-dynamic-theming.md](33-wear-material3-dynamic-theming.md) |
 | 34 | Gradle 9.6 / AGP 9.4.1 Upgrade: CI Alignment & Room KSP2 Remediation | [34-gradle9-agp9-ci-alignment.md](34-gradle9-agp9-ci-alignment.md) |
 | 35 | Mobile Navigation Fixes: Settings Trap & History Sub-Tab Bar | [35-mobile-settings-history-nav-fixes.md](35-mobile-settings-history-nav-fixes.md) |
+| 36 | Architecture Hardening: Durable Sessions, MVVM & Module Boundary Fix | [36-architecture-hardening-durable-sessions-mvvm.md](36-architecture-hardening-durable-sessions-mvvm.md) |

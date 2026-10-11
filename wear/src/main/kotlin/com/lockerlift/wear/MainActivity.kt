@@ -16,6 +16,7 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.*
 import com.lockerlift.core.database.entity.toDomainModel
+import com.lockerlift.core.database.state.ActiveSessionStateRepository
 import com.lockerlift.wear.presentation.ActiveWorkoutScreen
 import com.lockerlift.wear.presentation.WearSettingsScreen
 import com.lockerlift.wear.theme.LockerLiftWearTheme
@@ -45,6 +46,15 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
                     var showSettings by remember { mutableStateOf(false) }
+
+                    // Crash recovery: if an interrupted workout is durably
+                    // persisted, re-enter it instead of the template picker.
+                    LaunchedEffect(Unit) {
+                        val snapshot = ActiveSessionStateRepository(app.database.activeSessionStateDao()).load()
+                        if (snapshot != null) {
+                            activeWorkoutParams = Pair(snapshot.templateId, snapshot.templateName)
+                        }
+                    }
 
                     DisposableEffect(activeWorkoutParams != null) {
                         if (activeWorkoutParams != null) {

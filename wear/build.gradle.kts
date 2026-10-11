@@ -13,8 +13,8 @@ android {
         applicationId = "com.lockerlift"
         minSdk = 30
         targetSdk = 35
-        versionCode = 17
-        versionName = "1.9.1"
+        versionCode = 18
+        versionName = "1.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -52,6 +52,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
@@ -70,6 +71,9 @@ dependencies {
     implementation(libs.androidx.wear.compose.navigation)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext.junit)
 
     implementation(libs.kotlinx.serialization.json)

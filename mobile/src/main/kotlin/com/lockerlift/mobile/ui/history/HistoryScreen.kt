@@ -27,7 +27,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.lockerlift.core.database.entity.*
-import com.lockerlift.core.database.logic.WorkoutTrackingLogic
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.database.model.WorkoutSessionWithDetails
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
@@ -195,7 +195,7 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                                 val machineName = instanceWithDetails.machine.name
                                 val sets = instanceWithDetails.sets.sortedBy { it.setNumber }
                                 val setsSummary = sets.joinToString(", ") {
-                                    "${WorkoutTrackingLogic.formatWeight(it.weightKg)}kg × ${it.reps}"
+                                    "${WorkoutLogic.formatWeight(it.weightKg)}kg × ${it.reps}"
                                 }
 
                                 Text(
@@ -360,7 +360,7 @@ private fun EditWorkoutSessionDialog(
                             id = s.id,
                             sessionMachineId = s.sessionMachineId,
                             setNumber = s.setNumber,
-                            weightText = WorkoutTrackingLogic.formatWeight(s.weightKg),
+                            weightText = WorkoutLogic.formatWeight(s.weightKg),
                             repsText = s.reps.toString(),
                             setType = s.setType,
                             cadence = s.cadence,
@@ -397,12 +397,12 @@ private fun EditWorkoutSessionDialog(
                                         executionOrder = instIdx,
                                         sets = inst.sets.mapIndexed { setIdx, s ->
                                             val rawW = s.weightText.toFloatOrNull() ?: 0f
-                                            val clampedW = WorkoutTrackingLogic.clampWeight(rawW)
+                                            val clampedW = WorkoutLogic.clampWeight(rawW)
                                             val rawR = s.repsText.toIntOrNull() ?: 1
-                                            val clampedR = WorkoutTrackingLogic.clampReps(rawR)
+                                            val clampedR = WorkoutLogic.clampReps(rawR)
                                             s.copy(
                                                 setNumber = setIdx + 1,
-                                                weightText = WorkoutTrackingLogic.formatWeight(clampedW),
+                                                weightText = WorkoutLogic.formatWeight(clampedW),
                                                 repsText = clampedR.toString()
                                             )
                                         }
@@ -431,8 +431,8 @@ private fun EditWorkoutSessionDialog(
                                             id = s.id,
                                             sessionMachineId = inst.id,
                                             setNumber = s.setNumber,
-                                            reps = WorkoutTrackingLogic.clampReps(s.repsText.toIntOrNull() ?: 1),
-                                            weightKg = WorkoutTrackingLogic.clampWeight(s.weightText.toFloatOrNull() ?: 0f),
+                                            reps = WorkoutLogic.clampReps(s.repsText.toIntOrNull() ?: 1),
+                                            weightKg = WorkoutLogic.clampWeight(s.weightText.toFloatOrNull() ?: 0f),
                                             cadence = s.cadence,
                                             setType = s.setType,
                                             completedAt = s.completedAt
@@ -459,8 +459,8 @@ private fun EditWorkoutSessionDialog(
                                                     id = s.id,
                                                     sessionMachineId = inst.id,
                                                     setNumber = s.setNumber,
-                                                    reps = WorkoutTrackingLogic.clampReps(s.repsText.toIntOrNull() ?: 1),
-                                                    weightKg = WorkoutTrackingLogic.clampWeight(s.weightText.toFloatOrNull() ?: 0f),
+                                                    reps = WorkoutLogic.clampReps(s.repsText.toIntOrNull() ?: 1),
+                                                    weightKg = WorkoutLogic.clampWeight(s.weightText.toFloatOrNull() ?: 0f),
                                                     cadence = s.cadence,
                                                     setType = s.setType,
                                                     completedAt = s.completedAt
@@ -567,8 +567,8 @@ private fun EditWorkoutSessionDialog(
                                                 onClick = {
                                                     val curr = currentSet.weightText.toFloatOrNull() ?: 0f
                                                     val step = inst.machine.defaultIncrementKg.takeIf { it > 0f } ?: 2.5f
-                                                    val updatedW = WorkoutTrackingLogic.clampWeight(curr - step)
-                                                    instances = updateSetWeight(instances, inst.id, currentSet.id, WorkoutTrackingLogic.formatWeight(updatedW))
+                                                    val updatedW = WorkoutLogic.clampWeight(curr - step)
+                                                    instances = updateSetWeight(instances, inst.id, currentSet.id, WorkoutLogic.formatWeight(updatedW))
                                                 },
                                                 modifier = Modifier.size(28.dp)
                                             ) {
@@ -589,8 +589,8 @@ private fun EditWorkoutSessionDialog(
                                                 onClick = {
                                                     val curr = currentSet.weightText.toFloatOrNull() ?: 0f
                                                     val step = inst.machine.defaultIncrementKg.takeIf { it > 0f } ?: 2.5f
-                                                    val updatedW = WorkoutTrackingLogic.clampWeight(curr + step)
-                                                    instances = updateSetWeight(instances, inst.id, currentSet.id, WorkoutTrackingLogic.formatWeight(updatedW))
+                                                    val updatedW = WorkoutLogic.clampWeight(curr + step)
+                                                    instances = updateSetWeight(instances, inst.id, currentSet.id, WorkoutLogic.formatWeight(updatedW))
                                                 },
                                                 modifier = Modifier.size(28.dp)
                                             ) {
@@ -606,7 +606,7 @@ private fun EditWorkoutSessionDialog(
                                             IconButton(
                                                 onClick = {
                                                     val curr = currentSet.repsText.toIntOrNull() ?: 1
-                                                    val updatedR = WorkoutTrackingLogic.clampReps(curr - 1)
+                                                    val updatedR = WorkoutLogic.clampReps(curr - 1)
                                                     instances = updateSetReps(instances, inst.id, currentSet.id, updatedR.toString())
                                                 },
                                                 modifier = Modifier.size(28.dp)
@@ -627,7 +627,7 @@ private fun EditWorkoutSessionDialog(
                                             IconButton(
                                                 onClick = {
                                                     val curr = currentSet.repsText.toIntOrNull() ?: 1
-                                                    val updatedR = WorkoutTrackingLogic.clampReps(curr + 1)
+                                                    val updatedR = WorkoutLogic.clampReps(curr + 1)
                                                     instances = updateSetReps(instances, inst.id, currentSet.id, updatedR.toString())
                                                 },
                                                 modifier = Modifier.size(28.dp)
@@ -742,7 +742,7 @@ private fun EditWorkoutSessionDialog(
                                                     id = UUID.randomUUID().toString(),
                                                     sessionMachineId = newInstId,
                                                     setNumber = 1,
-                                                    weightText = WorkoutTrackingLogic.formatWeight(60f),
+                                                    weightText = WorkoutLogic.formatWeight(60f),
                                                     repsText = "10"
                                                 )
                                             )

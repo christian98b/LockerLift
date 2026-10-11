@@ -9,26 +9,28 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
-import com.lockerlift.core.model.Machine
-import com.lockerlift.core.sync.SyncPayloadSerializer
-import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(app: LockerLiftMobileApp) {
-    val context = LocalContext.current
-    val machineDao = remember { app.database.machineDao() }
-    val machinesState by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
-    val coroutineScope = rememberCoroutineScope()
+    val catalogViewModel: CatalogViewModel = viewModel(
+        key = "catalog",
+        factory = viewModelFactory {
+            initializer {
+                CatalogViewModel(application = app, database = app.database)
+            }
+        }
+    )
+    val machinesState by catalogViewModel.machines.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
     var machineName by remember { mutableStateOf("") }
@@ -46,12 +48,6 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
 
     val errorRequiredFields = stringResource(R.string.error_required_fields)
     val errorMachineExists = stringResource(R.string.error_machine_exists)
-
-    suspend fun syncCatalogToWear() {
-        val allMachines = machineDao.getAllMachines()
-        val catalogJson = SyncPayloadSerializer.encodeMachines(allMachines.map { it.toDomainModel() })
-        WearableDataLayerManager(context).syncEquipmentCatalog(catalogJson)
-    }
 
     Scaffold(
         topBar = {
@@ -156,26 +152,17 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (machineName.isBlank() || muscleGroup.isBlank()) {
-                            errorMessage = errorRequiredFields
-                            return@Button
-                        }
-                        coroutineScope.launch {
-                            val existing = machineDao.getMachineByName(machineName.trim())
-                            if (existing != null) {
-                                errorMessage = errorMachineExists
-                                return@launch
+                        catalogViewModel.addMachine(
+                            name = machineName,
+                            muscleGroup = muscleGroup,
+                            settingsNote = settingsNote,
+                            incrementKgText = incrementKgText
+                        ) { result ->
+                            when (result) {
+                                MachineEditResult.EMPTY_FIELDS -> errorMessage = errorRequiredFields
+                                MachineEditResult.DUPLICATE_NAME -> errorMessage = errorMachineExists
+                                MachineEditResult.SUCCESS -> showAddDialog = false
                             }
-                            val increment = incrementKgText.toFloatOrNull() ?: 2.5f
-                            val newMachine = Machine(
-                                name = machineName.trim(),
-                                targetMuscleGroup = muscleGroup.trim(),
-                                machineSettingsNote = settingsNote.takeIf { it.isNotBlank() },
-                                defaultIncrementKg = increment
-                            )
-                            machineDao.insertMachine(newMachine.toEntity())
-                            syncCatalogToWear()
-                            showAddDialog = false
                         }
                     }) {
                         Text(stringResource(R.string.btn_save))
@@ -230,28 +217,19 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (editMachineName.isBlank() || editMuscleGroup.isBlank()) {
-                            editErrorMessage = errorRequiredFields
-                            return@Button
-                        }
-                        coroutineScope.launch {
-                            val current = editingMachine ?: return@launch
-                            val existing = machineDao.getMachineByName(editMachineName.trim())
-                            if (existing != null && existing.id != current.id) {
-                                editErrorMessage = errorMachineExists
-                                return@launch
+                        val current = editingMachine ?: return@Button
+                        catalogViewModel.updateMachine(
+                            current = current,
+                            name = editMachineName,
+                            muscleGroup = editMuscleGroup,
+                            settingsNote = editSettingsNote,
+                            incrementKgText = editIncrementKgText
+                        ) { result ->
+                            when (result) {
+                                MachineEditResult.EMPTY_FIELDS -> editErrorMessage = errorRequiredFields
+                                MachineEditResult.DUPLICATE_NAME -> editErrorMessage = errorMachineExists
+                                MachineEditResult.SUCCESS -> editingMachine = null
                             }
-                            val increment = editIncrementKgText.toFloatOrNull() ?: 2.5f
-                            val updated = current.copy(
-                                name = editMachineName.trim(),
-                                targetMuscleGroup = editMuscleGroup.trim(),
-                                machineSettingsNote = editSettingsNote.takeIf { it.isNotBlank() },
-                                defaultIncrementKg = increment,
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            machineDao.updateMachine(updated)
-                            syncCatalogToWear()
-                            editingMachine = null
                         }
                     }) {
                         Text(stringResource(R.string.btn_save))

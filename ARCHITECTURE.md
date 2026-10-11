@@ -19,24 +19,32 @@ This yields non-negotiable architectural mandates:
 flowchart LR
     subgraph WearOS ["Wear OS Smartwatch (Autonomous in Gym)"]
         UI_Wear["Wear Compose UI / Horologist"]
+        VM_Wear["ActiveWorkoutViewModel"]
         FG_Service["Workout Foreground Service"]
         DB_Wear[("Local Room DB (Wear)")]
+        Active_State[("Active Session Snapshot (durable)")]
         Sync_Queue[("Sync Queue Table")]
         Wear_Sync["Wear Data Layer Client"]
         
-        UI_Wear --> FG_Service
-        FG_Service --> DB_Wear
-        FG_Service --> Sync_Queue
+        UI_Wear --> VM_Wear
+        VM_Wear -- "every mutation" --> Active_State
+        VM_Wear -- "resume on startup" --> Active_State
+        VM_Wear --> FG_Service
+        VM_Wear --> DB_Wear
+        VM_Wear --> Sync_Queue
         Sync_Queue --> Wear_Sync
     end
 
     subgraph Phone ["Android Smartphone (In Locker / At Home)"]
         Mobile_Sync["Wear Data Layer Listener"]
         DB_Mobile[("Local Room DB (Phone)")]
+        VM_Mobile["TrackingViewModel"]
         UI_Mobile["Mobile Jetpack Compose UI"]
         HC_Bridge["Health Connect Manager"]
         HC_API["Android Health Connect"]
         
+        UI_Mobile --> VM_Mobile
+        VM_Mobile --> DB_Mobile
         Mobile_Sync --> DB_Mobile
         Mobile_Sync --> HC_Bridge
         HC_Bridge --> HC_API

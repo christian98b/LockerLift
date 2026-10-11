@@ -1,7 +1,7 @@
 package com.lockerlift.mobile
 
 import com.lockerlift.core.database.entity.*
-import com.lockerlift.core.database.logic.WorkoutTrackingLogic
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.healthconnect.ExerciseRecordBuilder
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.SessionMachineInstancePayload
@@ -31,14 +31,14 @@ class MobileWorkoutHistoryTest {
         val rawValidReps = 12
 
         // Act
-        val clampedNegWeight = WorkoutTrackingLogic.clampWeight(rawNegativeWeight)
-        val clampedExWeight = WorkoutTrackingLogic.clampWeight(rawExcessiveWeight)
-        val clampedValidWeight = WorkoutTrackingLogic.clampWeight(rawValidWeight)
+        val clampedNegWeight = WorkoutLogic.clampWeight(rawNegativeWeight)
+        val clampedExWeight = WorkoutLogic.clampWeight(rawExcessiveWeight)
+        val clampedValidWeight = WorkoutLogic.clampWeight(rawValidWeight)
 
-        val clampedZeroReps = WorkoutTrackingLogic.clampReps(rawZeroReps)
-        val clampedNegReps = WorkoutTrackingLogic.clampReps(rawNegativeReps)
-        val clampedExReps = WorkoutTrackingLogic.clampReps(rawExcessiveReps)
-        val clampedValidReps = WorkoutTrackingLogic.clampReps(rawValidReps)
+        val clampedZeroReps = WorkoutLogic.clampReps(rawZeroReps)
+        val clampedNegReps = WorkoutLogic.clampReps(rawNegativeReps)
+        val clampedExReps = WorkoutLogic.clampReps(rawExcessiveReps)
+        val clampedValidReps = WorkoutLogic.clampReps(rawValidReps)
 
         // Assert
         assertEquals(0.0f, clampedNegWeight, 0.001f)
