@@ -23,29 +23,18 @@ import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.CompactButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import com.lockerlift.core.database.entity.SyncQueueEntity
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.*
-import com.lockerlift.core.sync.SessionMachineInstancePayload
-import com.lockerlift.core.sync.SyncConstants
-import com.lockerlift.core.sync.SyncPayloadSerializer
-import com.lockerlift.core.sync.SyncQueueWorker
-import com.lockerlift.core.sync.WearableDataLayerManager
-import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
-import com.lockerlift.core.model.CreateMachineMode
-import com.lockerlift.core.model.ValidationResult
 import com.lockerlift.wear.logic.WearPreferences
 import com.lockerlift.wear.logic.WearWorkoutLogic
-import com.lockerlift.wear.logic.WorkoutPauseState
+import com.lockerlift.wear.tracking.ActiveWorkoutViewModel
 import com.lockerlift.wear.tracking.WorkoutForegroundService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.UUID
 
 private enum class ActiveWorkoutSubScreen {
     OVERVIEW,
@@ -64,21 +53,27 @@ fun ActiveWorkoutScreen(
     onFinishWorkout: () -> Unit
 ) {
     val context = LocalContext.current
-    val database = app.database
-    val machineDao = remember { database.machineDao() }
-    val sessionDao = remember { database.workoutSessionDao() }
-    val templateDao = remember { database.workoutTemplateDao() }
-    val syncQueueDao = remember { database.syncQueueDao() }
-    val coroutineScope = rememberCoroutineScope()
 
-    val currentSessionId = remember { UUID.randomUUID().toString() }
-    val workoutStartTimeMillis = remember { System.currentTimeMillis() }
-    val initialMachines = remember { mutableStateListOf<Machine>() }
-    val sessionInstances = remember { mutableStateListOf<SessionMachineInstance>() }
-    val loggedSets = remember { mutableStateMapOf<String, MutableList<WorkoutSet>>() }
+    val viewModel: ActiveWorkoutViewModel = viewModel(
+        key = "activeWorkout",
+        factory = viewModelFactory {
+            initializer {
+                ActiveWorkoutViewModel(
+                    application = app,
+                    database = app.database,
+                    templateId = templateId,
+                    templateName = templateName
+                )
+            }
+        }
+    )
+    val state by viewModel.uiState.collectAsState()
+    val catalogMachines by viewModel.catalogMachines.collectAsState()
 
-    val catalogFlow = remember { machineDao.getAllMachinesFlow() }
-    val catalogMachines by catalogFlow.collectAsState(initial = emptyList())
+    val sessionInstances = state.instances
+    val loggedSets = state.setsByInstance
+    val initialMachines = state.initialMachines
+    val pauseState = state.pauseState
 
     var selectedInstanceIndex by remember { mutableIntStateOf(-1) }
     var targetInstanceIndex by remember { mutableIntStateOf(-1) }
@@ -90,23 +85,12 @@ fun ActiveWorkoutScreen(
     var lastLoggedMachineName by remember { mutableStateOf<String?>(null) }
 
     var showRestTimer by remember { mutableStateOf(false) }
-    var pauseState by remember { mutableStateOf(WorkoutPauseState()) }
     var currentSubScreen by remember { mutableStateOf(ActiveWorkoutSubScreen.OVERVIEW) }
     var createMachineMode by remember { mutableStateOf(CreateMachineMode.ADD_NEW) }
 
+    // Invariant 5: the active workout runs inside a foreground service
     LaunchedEffect(Unit) {
         WorkoutForegroundService.startService(context)
-        // Load initial machines from template if provided
-        if (templateId != null) {
-            val orderedEntities = templateDao.getMachinesForTemplateOrdered(templateId)
-            val machines = orderedEntities.map { it.toDomainModel() }
-            initialMachines.addAll(machines)
-            val instances = WearWorkoutLogic.initializeSessionInstances(machines, currentSessionId)
-            sessionInstances.addAll(instances)
-            instances.forEach { instance ->
-                loggedSets[instance.id] = mutableListOf()
-            }
-        }
     }
 
     // Paused State Screen (AK 3.1, AK 3.2, AK 3.3)
@@ -136,7 +120,7 @@ fun ActiveWorkoutScreen(
             item {
                 Button(
                     onClick = {
-                        pauseState = WearWorkoutLogic.resumeWorkout(pauseState, System.currentTimeMillis())
+                        viewModel.resumeWorkout()
                     },
                     modifier = Modifier.fillMaxWidth(0.9f).padding(vertical = 4.dp)
                 ) {
@@ -146,21 +130,7 @@ fun ActiveWorkoutScreen(
             item {
                 CompactButton(
                     onClick = {
-                        coroutineScope.launch {
-                            finishAndSaveWorkout(
-                                app = app,
-                                sessionId = currentSessionId,
-                                startTimeMillis = workoutStartTimeMillis,
-                                totalPausedMillis = pauseState.totalPausedDurationMillis,
-                                templateId = templateId,
-                                templateName = templateName,
-                                sessionInstances = sessionInstances,
-                                loggedSets = loggedSets,
-                                catalogMachines = catalogMachines.map { it.toDomainModel() },
-                                initialMachines = initialMachines,
-                                onFinish = onFinishWorkout
-                            )
-                        }
+                        viewModel.finishWorkout(onFinished = onFinishWorkout)
                     },
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
@@ -212,10 +182,10 @@ fun ActiveWorkoutScreen(
     // Edit Existing Set Screen (AK 3.11, AK 3.12)
     if (editingInstanceIndex in sessionInstances.indices && editingSetIndex >= 0) {
         val targetInstance = sessionInstances[editingInstanceIndex]
-        val machine = catalogMachines.find { it.id == targetInstance.machineId }?.toDomainModel()
+        val machine = catalogMachines.find { it.id == targetInstance.machineId }
             ?: initialMachines.find { it.id == targetInstance.machineId }
             ?: Machine(id = targetInstance.machineId, name = defaultExerciseName, targetMuscleGroup = "")
-        val currentSets = loggedSets.getOrPut(targetInstance.id) { mutableListOf() }
+        val currentSets = loggedSets[targetInstance.id] ?: emptyList()
         val setToEdit = currentSets.getOrNull(editingSetIndex)
 
         if (setToEdit != null) {
@@ -228,23 +198,21 @@ fun ActiveWorkoutScreen(
                 historicalPerformanceText = null,
                 isEditing = true,
                 onSaveSet = { updatedSet ->
-                    val updatedList = WearWorkoutLogic.updateSetInList(
-                        sets = currentSets,
+                    viewModel.updateSet(
+                        instanceId = targetInstance.id,
                         targetIndex = editingSetIndex,
                         weightKg = updatedSet.weightKg,
                         reps = updatedSet.reps,
                         cadence = updatedSet.cadence
                     )
-                    loggedSets[targetInstance.id] = updatedList.toMutableList()
                     editingInstanceIndex = -1
                     editingSetIndex = -1
                 },
                 onDeleteSet = {
-                    val renumberedList = WearWorkoutLogic.deleteSetAndRenumber(
-                        sets = currentSets,
+                    viewModel.deleteSet(
+                        instanceId = targetInstance.id,
                         targetIndex = editingSetIndex
                     )
-                    loggedSets[targetInstance.id] = renumberedList.toMutableList()
                     editingInstanceIndex = -1
                     editingSetIndex = -1
                 },
@@ -263,16 +231,16 @@ fun ActiveWorkoutScreen(
     // Set Logging Screen (US 4.1, AK 4.1.1)
     if (selectedInstanceIndex >= 0 && selectedInstanceIndex < sessionInstances.size) {
         val currentInstance = sessionInstances[selectedInstanceIndex]
-        val machine = catalogMachines.find { it.id == currentInstance.machineId }?.toDomainModel()
+        val machine = catalogMachines.find { it.id == currentInstance.machineId }
             ?: initialMachines.find { it.id == currentInstance.machineId }
             ?: Machine(id = currentInstance.machineId, name = defaultExerciseName, targetMuscleGroup = "")
-        val currentSets = loggedSets.getOrPut(currentInstance.id) { mutableListOf() }
+        val currentSets = loggedSets[currentInstance.id] ?: emptyList()
         val nextSetNumber = currentSets.size + 1
 
         var historicalSets by remember(currentInstance.id) { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
 
         LaunchedEffect(currentInstance.id) {
-            historicalSets = sessionDao.getLastCompletedSetsForMachine(machine.id)
+            historicalSets = viewModel.getHistoricalSetsForMachine(machine.id)
         }
 
         val historicalPerformanceText = remember(historicalSets) {
@@ -302,8 +270,10 @@ fun ActiveWorkoutScreen(
             historicalPerformanceText = historicalPerformanceText,
             isEditing = false,
             onSaveSet = { newSet ->
-                val setWithCorrectId = newSet.copy(sessionMachineId = currentInstance.id)
-                currentSets.add(setWithCorrectId)
+                viewModel.logSet(
+                    instanceId = currentInstance.id,
+                    set = newSet.copy(sessionMachineId = currentInstance.id)
+                )
                 lastLoggedStationIndex = selectedInstanceIndex
                 lastLoggedSetNumber = nextSetNumber
                 lastLoggedMachineName = machine.name
@@ -343,20 +313,10 @@ fun ActiveWorkoutScreen(
                     Text(stringResource(R.string.btn_new_machine))
                 }
             }
-            items(catalogMachines, key = { it.id }) { machineEntity ->
-                val machine = machineEntity.toDomainModel()
+            items(catalogMachines, key = { it.id }) { machine ->
                 Card(
                     onClick = {
-                        val newInstance = WearWorkoutLogic.appendMachineToSession(
-                            instances = sessionInstances,
-                            sessionId = currentSessionId,
-                            machine = machine
-                        )
-                        sessionInstances.add(newInstance)
-                        if (!initialMachines.any { it.id == machine.id }) {
-                            initialMachines.add(machine)
-                        }
-                        loggedSets[newInstance.id] = mutableListOf()
+                        viewModel.appendMachine(machine)
                         currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
                     },
                     modifier = Modifier.fillMaxWidth(0.9f).padding(vertical = 2.dp)
@@ -414,21 +374,11 @@ fun ActiveWorkoutScreen(
                 }
             }
             val availableMachines = catalogMachines.filter { it.id != currentInstance?.machineId }
-            items(availableMachines, key = { it.id }) { machineEntity ->
-                val machine = machineEntity.toDomainModel()
+            items(availableMachines, key = { it.id }) { machine ->
                 Card(
                     onClick = {
                         if (targetInstanceIndex in sessionInstances.indices) {
-                            val updated = WearWorkoutLogic.replaceMachineInSession(
-                                instances = sessionInstances,
-                                targetIndex = targetInstanceIndex,
-                                newMachine = machine
-                            )
-                            sessionInstances.clear()
-                            sessionInstances.addAll(updated)
-                            if (!initialMachines.any { it.id == machine.id }) {
-                                initialMachines.add(machine)
-                            }
+                            viewModel.replaceMachine(targetInstanceIndex, machine)
                         }
                         currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
                     },
@@ -599,34 +549,15 @@ fun ActiveWorkoutScreen(
                                 errorMessage = context.getString(R.string.error_machine_exists)
                             }
                             ValidationResult.Valid -> {
-                                coroutineScope.launch {
-                                    val newMachine = Machine(
-                                        name = machineName.trim(),
-                                        targetMuscleGroup = fullBodyMuscleGroup,
-                                        defaultIncrementKg = incrementKg
-                                    )
-                                    machineDao.insertMachine(newMachine.toEntity())
-                                    if (createMachineMode == CreateMachineMode.ADD_NEW) {
-                                        val newInstance = WearWorkoutLogic.appendMachineToSession(
-                                            instances = sessionInstances,
-                                            sessionId = currentSessionId,
-                                            machine = newMachine
-                                        )
-                                        sessionInstances.add(newInstance)
-                                        initialMachines.add(newMachine)
-                                        loggedSets[newInstance.id] = mutableListOf()
-                                    } else if (targetInstanceIndex in sessionInstances.indices) {
-                                        val updated = WearWorkoutLogic.replaceMachineInSession(
-                                            instances = sessionInstances,
-                                            targetIndex = targetInstanceIndex,
-                                            newMachine = newMachine
-                                        )
-                                        sessionInstances.clear()
-                                        sessionInstances.addAll(updated)
-                                        initialMachines.add(newMachine)
-                                    }
-                                    currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
-                                }
+                                viewModel.createMachine(
+                                    name = machineName,
+                                    incrementKg = incrementKg,
+                                    targetMuscleGroup = fullBodyMuscleGroup,
+                                    existingMachineNames = catalogMachines.map { it.name },
+                                    mode = createMachineMode,
+                                    targetIndex = targetInstanceIndex
+                                )
+                                currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
                             }
                         }
                     },
@@ -651,7 +582,7 @@ fun ActiveWorkoutScreen(
     // Subscreen: Edit Setup Note (US 1.2, AK 1.2.2)
     if (currentSubScreen == ActiveWorkoutSubScreen.EDIT_NOTE) {
         val targetInstance = sessionInstances.getOrNull(targetInstanceIndex)
-        val machine = catalogMachines.find { it.id == targetInstance?.machineId }?.toDomainModel()
+        val machine = catalogMachines.find { it.id == targetInstance?.machineId }
             ?: initialMachines.find { it.id == targetInstance?.machineId }
         var noteText by remember(targetInstanceIndex) {
             mutableStateOf(targetInstance?.customSettingsNote ?: machine?.machineSettingsNote ?: "")
@@ -725,9 +656,7 @@ fun ActiveWorkoutScreen(
                     onClick = {
                         val clean = noteText.trim().ifEmpty { null }
                         if (targetInstanceIndex in sessionInstances.indices) {
-                            sessionInstances[targetInstanceIndex] = sessionInstances[targetInstanceIndex].copy(
-                                customSettingsNote = clean
-                            )
+                            viewModel.saveStationNote(targetInstanceIndex, clean)
                         }
                         currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
                     },
@@ -743,24 +672,10 @@ fun ActiveWorkoutScreen(
                     onClick = {
                         val clean = noteText.trim().ifEmpty { null }
                         if (targetInstanceIndex in sessionInstances.indices && targetInstance != null) {
-                            sessionInstances[targetInstanceIndex] = sessionInstances[targetInstanceIndex].copy(
-                                customSettingsNote = clean
-                            )
-                            coroutineScope.launch {
-                                val entity = machineDao.getMachineById(targetInstance.machineId)
-                                if (entity != null) {
-                                    machineDao.updateMachine(
-                                        entity.copy(
-                                            machineSettingsNote = clean,
-                                            updatedAt = System.currentTimeMillis()
-                                        )
-                                    )
-                                }
-                                currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
-                            }
-                        } else {
-                            currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
+                            viewModel.saveStationNote(targetInstanceIndex, clean)
+                            viewModel.saveMachineNoteToCatalog(targetInstance.machineId, clean)
                         }
+                        currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW
                     },
                     modifier = Modifier.fillMaxWidth(0.9f)
                 ) {
@@ -805,31 +720,7 @@ fun ActiveWorkoutScreen(
             item {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            if (templateId != null) {
-                                val templateEntity = templateDao.getTemplateWithMachinesById(templateId)?.template
-                                if (templateEntity != null) {
-                                    val nonSkippedMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-                                    templateDao.saveTemplateWithMachines(
-                                        template = templateEntity.copy(updatedAt = System.currentTimeMillis()),
-                                        machineIdsInOrder = nonSkippedMachineIds
-                                    )
-                                }
-                            }
-                            finishAndSaveWorkout(
-                                app = app,
-                                sessionId = currentSessionId,
-                                startTimeMillis = workoutStartTimeMillis,
-                                totalPausedMillis = pauseState.totalPausedDurationMillis,
-                                templateId = templateId,
-                                templateName = templateName,
-                                sessionInstances = sessionInstances,
-                                loggedSets = loggedSets,
-                                catalogMachines = catalogMachines.map { it.toDomainModel() },
-                                initialMachines = initialMachines,
-                                onFinish = onFinishWorkout
-                            )
-                        }
+                        viewModel.consolidateTemplateAndFinish(onFinished = onFinishWorkout)
                     },
                     modifier = Modifier.fillMaxWidth(0.9f)
                 ) {
@@ -839,21 +730,7 @@ fun ActiveWorkoutScreen(
             item {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            finishAndSaveWorkout(
-                                app = app,
-                                sessionId = currentSessionId,
-                                startTimeMillis = workoutStartTimeMillis,
-                                totalPausedMillis = pauseState.totalPausedDurationMillis,
-                                templateId = templateId,
-                                templateName = templateName,
-                                sessionInstances = sessionInstances,
-                                loggedSets = loggedSets,
-                                catalogMachines = catalogMachines.map { it.toDomainModel() },
-                                initialMachines = initialMachines,
-                                onFinish = onFinishWorkout
-                            )
-                        }
+                        viewModel.finishWorkout(onFinished = onFinishWorkout)
                     },
                     modifier = Modifier.fillMaxWidth(0.9f)
                 ) {
@@ -887,7 +764,7 @@ fun ActiveWorkoutScreen(
                 )
                 CompactButton(
                     onClick = {
-                        pauseState = WearWorkoutLogic.pauseWorkout(pauseState, System.currentTimeMillis())
+                        viewModel.pauseWorkout()
                     },
                     modifier = Modifier.padding(start = 4.dp)
                 ) {
@@ -897,7 +774,7 @@ fun ActiveWorkoutScreen(
         }
 
         itemsIndexed(sessionInstances) { index, instance ->
-            val machine = catalogMachines.find { it.id == instance.machineId }?.toDomainModel()
+            val machine = catalogMachines.find { it.id == instance.machineId }
                 ?: initialMachines.find { it.id == instance.machineId }
             val sets = loggedSets[instance.id] ?: emptyList()
             val setupNote = instance.customSettingsNote ?: machine?.machineSettingsNote
@@ -1004,9 +881,7 @@ fun ActiveWorkoutScreen(
                         // Clear Skip exercise action (AK 3.6, AK 3.7)
                         CompactButton(
                             onClick = {
-                                val updated = WearWorkoutLogic.toggleSkipStation(sessionInstances, index)
-                                sessionInstances.clear()
-                                sessionInstances.addAll(updated)
+                                viewModel.toggleSkipStation(index)
                             }
                         ) {
                             Text(
@@ -1066,21 +941,7 @@ fun ActiveWorkoutScreen(
                     if (isModified) {
                         currentSubScreen = ActiveWorkoutSubScreen.CONSOLIDATION_CONFIRM
                     } else {
-                        coroutineScope.launch {
-                            finishAndSaveWorkout(
-                                app = app,
-                                sessionId = currentSessionId,
-                                startTimeMillis = workoutStartTimeMillis,
-                                totalPausedMillis = pauseState.totalPausedDurationMillis,
-                                templateId = templateId,
-                                templateName = templateName,
-                                sessionInstances = sessionInstances,
-                                loggedSets = loggedSets,
-                                catalogMachines = catalogMachines.map { it.toDomainModel() },
-                                initialMachines = initialMachines,
-                                onFinish = onFinishWorkout
-                            )
-                        }
+                        viewModel.finishWorkout(onFinished = onFinishWorkout)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
@@ -1088,85 +949,5 @@ fun ActiveWorkoutScreen(
                 Text(stringResource(R.string.finish_workout_button))
             }
         }
-    }
-}
-
-private suspend fun finishAndSaveWorkout(
-    app: LockerLiftWearApp,
-    sessionId: String,
-    startTimeMillis: Long,
-    totalPausedMillis: Long,
-    templateId: String?,
-    templateName: String?,
-    sessionInstances: List<SessionMachineInstance>,
-    loggedSets: Map<String, List<WorkoutSet>>,
-    catalogMachines: List<Machine>,
-    initialMachines: List<Machine>,
-    onFinish: () -> Unit
-) {
-    val database = app.database
-    val endTimeMillis = System.currentTimeMillis()
-    val adjustedStartTime = WearWorkoutLogic.calculateAdjustedStartTime(
-        originalStartTime = startTimeMillis,
-        endTime = endTimeMillis,
-        totalPausedMillis = totalPausedMillis
-    )
-
-    val session = WorkoutSession(
-        id = sessionId,
-        templateId = templateId,
-        startTime = adjustedStartTime,
-        endTime = endTimeMillis,
-        originDevice = "WEAR_OS",
-        syncStatus = SyncStatus.PENDING_SYNC
-    )
-
-    val allSets = loggedSets.values.flatten()
-
-    val payload = WorkoutSessionPayload(
-        session = session,
-        templateName = templateName,
-        machineInstances = sessionInstances.map { inst ->
-            val machine = catalogMachines.find { it.id == inst.machineId }
-                ?: initialMachines.find { it.id == inst.machineId }
-                ?: Machine(id = inst.machineId, name = "Station", targetMuscleGroup = "General")
-            SessionMachineInstancePayload(
-                instance = inst,
-                machine = machine,
-                sets = loggedSets[inst.id] ?: emptyList()
-            )
-        }
-    )
-
-    val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
-    val syncItem = SyncQueueEntity(
-        id = UUID.randomUUID().toString(),
-        sessionId = sessionId,
-        payloadJson = payloadJson,
-        status = QueueStatus.PENDING
-    )
-
-    // Persist session + queue item atomically-ish: DB write first, then queue insert.
-    // If the app crashes between these two calls, the startup recovery in
-    // SyncIngestionEngine.recoverOrphanedSessions() will re-queue the session.
-    database.workoutSessionDao().upsertFullSession(
-        session = session.toEntity(),
-        instances = sessionInstances.map { it.toEntity() },
-        sets = allSets.map { it.toEntity() }
-    )
-    database.syncQueueDao().insertQueueItem(syncItem)
-
-    // Enqueue background sync worker (Store-and-Forward)
-    SyncQueueWorker.enqueue(app)
-
-    // Attempt immediate flush if phone is connected right now
-    runCatching {
-        val dataLayerManager = WearableDataLayerManager(app)
-        dataLayerManager.flushPendingQueue(database.syncQueueDao(), SyncConstants.CAPABILITY_MOBILE)
-    }
-
-    WorkoutForegroundService.stopService(app)
-    withContext(Dispatchers.Main) {
-        onFinish()
     }
 }
