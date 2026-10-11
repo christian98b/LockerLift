@@ -7,6 +7,24 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.9.0] - 2026-10-11
+
+### 🚀 Neue Features
+
+#### Wear OS (`:wear`)
+- **Wear Compose Material 3 Migration:** Alle Watch-Screens nutzen jetzt die für Runddisplays optimierten Wear-Material-3-Komponenten (Pill-Buttons, Edge-Fading, runde Touch-Targets) statt der bisherigen Smartphone-Komponenten, die auf der runden Fläche deplatziert wirkten.
+- **Dynamic Color auf Uhr und Smartphone:** Ab Android 12 übernimmt die Watch das dynamische Farbschema des Geräts (Material You) im Dark-Modus — passend zur Smartphone-App. Auf älteren Versionen gilt weiterhin die statische LockerLift-Markenpalette.
+
+#### Smartphone (`:mobile`)
+- **Entschlackte Bottom-Navigation:** Reduziert auf vier primäre Tabs (Katalog, Templates, Verlauf inkl. Insights, Tracking).
+
+### 🔧 Fixes & Toolchain
+- **Wear-Buttons folgen jetzt dem App-Theme:** Wear-Material-1-Restbestände (CompactButton) wurden entfernt — zuvor fielen Vorschlags- und Abbrechen-Buttons aus der Farbpalette heraus.
+- **Room 2.8.5:** Absicherung gegen die KSP2-Inkompatibilität ("unexpected jvm signature V").
+- **Toolchain:** Gradle 9.6.0, AGP 9.4.1, Kotlin 2.2.10, KSP 2.3.6; CI-Pipelines entsprechend ausgerichtet. Lokale Builds laufen jetzt auf dem Mac in Android Studio.
+
+---
+
 ## [1.8.0] - 2026-10-12
 
 ### 🚀 Neue Features
