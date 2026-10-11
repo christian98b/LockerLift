@@ -105,7 +105,39 @@ jobs:
           # Alle APKs anzeigen
           ls -lh *.apk || echo "No APKs found"
       
-      # 10. Release erstellen und APKs hochladen
+      # 10. Changelog extrahieren (für Release-Notizen) — muss VOR dem Release laufen
+      - name: Extract changelog
+        id: changelog
+        run: |
+          # Versuche, den Changelog für diese Version zu extrahieren
+          if [ -f "CHANGELOG.md" ]; then
+            # Git-Tag hat 'v'-Präfix, CHANGELOG-Überschriften nicht
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+            CONTENT=$(awk -v version="$VERSION" '
+              /^## \[/ {
+                if (found) exit
+                if (index($0, "## [" version "]") == 1) found = 1
+                next
+              }
+              found {print}
+            ' CHANGELOG.md)
+            
+            # Falls nichts gefunden, nehme den gesamten Changelog
+            if [ -z "$CONTENT" ]; then
+              CONTENT=$(cat CHANGELOG.md)
+            fi
+            
+            # Für GitHub Actions Output (Zeilenumbrüche ersetzen)
+            CONTENT="${CONTENT//'%'/'%25'}"
+            CONTENT="${CONTENT//$'\n'/'%0A'}"
+            CONTENT="${CONTENT//$'\r'/'%0D'}"
+            echo "content=$CONTENT" >> $GITHUB_OUTPUT
+          else
+            echo "content=No changelog found" >> $GITHUB_OUTPUT
+          fi
+      
+      # 11. Release erstellen und APKs hochladen
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -131,34 +163,6 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
-      # 11. Changelog extrahieren (für Release-Notizen)
-      - name: Extract changelog
-        id: changelog
-        run: |
-          # Versuche, den Changelog für diese Version zu extrahieren
-          if [ -f "CHANGELOG.md" ]; then
-            # Extrahiere den Abschnitt für diese Version
-            VERSION=${{ github.ref_name }}
-            CONTENT=$(awk -v version="$VERSION" '
-              /^## \[$version\]/ {found=1; next}
-              found {print}
-              /^## \[/ {exit}
-            ' CHANGELOG.md)
-            
-            # Falls nichts gefunden, nehme den gesamten Changelog
-            if [ -z "$CONTENT" ]; then
-              CONTENT=$(cat CHANGELOG.md)
-            fi
-            
-            # Für GitHub Actions Output (Zeilenumbrüche ersetzen)
-            CONTENT="${CONTENT//'%'/'%25'}"
-            CONTENT="${CONTENT//$'\n'/'%0A'}"
-            CONTENT="${CONTENT//$'\r'/'%0D'}"
-            echo "content=$CONTENT" >> $GITHUB_OUTPUT
-          else
-            echo "content=No changelog found" >> $GITHUB_OUTPUT
-          fi
       
       # 12. Build-Artifacts speichern (für Debugging)
       - name: Upload build artifacts
