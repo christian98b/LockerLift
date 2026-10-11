@@ -63,30 +63,19 @@ jobs:
       - name: Download dependencies
         run: gradle --no-daemon dependencies
       
-      # 7. Mobile APK bauen (Release)
+      # 7. Mobile APK bauen (Debug, unsigniert)
       - name: Build Mobile APK
-        run: gradle :mobile:assembleRelease --no-daemon --stacktrace
-        env:
-          # Android Keystore Konfiguration (optional für signed APKs)
-          ANDROID_KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_FILE }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      
-      # 8. Wear APK bauen (Release)
+        run: gradle :mobile:assembleDebug --no-daemon --stacktrace
+
+      # 8. Wear APK bauen (Debug, unsigniert)
       - name: Build Wear APK
-        run: gradle :wear:assembleRelease --no-daemon --stacktrace
-        env:
-          ANDROID_KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_FILE }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      
+        run: gradle :wear:assembleDebug --no-daemon --stacktrace
+
       # 9. APK-Dateien finden und umbenennen (für bessere Lesbarkeit)
       - name: Rename APK files
         run: |
           # Mobile APK
-          MOBILE_APK=$(find mobile/build/outputs/apk/release -name "*.apk" | head -1)
+          MOBILE_APK=$(find mobile/build/outputs/apk/debug -name "*.apk" | head -1)
           if [ -n "$MOBILE_APK" ]; then
             cp "$MOBILE_APK" mobile-release.apk
             echo "Mobile APK: mobile-release.apk"
@@ -100,7 +89,7 @@ jobs:
           fi
           
           # Wear APK
-          WEAR_APK=$(find wear/build/outputs/apk/release -name "*.apk" | head -1)
+          WEAR_APK=$(find wear/build/outputs/apk/debug -name "*.apk" | head -1)
           if [ -n "$WEAR_APK" ]; then
             cp "$WEAR_APK" wear-release.apk
             echo "Wear APK: wear-release.apk"

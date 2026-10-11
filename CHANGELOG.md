@@ -7,7 +7,17 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
-## [1.7.4] - 2026-10-10
+## [1.8.0] - 2026-10-12
+
+### 🚀 Neue Features
+
+#### Insights Dashboard (`:mobile`)
+- **Konfigurierbares Insights Dashboard:** Neues Analytics-Dashboard mit Trainingskalender, Regelmäßigkeit, Volumen-/Übungsprogressions-Charts und einem dreistufigen Trainings-Verdict auf dem Smartphone
+- Widget-Reihenfolge ist frei konfigurierbar
+
+### 🔧 Build & Release
+- **Release-APKs als unsignierte Debug-Builds:** Die Release-Pipeline baut und veröffentlicht ab sofort unsignierte Debug-APKs (ohne Keystore-Signierung), damit lokale Installationen direkt möglich sind
+ - 2026-10-10
 
 ### 🔧 Korrekturen
 
