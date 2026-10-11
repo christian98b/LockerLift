@@ -155,7 +155,7 @@ fun InsightsScreen(app: LockerLiftMobileApp) {
                             DashboardWidgetType.VERDICT -> VerdictWidget(snapshots, today, zone)
                             DashboardWidgetType.REGULARITY -> RegularityWidget(snapshots, today, zone)
                             DashboardWidgetType.CALENDAR -> CalendarWidget(snapshots, displayedMonth, zone) { delta ->
-                                displayedMonth = displayedMonth.plusMonths(delta)
+                                displayedMonth = displayedMonth.plusMonths(delta.toLong())
                             }
                             DashboardWidgetType.VOLUME_CHART -> VolumeChartWidget(snapshots, zone)
                             DashboardWidgetType.PROGRESSION -> ProgressionWidget(snapshots, zone, selectedMachineId) { id ->
@@ -310,7 +310,7 @@ private fun CalendarWidget(
     }
     DashboardCard(title = stringResource(R.string.insights_widget_calendar)) {
         Row(
-            verticalArrangement = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
