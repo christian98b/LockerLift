@@ -18,59 +18,45 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import com.lockerlift.core.database.entity.SyncQueueEntity
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.WorkoutSetEntity
-import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
-import com.lockerlift.core.model.ValidationResult
 import com.lockerlift.core.database.logic.WorkoutTrackingLogic
-import com.lockerlift.core.model.WorkoutLogic
-import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
-import com.lockerlift.core.sync.SessionMachineInstancePayload
-import com.lockerlift.core.sync.SyncConstants
-import com.lockerlift.core.sync.SyncPayloadSerializer
-import com.lockerlift.core.sync.SyncQueueWorker
-import com.lockerlift.core.sync.WearableDataLayerManager
-import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MobileTrackingScreen(app: LockerLiftMobileApp) {
-    val database = app.database
-    val machineDao = remember { database.machineDao() }
-    val sessionDao = remember { database.workoutSessionDao() }
-    val templateDao = remember { database.workoutTemplateDao() }
-    val syncQueueDao = remember { database.syncQueueDao() }
-    val healthConnectManager = remember { HealthConnectManager(app) }
-    val coroutineScope = rememberCoroutineScope()
+    val viewModel: TrackingViewModel = viewModel(
+        key = "tracking",
+        factory = viewModelFactory {
+            initializer {
+                TrackingViewModel(
+                    application = app,
+                    database = app.database
+                )
+            }
+        }
+    )
+    val state by viewModel.uiState.collectAsState()
+    val machines by viewModel.machines.collectAsState()
+    val templates by viewModel.templates.collectAsState()
 
-    val templateWithMachinesList by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
-    val machineEntities by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
-
-    val machines: List<Machine> = remember(machineEntities) { machineEntities.map { it.toDomainModel() } }
-    val templates: List<WorkoutTemplate> = remember(templateWithMachinesList) { templateWithMachinesList.map { it.template.toDomainModel() } }
-
-    // Active session state
-    var isWorkoutActive by remember { mutableStateOf(false) }
-    var currentSessionId by remember { mutableStateOf("") }
-    var currentTemplateId by remember { mutableStateOf<String?>(null) }
-    var currentTemplateName by remember { mutableStateOf<String?>(null) }
-    var workoutStartTime by remember { mutableLongStateOf(0L) }
+    // Active session state (owned by the ViewModel, durable across process death)
+    val isWorkoutActive = state.isWorkoutActive
+    val currentSessionId = state.sessionId
+    val currentTemplateId = state.templateId
+    val currentTemplateName = state.templateName
+    val workoutStartTime = state.startTimeMillis
     var elapsedSeconds by remember { mutableIntStateOf(0) }
 
-    val initialMachineIds = remember { mutableStateListOf<String>() }
-    val sessionInstances = remember { mutableStateListOf<SessionMachineInstance>() }
-    val loggedSets = remember { mutableStateMapOf<String, List<WorkoutSet>>() }
+    val initialMachineIds = state.initialMachineIds
+    val sessionInstances = state.instances
+    val loggedSets = state.setsByInstance
 
     // Dialog & sheet states
     var selectedInstanceIndexForSet by remember { mutableIntStateOf(-1) }
@@ -109,36 +95,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     }
 
     fun startWorkout(template: WorkoutTemplate?) {
-        val newSessionId = UUID.randomUUID().toString()
-        currentSessionId = newSessionId
-        currentTemplateId = template?.id
-        currentTemplateName = template?.name
-        workoutStartTime = System.currentTimeMillis()
         elapsedSeconds = 0
-        initialMachineIds.clear()
-        sessionInstances.clear()
-        loggedSets.clear()
         isRestTimerRunning = false
         restTimerRemainingSeconds = 0
-
-        coroutineScope.launch {
-            if (template != null) {
-                val orderedEntities = templateDao.getMachinesForTemplateOrdered(template.id)
-                orderedEntities.forEachIndexed { index, entity ->
-                    val machine = entity.toDomainModel()
-                    initialMachineIds.add(machine.id)
-                    val instance = SessionMachineInstance(
-                        sessionId = newSessionId,
-                        machineId = machine.id,
-                        executionOrder = index,
-                        customSettingsNote = machine.machineSettingsNote
-                    )
-                    sessionInstances.add(instance)
-                    loggedSets[instance.id] = emptyList()
-                }
-            }
-            isWorkoutActive = true
-        }
+        viewModel.startWorkout(template)
     }
 
     if (!isWorkoutActive) {
@@ -333,9 +293,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     // Query historical sets for this machine
                     var historicalSets by remember(instance.machineId) { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
                     LaunchedEffect(instance.machineId) {
-                        withContext(Dispatchers.IO) {
-                            historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId)
-                        }
+                        historicalSets = viewModel.getHistoricalSetsForMachine(instance.machineId)
                     }
                     val lastHistSets = remember(historicalSets) { WorkoutTrackingLogic.extractLastSessionSets(historicalSets) }
 
@@ -415,9 +373,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.menu_move_up)) },
                                                 onClick = {
-                                                    val reordered = WorkoutLogic.reorderInstances(sessionInstances, index, index - 1)
-                                                    sessionInstances.clear()
-                                                    sessionInstances.addAll(reordered)
+                                                    viewModel.reorderInstance(index, index - 1)
                                                     expandedMenuIndex = -1
                                                 },
                                                 leadingIcon = { Icon(Icons.Default.ArrowUpward, null) }
@@ -427,9 +383,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.menu_move_down)) },
                                                 onClick = {
-                                                    val reordered = WorkoutLogic.reorderInstances(sessionInstances, index, index + 1)
-                                                    sessionInstances.clear()
-                                                    sessionInstances.addAll(reordered)
+                                                    viewModel.reorderInstance(index, index + 1)
                                                     expandedMenuIndex = -1
                                                 },
                                                 leadingIcon = { Icon(Icons.Default.ArrowDownward, null) }
@@ -439,9 +393,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.menu_remove_exercise), color = MaterialTheme.colorScheme.error) },
                                             onClick = {
-                                                val removed = WorkoutLogic.removeInstanceFromSession(sessionInstances, index)
-                                                sessionInstances.clear()
-                                                sessionInstances.addAll(removed)
+                                                viewModel.removeInstance(index)
                                                 expandedMenuIndex = -1
                                             },
                                             leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
@@ -680,9 +632,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
         var historicalSets by remember { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
         LaunchedEffect(instance.machineId) {
-            withContext(Dispatchers.IO) {
-                historicalSets = sessionDao.getLastCompletedSetsForMachine(instance.machineId)
-            }
+            historicalSets = viewModel.getHistoricalSetsForMachine(instance.machineId)
         }
 
         val (prefillWeight, prefillReps) = remember(selectedInstanceIndexForSet, existingSets.size) {
@@ -789,9 +739,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             setType = SetType.NORMAL
                         )
 
-                        // Reactive state update (new list instance triggers Compose recomposition)
-                        val currentList = loggedSets[instance.id] ?: emptyList()
-                        loggedSets[instance.id] = currentList + newSet
+                        viewModel.logSet(instanceId = instance.id, set = newSet)
 
                         // Start rest timer
                         restTimerRemainingSeconds = 90
@@ -867,8 +815,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
                             onClick = {
-                                val updated = WorkoutLogic.deleteSetAndRenumber(currentList, editingSetIndex)
-                                loggedSets[currentEditingInstanceId] = updated
+                                viewModel.deleteSet(currentEditingInstanceId, editingSetIndex)
                                 editingInstanceId = null
                                 editingSetIndex = -1
                             },
@@ -887,13 +834,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             val finalWeight = WorkoutLogic.clampWeight(editWeightInput.toFloatOrNull() ?: 0f)
                             val finalReps = WorkoutLogic.clampReps(editRepsInput.toIntOrNull() ?: 1)
 
-                            val updated = WorkoutLogic.updateSetInList(
-                                sets = currentList,
+                            viewModel.updateSet(
+                                instanceId = currentEditingInstanceId,
                                 targetIndex = editingSetIndex,
                                 weightKg = finalWeight,
                                 reps = finalReps
                             )
-                            loggedSets[currentEditingInstanceId] = updated
                             editingInstanceId = null
                             editingSetIndex = -1
                         }
@@ -932,9 +878,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
-                                val updated = WorkoutLogic.swapMachinePreservingSets(sessionInstances, showSwapDialogIndex, m)
-                                sessionInstances.clear()
-                                sessionInstances.addAll(updated)
+                                viewModel.swapMachine(showSwapDialogIndex, m)
                                 showSwapDialogIndex = -1
                             }
                         ) {
@@ -1013,9 +957,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    val appended = WorkoutLogic.appendMachineToSession(sessionInstances, currentSessionId, m)
-                                    sessionInstances.add(appended)
-                                    loggedSets[appended.id] = emptyList()
+                                    viewModel.appendMachine(m)
                                     showAddExerciseDialog = false
                                 }
                             ) {
@@ -1042,21 +984,15 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 return@Button
                             }
 
-                            val newMachine = Machine(
-                                id = UUID.randomUUID().toString(),
-                                name = newMachineName.trim(),
-                                targetMuscleGroup = newMuscleGroup.trim().ifEmpty { "General" },
-                                machineSettingsNote = newSettingsNote.trim(),
-                                defaultIncrementKg = newIncrement.toFloatOrNull() ?: 2.5f
+                            viewModel.createMachineAndAppend(
+                                Machine(
+                                    name = newMachineName.trim(),
+                                    targetMuscleGroup = newMuscleGroup.trim().ifEmpty { "General" },
+                                    machineSettingsNote = newSettingsNote.trim(),
+                                    defaultIncrementKg = newIncrement.toFloatOrNull() ?: 2.5f
+                                )
                             )
-
-                            coroutineScope.launch {
-                                machineDao.insertMachine(newMachine.toEntity())
-                                val appended = WorkoutLogic.appendMachineToSession(sessionInstances, currentSessionId, newMachine)
-                                sessionInstances.add(appended)
-                                loggedSets[appended.id] = emptyList()
-                                showAddExerciseDialog = false
-                            }
+                            showAddExerciseDialog = false
                         }
                     ) {
                         Text(stringResource(R.string.btn_save))
@@ -1094,11 +1030,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        val updated = sessionInstances.mapIndexed { idx, item ->
-                            if (idx == showEditNoteIndex) item.copy(customSettingsNote = noteInput.trim()) else item
-                        }
-                        sessionInstances.clear()
-                        sessionInstances.addAll(updated)
+                        viewModel.saveStationNote(showEditNoteIndex, noteInput)
                         showEditNoteIndex = -1
                     }
                 ) {
@@ -1158,76 +1090,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        val finalEndTime = System.currentTimeMillis()
-                        val session = WorkoutSession(
-                            id = currentSessionId,
-                            templateId = currentTemplateId,
-                            startTime = workoutStartTime,
-                            endTime = finalEndTime,
-                            originDevice = "MOBILE",
-                            syncStatus = SyncStatus.PENDING_SYNC,
-                            notes = workoutNotes.trim()
-                        )
-
-                        coroutineScope.launch {
-                            // 1. Save session, instances and sets to local Room DB
-                            val allSets = loggedSets.values.flatten()
-                            sessionDao.upsertFullSession(
-                                session = session.toEntity(),
-                                instances = sessionInstances.map { it.toEntity() },
-                                sets = allSets.map { it.toEntity() }
-                            )
-
-                            // 2. Consolidate template if requested
-                            val templateIdForConsolidation = currentTemplateId
-                            if (consolidateTemplate && templateIdForConsolidation != null) {
-                                val activeMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-                                val templateWithMachines = templateDao.getTemplateWithMachinesById(templateIdForConsolidation)
-                                val existingTemplate = templateWithMachines?.template
-                                if (existingTemplate != null) {
-                                    templateDao.saveTemplateWithMachines(existingTemplate, activeMachineIds)
-                                }
-                            }
-
-                            // 3. Export to Health Connect
-                            if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                                healthConnectManager.exportWorkoutSession(
-                                    session = session,
-                                    templateName = currentTemplateName
-                                )
-                            }
-
-                            // 4. Enqueue in sync queue to transfer completed workout to Wear OS companion
-                            val payload = WorkoutSessionPayload(
-                                session = session,
-                                templateName = currentTemplateName,
-                                machineInstances = sessionInstances.map { inst ->
-                                    val m = machines.find { it.id == inst.machineId } ?: Machine(id = inst.machineId, name = "Exercise", targetMuscleGroup = "General")
-                                    val setsForInst = loggedSets[inst.id] ?: emptyList()
-                                    SessionMachineInstancePayload(
-                                        instance = inst,
-                                        machine = m,
-                                        sets = setsForInst
-                                    )
-                                }
-                            )
-                            val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
-                            syncQueueDao.insertQueueItem(
-                                SyncQueueEntity(
-                                    id = UUID.randomUUID().toString(),
-                                    sessionId = session.id,
-                                    payloadJson = payloadJson
-                                )
-                            )
-
-                            // Trigger WorkManager sync (Store-and-Forward)
-                            SyncQueueWorker.enqueue(app)
-                            runCatching {
-                                WearableDataLayerManager(app).flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
-                            }
-
-                            // Reset state
-                            isWorkoutActive = false
+                        // Local write, template consolidation, Health Connect
+                        // export and Store-and-Forward sync all run in the VM
+                        viewModel.finishWorkout(
+                            consolidateTemplate = consolidateTemplate,
+                            notes = workoutNotes
+                        ) {
                             showFinishDialog = false
                         }
                     }
@@ -1252,7 +1120,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        isWorkoutActive = false
+                        viewModel.discardWorkout()
                         showDiscardConfirmDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)

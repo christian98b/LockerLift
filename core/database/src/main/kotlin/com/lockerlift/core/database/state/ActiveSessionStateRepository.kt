@@ -16,7 +16,12 @@ import kotlinx.serialization.json.Json
  */
 class ActiveSessionStateRepository(
     private val dao: ActiveSessionStateDao,
-    private val json: Json = Json { ignoreUnknownKeys = true }
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        // WorkoutSet defaults (completedAt, setType, cadence) carry real data
+        // and must survive the snapshot round-trip, so they must be encoded.
+        encodeDefaults = true
+    }
 ) {
 
     suspend fun save(snapshot: ActiveSessionSnapshot) = withContext(Dispatchers.IO) {

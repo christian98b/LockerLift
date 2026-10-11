@@ -60,6 +60,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 
 # WorkManager
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workManager" }
 
 # DocumentFile (SAF helper)
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.0.1" }
