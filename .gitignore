@@ -15,3 +15,6 @@ local.properties
 *.aab
 *.keystore
 *.jks
+
+# Android Studio daemon JVM criteria (IDE-local, JetBrains JDK unavailable on CI runners)
+gradle/gradle-daemon-jvm.properties

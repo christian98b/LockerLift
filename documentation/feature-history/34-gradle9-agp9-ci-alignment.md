@@ -27,4 +27,5 @@ The toolchain upgrade to Gradle 9.6.0 / AGP 9.4.1 / Kotlin 2.2.10 / KSP 2.3.6 (K
 
 ## Follow-Up
 
-* The `local-build` skill still documents Gradle 8.10.2 on the Ubuntu build server; the server toolchain must be upgraded to Gradle 9.6.0 to match before the next remote build.
+* The Ubuntu build server is retired; local builds now happen on the Mac in Android Studio (JDK 21 / Gradle 9.6.0 / Android SDK 35, two emulators for APK verification). The `local-build` skill was rewritten for this environment.
+* The Android Studio generated `gradle/gradle-daemon-jvm.properties` (JetBrains JDK 21 daemon criteria) stays untracked: CI runners use Temurin 21 and cannot download a JetBrains JDK, so the file must not be committed.
