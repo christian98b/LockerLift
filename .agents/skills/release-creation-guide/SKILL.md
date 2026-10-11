@@ -33,7 +33,7 @@ flowchart TD
     C --> D["4. CHANGELOG Entry<br/>(section '## [X.Y.Z]')"]
     D --> E["5. Push git tag v*<br/>(triggers release.yml)"]
     E --> F["6. CI builds release APKs<br/>and publishes the GitHub Release"]
-    F --> G["7. Post-Release Verification<br/>(assets, changelog, AGENTS.md log)"]
+    F --> G["7. Post-Release Verification<br/>(assets, changelog, feature-history log)"]
 ```
 
 ---
@@ -153,7 +153,7 @@ re-trigger.
 2. **Verify on main:** Ensure the `Test & Build APKs` workflow for the pushed `main`
    commit is green as well.
 
-3. **Update tracking in `AGENTS.md`:** Add the release milestone, version code, and tag
+3. **Update tracking:** Add the release milestone, version code, and tag in a new file in `documentation/feature-history/` (see its README for conventions)
    to the progress log (as done for v1.7.3 and v1.7.4).
 
 No local build, no artifact download, no manual APK upload is part of this procedure.

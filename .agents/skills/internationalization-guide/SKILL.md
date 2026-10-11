@@ -161,7 +161,7 @@ Before committing new translations:
 3. **Build APKs:** Run `./gradlew :mobile:assembleDebug :wear:assembleDebug` to verify resource compilation.
 4. **Update Documentation:**
    * Update [README.md](../../../README.md) under Key Features / Multi-Language Support.
-   * Update [AGENTS.md](../../../AGENTS.md) tracking section.
+   * Create a new implementation history file in [documentation/feature-history/](../../../documentation/feature-history/README.md) per its conventions.
 5. **Git Commit:**
    * Adhere to [git-commit-guidelines](../git-commit-guidelines/SKILL.md):
      ```bash
