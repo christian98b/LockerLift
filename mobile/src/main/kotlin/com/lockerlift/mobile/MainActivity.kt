@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.History
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import com.lockerlift.mobile.tracking.MobileTrackingScreen
 import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
+import com.lockerlift.mobile.ui.insights.InsightsScreen
 import com.lockerlift.mobile.ui.settings.SettingsScreen
 import com.lockerlift.mobile.ui.templates.TemplateListScreen
 import com.lockerlift.mobile.ui.theme.LockerLiftTheme
@@ -33,7 +35,8 @@ enum class MobileTab(@StringRes val labelRes: Int) {
     TEMPLATES(R.string.tab_templates),
     HISTORY(R.string.tab_history),
     TRACKING(R.string.tab_tracking),
-    SETTINGS(R.string.tab_settings)
+    SETTINGS(R.string.tab_settings),
+    INSIGHTS(R.string.tab_insights)
 }
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +84,12 @@ class MainActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.SETTINGS.labelRes)) }
                             )
+                            NavigationBarItem(
+                                selected = selectedTab == MobileTab.INSIGHTS,
+                                onClick = { selectedTab = MobileTab.INSIGHTS },
+                                icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                                label = { Text(stringResource(MobileTab.INSIGHTS.labelRes)) }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -96,6 +105,7 @@ class MainActivity : ComponentActivity() {
                             MobileTab.HISTORY -> HistoryScreen(app)
                             MobileTab.TRACKING -> MobileTrackingScreen(app)
                             MobileTab.SETTINGS -> SettingsScreen(app)
+                            MobileTab.INSIGHTS -> InsightsScreen(app)
                         }
                     }
                 }

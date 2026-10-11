@@ -8,6 +8,32 @@
     <string name="tab_tracking">Tracking</string>
     <string name="tab_settings">Einstellungen</string>
 
+    <!-- Insights Dashboard -->
+    <string name="tab_insights">Auswertung</string>
+    <string name="insights_title">Auswertung</string>
+    <string name="insights_edit_dashboard">Dashboard bearbeiten</string>
+    <string name="insights_edit_hint">Ordne die Widgets mit den Pfeilen um und blende sie mit dem Augensymbol ein oder aus.</string>
+    <string name="insights_empty_dashboard">Alle Widgets sind ausgeblendet. Tippe auf das Stift-Symbol, um dein Dashboard zu konfigurieren.</string>
+    <string name="insights_widget_verdict">Trainingsbewertung</string>
+    <string name="insights_widget_regularity">Regelmäßigkeit (8 Wochen)</string>
+    <string name="insights_widget_calendar">Trainingskalender</string>
+    <string name="insights_widget_volume_chart">Volumen-Verlauf</string>
+    <string name="insights_widget_progression">Übungs-Progression</string>
+    <string name="insights_widget_records">Gesamtwerte</string>
+    <string name="insights_verdict_too_little">Zu wenig – trainiere mehr!</string>
+    <string name="insights_verdict_on_track">Genau richtig – mach weiter so!</string>
+    <string name="insights_verdict_do_more">Achtung – sehr hohe Belastung!</string>
+    <string name="insights_sessions_per_week">%s Einheiten pro Woche in den letzten 4 Wochen</string>
+    <string name="insights_average_per_week">Ø %s Einheiten pro Woche</string>
+    <string name="insights_trend_change">%s im Vergleich zur ersten Einheit</string>
+    <string name="insights_not_enough_data">Noch zu wenig Daten – schließe erst einige Workouts ab.</string>
+    <string name="insights_stat_sessions">Einheiten</string>
+    <string name="insights_stat_volume">Volumen</string>
+    <string name="insights_stat_sets">Sätze</string>
+    <string name="insights_volume_kg">%s kg</string>
+    <string name="insights_move_up">Nach oben</string>
+    <string name="insights_move_down">Nach unten</string>
+    <string name="insights_toggle_visibility">Widget ein- oder ausblenden</string>
     <!-- Catalog Screen -->
     <string name="catalog_title">Maschinenkatalog</string>
     <string name="add_machine">Maschine hinzufügen</string>

@@ -8,6 +8,32 @@
     <string name="tab_tracking">Tracking</string>
     <string name="tab_settings">Settings</string>
 
+    <!-- Insights Dashboard -->
+    <string name="tab_insights">Insights</string>
+    <string name="insights_title">Insights</string>
+    <string name="insights_edit_dashboard">Edit dashboard</string>
+    <string name="insights_edit_hint">Reorder widgets with the arrows and toggle visibility with the eye icon.</string>
+    <string name="insights_empty_dashboard">All widgets are hidden. Tap the edit icon to configure your dashboard.</string>
+    <string name="insights_widget_verdict">Training Verdict</string>
+    <string name="insights_widget_regularity">Regularity (8 weeks)</string>
+    <string name="insights_widget_calendar">Training Calendar</string>
+    <string name="insights_widget_volume_chart">Volume Progression</string>
+    <string name="insights_widget_progression">Exercise Progression</string>
+    <string name="insights_widget_records">Totals</string>
+    <string name="insights_verdict_too_little">Too little – train more!</string>
+    <string name="insights_verdict_on_track">On track – keep it up!</string>
+    <string name="insights_verdict_do_more">Watch out – very high load!</string>
+    <string name="insights_sessions_per_week">%s sessions per week in the last 4 weeks</string>
+    <string name="insights_average_per_week">Ø %s sessions per week</string>
+    <string name="insights_trend_change">%s vs. first session</string>
+    <string name="insights_not_enough_data">Not enough data yet – complete a few workouts first.</string>
+    <string name="insights_stat_sessions">Sessions</string>
+    <string name="insights_stat_volume">Volume</string>
+    <string name="insights_stat_sets">Sets</string>
+    <string name="insights_volume_kg">%s kg</string>
+    <string name="insights_move_up">Move up</string>
+    <string name="insights_move_down">Move down</string>
+    <string name="insights_toggle_visibility">Show or hide widget</string>
     <!-- Catalog Screen -->
     <string name="catalog_title">Machine Catalog</string>
     <string name="add_machine">Add machine</string>
