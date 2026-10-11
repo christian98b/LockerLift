@@ -1,0 +1,5 @@
+# Material 3 Theming, Edge-to-Edge & Appbar Placement Fix (`:mobile`)
+
+  - Edge-to-Edge Integration: Enabled `enableEdgeToEdge()` in `MainActivity.kt` with transparent status and navigation bars (`themes.xml`), aligned with Android 15 (API 35) display architecture.
+  - Window Insets & Appbar Alignment Fix: Fixed nested Scaffold double-padding bug where outer `Scaffold` applied top system insets and child screens' `TopAppBar` applied them again, pushing appbars and screen text down by ~96dp-160dp. Outer `Scaffold` now sets `contentWindowInsets = WindowInsets(0, 0, 0, 0)` and consumes bottom insets, allowing child `TopAppBar`s to sit naturally directly under the status bar at the very top edge of each screen.
+  - Modern Material 3 Theme (`LockerLiftTheme`): Implemented dynamic color adaptation on Android 12+ (`dynamicDarkColorScheme` / `dynamicLightColorScheme`), modern dark & light color schemes with clean athletic slate/indigo tones, and automatic dark mode support (`isSystemInDarkTheme()`).

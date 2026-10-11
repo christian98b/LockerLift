@@ -181,8 +181,8 @@ Dieses Projekt verwendet [Semantic Versioning](https://semver.org/):
 
 - [Projekt-Dokumentation](README.md)
 - [Architektur](ARCHITECTURE.md)
-- [Sync-Zuverlässigkeits-Verbesserungen](SYNC_RELIABILITY_IMPROVEMENTS.md)
-- [Code-Beispiele](CODE_EXAMPLES_SYNC_FIXES.md)
+- [Sync-Zuverlässigkeits-Verbesserungen](documentation/feature-history/31-sync-reliability-improvements.md)
+- [Code-Beispiele](documentation/feature-history/30-code-examples-sync-fixes.md)
 
 ---
 

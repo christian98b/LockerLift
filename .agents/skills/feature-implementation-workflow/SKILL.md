@@ -20,7 +20,7 @@ flowchart TD
     C --> D["4. Write Unit Tests (unit-testing-guidelines)"]
     D --> E["5. Implement UI / Service / Sync (mobile, wear, core:sync)"]
     E --> F["6. Verify Tests (Regression Check)"]
-    F --> G["7. Update Tracking (AGENTS.md)"]
+    F --> G["7. Update Tracking (feature-history)"]
     G --> H["8. Atomic Git Commit (git-commit-guidelines)"]
 ```
 
@@ -69,7 +69,7 @@ Before writing any code, verify that the design complies with the non-negotiable
 * **Regression-Free Rule:** Ensure all existing unit tests and all newly added tests pass without errors.
 
 ### Step 7: Update Implementation Tracking
-* Open [AGENTS.md](../../../AGENTS.md).
+* Create a new history file in [documentation/feature-history/](../../../documentation/feature-history/README.md) following its naming convention and content rules.
 * Update Section 2/3 (**Nachverfolgung von Implementierungen / Progress & Tracking**):
   * Check off completed features (`[x]`).
   * Document created/modified files.

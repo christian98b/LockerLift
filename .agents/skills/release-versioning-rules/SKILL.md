@@ -109,4 +109,4 @@ When executing a release:
    git tag -a vX.Y.Z -m "Release vX.Y.Z: <Summary of changes>"
    git push origin vX.Y.Z
    ```
-5. **Update Tracking:** Document the release and version bump in `AGENTS.md`.
+5. **Update Tracking:** Document the release and version bump in a new file in `documentation/feature-history/` (see its README for conventions).

@@ -1,0 +1,7 @@
+# US 5.4: Phone-Initiated Pull-to-Refresh Synchronization with Wear OS Wake-Up & Sync Resiliency (`:mobile`, `:wear`, `:core:sync`)
+
+  - `HistoryScreen` & `TemplateListScreen` (`:mobile`): Implemented pull-to-refresh gesture via Material 3 `PullToRefreshBox` with native refresh spinner and non-blocking Snackbar feedback.
+  - `SyncPullRefreshCoordinator` (`:core:sync`): State machine coordinating master data push (`pushAllMasterData`), companion reachability check, `/sync/request_flush` wake-up dispatch, reactive completion listening via `SyncEventBus`, and 8-second safe timeout fallback.
+  - `WearDataLayerListenerService` (`:wear`): Immediate offline queue flush upon receiving `/sync/request_flush` without periodic WorkManager constraints, dispatching completion message `/sync/flush_completed` with transferred workout count.
+  - Synchronizer & Store-and-Forward Fixes: Fixed missing `SyncQueueWorker` enqueue in `ActiveWorkoutScreen.kt` upon workout completion; eliminated sender-side channel abortion in `sendWorkoutPayloadViaChannel`; added fast atomic `MessageClient` payload transfer fallback (`PATH_WORKOUT_MESSAGE`); updated manifests to declare all intent-filter data path prefixes (`/workout_delete`, `/workout_payload_message`, `/sync/request_flush`, `/sync/flush_completed`, `/sync/request_master_data`).
+  - Unit Tests: `SyncPullRefreshCoordinatorTest.kt` covering companion reachability, master data push, flush completion response, timeout dismiss, and protocol path contracts.
