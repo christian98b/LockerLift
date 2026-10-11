@@ -106,9 +106,8 @@ object InsightsEngine {
                 date = date,
                 sessionCount = daySessions.size,
                 totalVolumeKg = daySessions.sumOf { s ->
-                    s.machineInstances.filter { !it.isSkipped }.sumOf { (it.volumeKg).toDouble() }
-                        .toFloat()
-                }
+                    s.machineInstances.filter { !it.isSkipped }.sumOf { it.volumeKg.toDouble() }
+                }.toFloat()
             )
         }.sortedBy { it.date }
     }
@@ -280,8 +279,8 @@ object InsightsEngine {
             totalSessions = completed.size,
             totalVolumeKg = completed.sumOf { s ->
                 s.machineInstances.filter { !it.isSkipped }
-                    .sumOf { it.volumeKg.toDouble() }.toFloat()
-            },
+                    .sumOf { it.volumeKg.toDouble() }
+            }.toFloat(),
             totalSets = completed.sumOf { it.completedSets }
         )
     }
