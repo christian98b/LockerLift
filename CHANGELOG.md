@@ -7,6 +7,16 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.9.1] - 2026-10-11
+
+### 🔧 Korrekturen
+
+#### Smartphone (`:mobile`)
+- **Settings-Falle behoben:** Der Settings-Screen ließ sich nach dem Öffnen nicht mehr verlassen — Bottom-Navigation-Taps wurden verschluckt und der System-Zurück-Button ignoriert. Jeder Tab-Wechsel verlässt Settings jetzt korrekt, und auch der Zurück-Gesten-Button führt aus dem Screen heraus.
+- **Insights-Dashboard wieder erreichbar:** Die Sessions/Insights-Sub-Tab-Leiste im Verlauf wurde versehentlich hinter die Statusleiste gezeichnet — sichtbar blieb nur die halbbreite Tab-Indikator-Linie, und das Dashboard war nicht antippbar. Die Tab-Leiste liegt jetzt unterhalb der Statusleiste, ohne doppelte Innenabstände in den Screens darunter.
+
+---
+
 ## [1.9.0] - 2026-10-11
 
 ### 🚀 Neue Features
