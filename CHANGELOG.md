@@ -7,6 +7,24 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.10.0] - 2026-10-11
+
+### 🚀 Neue Features
+
+#### Wear OS (`:wear`) & Smartphone (`:mobile`)
+- **Absturzsichere Workouts (Dauerhafte Sitzungsspeicherung):** Ein laufendes Training wird nach jeder Änderung (Satz geloggt/bearbeitet/gelöscht, Station hinzugefügt/getauscht/übersprungen, Pause, Notizen) als Snapshot in der lokalen verschlüsselten Datenbank gesichert. Wird die App im Ambient-Modus vom System beendet, startet das Training beim nächsten Öffnen exakt dort weiter, wo es unterbrochen wurde — inklusive Sätzen, Pausenzeit und Startzeitpunkt. Die Watch springt dabei direkt in das unterbrochene Training zurück.
+
+### 🔧 Refactoring & Architektur
+
+#### Projektübergreifend (`:core:*`, `:mobile`, `:wear`)
+- **MVVM-Präsentationsschicht:** Die aktiven Trainings auf Uhr und Smartphone werden jetzt von ViewModels mit `StateFlow` verwaltet (`ActiveWorkoutViewModel`, `TrackingViewModel`, `CatalogViewModel`, `WearSettingsViewModel`). Die Screens sind reine Renderer ohne direkten Datenbankzugriff; das Finish inkl. Synchronisation und Health-Connect-Export ist jetzt testbar.
+- **Modulgrenze bereinigt:** Die reine Trainingslogik (Double Progression, Validierung, Satzverwaltung) ist von `:core:database` in das domänenreine `:core:model` (`WorkoutLogic`) gewandert — wie in AGENTS.md Abschnitt 6 vorgesehen.
+- **Snapshots verlieren keine Daten mehr:** Der Codec codiert jetzt auch Felder mit Default-Werten, damit Zeitstempel der Sätze den Speicher-Roundtrip überstehen.
+- **Datenbank v3:** Neue Tabelle `active_session_state` mit sauberer Migration (2 → 3) — bestehende Daten bleiben unangetastet.
+- **23 neue Unit-Tests** (Robolectric + In-Memory-Room) für Session-Lebenszyklus, Absturz-Wiederherstellung und Katalog-Validierung.
+
+---
+
 ## [1.9.1] - 2026-10-11
 
 ### 🔧 Korrekturen
