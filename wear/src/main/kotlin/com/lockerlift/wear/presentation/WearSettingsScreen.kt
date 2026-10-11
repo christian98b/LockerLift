@@ -23,7 +23,10 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import com.lockerlift.core.sync.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.lockerlift.core.sync.SyncUtils
 import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
 import com.lockerlift.wear.logic.WearSettingsLogic
@@ -35,13 +38,19 @@ fun WearSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val syncQueueDao = remember { app.database.syncQueueDao() }
-    val dataLayerManager = remember { WearableDataLayerManager(context) }
+    val settingsViewModel: WearSettingsViewModel = viewModel(
+        key = "wearSettings",
+        factory = viewModelFactory {
+            initializer {
+                WearSettingsViewModel(application = app, database = app.database)
+            }
+        }
+    )
 
-    val pendingQueueCount by syncQueueDao.getPendingQueueCountFlow().collectAsState(initial = 0)
-    var companionStatus by remember { mutableStateOf<CompanionDeviceStatus?>(null) }
-    var lastSyncTimestamp by remember { mutableLongStateOf(dataLayerManager.getLastSyncTimestamp()) }
-    var isSyncing by remember { mutableStateOf(false) }
+    val pendingQueueCount by settingsViewModel.pendingQueueCount.collectAsState()
+    val companionStatus by settingsViewModel.companionStatus.collectAsState()
+    val lastSyncTimestamp by settingsViewModel.lastSyncTimestamp.collectAsState()
+    val isSyncing by settingsViewModel.isSyncing.collectAsState()
     var syncStatusMessage by remember { mutableStateOf<String?>(null) }
 
     val listState = rememberScalingLazyListState()
@@ -63,8 +72,7 @@ fun WearSettingsScreen(
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
-        companionStatus = dataLayerManager.getMobileCompanionStatus()
-        lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
+        settingsViewModel.refreshStatus()
     }
 
     ScalingLazyColumn(
@@ -95,10 +103,7 @@ fun WearSettingsScreen(
         item {
             Card(
                 onClick = {
-                    coroutineScope.launch {
-                        companionStatus = dataLayerManager.getMobileCompanionStatus()
-                        lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-                    }
+                    settingsViewModel.refreshStatus()
                 },
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
@@ -180,46 +185,24 @@ fun WearSettingsScreen(
             Button(
                 onClick = {
                     if (isSyncing) return@Button
-                    isSyncing = true
                     syncStatusMessage = null
-                    coroutineScope.launch {
-                        val status = dataLayerManager.getMobileCompanionStatus()
-                        companionStatus = status
-
-                        if (!status.isConnected) {
-                            isSyncing = false
-                            syncStatusMessage = strSyncFailedUnreachable
-                            WearSettingsLogic.triggerHapticError(context)
-                            return@launch
-                        }
-
-                        // Pull master data from phone (catalog + templates)
-                        dataLayerManager.requestMasterDataFromPhone()
-
-                        // Push any pending workout sessions to phone
-                        val result = dataLayerManager.flushPendingQueue(
-                            syncQueueDao,
-                            SyncConstants.CAPABILITY_MOBILE
-                        )
-                        lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-                        isSyncing = false
-
-                        when (result) {
-                            is SyncResult.Success -> {
+                    settingsViewModel.syncNow { outcome ->
+                        when (outcome) {
+                            is SyncOutcome.Success -> {
                                 WearSettingsLogic.triggerHapticSuccess(context)
-                                syncStatusMessage = if (result.itemsSyncedCount > 0) {
-                                    String.format(strSyncSuccessFmt, result.itemsSyncedCount)
+                                syncStatusMessage = if (outcome.itemsSyncedCount > 0) {
+                                    String.format(strSyncSuccessFmt, outcome.itemsSyncedCount)
                                 } else {
                                     strSyncUpToDate
                                 }
                             }
-                            is SyncResult.NoCompanionFound -> {
+                            SyncOutcome.NoCompanionFound -> {
                                 WearSettingsLogic.triggerHapticError(context)
                                 syncStatusMessage = strSyncFailedUnreachable
                             }
-                            is SyncResult.Error -> {
+                            is SyncOutcome.Error -> {
                                 WearSettingsLogic.triggerHapticError(context)
-                                syncStatusMessage = String.format(strSyncFailedFmt, result.message)
+                                syncStatusMessage = String.format(strSyncFailedFmt, outcome.message)
                             }
                         }
                     }
