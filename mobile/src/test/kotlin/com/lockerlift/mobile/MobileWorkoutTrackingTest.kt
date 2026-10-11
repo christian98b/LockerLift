@@ -1,6 +1,6 @@
 package com.lockerlift.mobile
 
-import com.lockerlift.core.database.logic.WorkoutTrackingLogic
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.SessionMachineInstancePayload
 import com.lockerlift.core.sync.SyncPayloadSerializer
@@ -55,16 +55,16 @@ class MobileWorkoutTrackingTest {
         val increment = 2.5f
 
         // Under threshold: no progression
-        assertFalse(WorkoutTrackingLogic.isProgressionProposed(reps = 10, threshold = threshold))
-        assertEquals(80f, WorkoutTrackingLogic.calculateNextWeight(80f, increment, shouldProgress = false), 0.001f)
+        assertFalse(WorkoutLogic.isProgressionProposed(reps = 10, threshold = threshold))
+        assertEquals(80f, WorkoutLogic.calculateNextWeight(80f, increment, shouldProgress = false), 0.001f)
 
         // Threshold reached: progression proposed
-        assertTrue(WorkoutTrackingLogic.isProgressionProposed(reps = 12, threshold = threshold))
-        assertEquals(82.5f, WorkoutTrackingLogic.calculateNextWeight(80f, increment, shouldProgress = true), 0.001f)
+        assertTrue(WorkoutLogic.isProgressionProposed(reps = 12, threshold = threshold))
+        assertEquals(82.5f, WorkoutLogic.calculateNextWeight(80f, increment, shouldProgress = true), 0.001f)
 
         // Over threshold: progression proposed
-        assertTrue(WorkoutTrackingLogic.isProgressionProposed(reps = 14, threshold = threshold))
-        assertEquals(82.5f, WorkoutTrackingLogic.calculateNextWeight(80f, increment, shouldProgress = true), 0.001f)
+        assertTrue(WorkoutLogic.isProgressionProposed(reps = 14, threshold = threshold))
+        assertEquals(82.5f, WorkoutLogic.calculateNextWeight(80f, increment, shouldProgress = true), 0.001f)
     }
 
     @Test
@@ -165,7 +165,7 @@ class MobileWorkoutTrackingTest {
         val initialSets = listOf(set1, set2, set3)
 
         // 1. In-workout edit of set 2: user corrects 70kg -> 75kg, 10 reps -> 9 reps
-        val editedSets = WorkoutTrackingLogic.updateSetInList(
+        val editedSets = WorkoutLogic.updateSetInList(
             sets = initialSets,
             targetIndex = 1,
             weightKg = 75f,
@@ -177,7 +177,7 @@ class MobileWorkoutTrackingTest {
         assertEquals(2, editedSets[1].setNumber)
 
         // 2. In-workout deletion of set 1: set 2 and 3 should renumber to 1 and 2
-        val remainingSets = WorkoutTrackingLogic.deleteSetAndRenumber(editedSets, targetIndex = 0)
+        val remainingSets = WorkoutLogic.deleteSetAndRenumber(editedSets, targetIndex = 0)
         assertEquals(2, remainingSets.size)
         assertEquals(1, remainingSets[0].setNumber)
         assertEquals(75f, remainingSets[0].weightKg, 0.001f)
@@ -195,19 +195,19 @@ class MobileWorkoutTrackingTest {
             WorkoutSet(sessionMachineId = "old-smi-1", setNumber = 3, weightKg = 80f, reps = 7)
         )
 
-        val lastHistSets = WorkoutTrackingLogic.extractLastSessionSetsFromDomain(histSets)
+        val lastHistSets = WorkoutLogic.extractLastSessionSets(histSets)
         assertEquals(3, lastHistSets.size)
 
         // Match for set 1
         val prev1 = lastHistSets.getOrNull(0)
         assertNotNull(prev1)
-        assertEquals("80", WorkoutTrackingLogic.formatWeight(prev1!!.weightKg))
+        assertEquals("80", WorkoutLogic.formatWeight(prev1!!.weightKg))
         assertEquals(10, prev1.reps)
 
         // Match for set 2
         val prev2 = lastHistSets.getOrNull(1)
         assertNotNull(prev2)
-        assertEquals("80", WorkoutTrackingLogic.formatWeight(prev2!!.weightKg))
+        assertEquals("80", WorkoutLogic.formatWeight(prev2!!.weightKg))
         assertEquals(9, prev2.reps)
 
         // Set 4 has no previous historical set
@@ -229,13 +229,13 @@ class MobileWorkoutTrackingTest {
 
         // Swap machine in inst1 (e.g. replaced incline dumbbells with machine chest press)
         val chestPress = Machine(id = "m-press", name = "Chest Press Machine", targetMuscleGroup = "Chest", machineSettingsNote = "Seat 5")
-        val swapped = WorkoutTrackingLogic.swapMachinePreservingSets(instances, targetIndex = 1, newMachine = chestPress)
+        val swapped = WorkoutLogic.swapMachinePreservingSets(instances, targetIndex = 1, newMachine = chestPress)
         assertEquals("inst-1", swapped[1].id)
         assertEquals("m-press", swapped[1].machineId)
         assertEquals("Seat 5", swapped[1].customSettingsNote)
 
         // Reorder: move fly (index 2) to the front (index 0)
-        val reordered = WorkoutTrackingLogic.reorderInstances(swapped, fromIndex = 2, toIndex = 0)
+        val reordered = WorkoutLogic.reorderInstances(swapped, fromIndex = 2, toIndex = 0)
         assertEquals("inst-2", reordered[0].id)
         assertEquals(0, reordered[0].executionOrder)
         assertEquals("inst-0", reordered[1].id)
@@ -258,7 +258,7 @@ class MobileWorkoutTrackingTest {
             "s-c" to emptyList()
         )
 
-        val nextFromA = WorkoutTrackingLogic.findNextUnfinishedStationIndex(0, instances, loggedSets)
+        val nextFromA = WorkoutLogic.findNextUnfinishedStationIndex(0, instances, loggedSets)
         assertEquals(1, nextFromA)
 
         // When B is also logged, next from A is C (index 2)
@@ -267,39 +267,39 @@ class MobileWorkoutTrackingTest {
             "s-b" to listOf(set),
             "s-c" to emptyList()
         )
-        val nextFromA2 = WorkoutTrackingLogic.findNextUnfinishedStationIndex(0, instances, loggedSets2)
+        val nextFromA2 = WorkoutLogic.findNextUnfinishedStationIndex(0, instances, loggedSets2)
         assertEquals(2, nextFromA2)
     }
 
     @Test
     fun testWeightStepperInteractionAndClamping() {
         val increment = 2.5f
-        val (minusSteps, plusSteps) = WorkoutTrackingLogic.calculateWeightSteppers(increment)
+        val (minusSteps, plusSteps) = WorkoutLogic.calculateWeightSteppers(increment)
 
         var weight = 20.0f
 
         // Apply +2.5
         val plus25 = plusSteps.first { it == 2.5f }
-        weight = WorkoutTrackingLogic.clampWeight(weight + plus25)
+        weight = WorkoutLogic.clampWeight(weight + plus25)
         assertEquals(22.5f, weight, 0.001f)
 
         // Apply -5.0
         val minus5 = minusSteps.first { it == -5.0f }
-        weight = WorkoutTrackingLogic.clampWeight(weight + minus5)
+        weight = WorkoutLogic.clampWeight(weight + minus5)
         assertEquals(17.5f, weight, 0.001f)
 
         // Apply negative stepping that goes below zero -> clamps to 0
-        weight = WorkoutTrackingLogic.clampWeight(weight - 50f)
+        weight = WorkoutLogic.clampWeight(weight - 50f)
         assertEquals(0.0f, weight, 0.001f)
 
         // Formatting of steps ensures no character wrapping issues
         minusSteps.forEach { delta ->
-            val label = WorkoutTrackingLogic.formatDelta(delta)
+            val label = WorkoutLogic.formatDelta(delta)
             assertTrue(label.startsWith("-"))
             assertFalse(label.contains(" "))
         }
         plusSteps.forEach { delta ->
-            val label = WorkoutTrackingLogic.formatDelta(delta)
+            val label = WorkoutLogic.formatDelta(delta)
             assertTrue(label.startsWith("+"))
             assertFalse(label.contains(" "))
         }

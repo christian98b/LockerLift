@@ -24,8 +24,9 @@ import com.lockerlift.core.database.entity.SyncQueueEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
-import com.lockerlift.core.database.logic.ValidationResult
+import com.lockerlift.core.model.ValidationResult
 import com.lockerlift.core.database.logic.WorkoutTrackingLogic
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.SessionMachineInstancePayload
@@ -340,9 +341,9 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
                     // Double progression proposal for next set
                     val lastSet = sets.lastOrNull()
-                    val showProgressionSuggestion = lastSet != null && WorkoutTrackingLogic.isProgressionProposed(lastSet.reps)
+                    val showProgressionSuggestion = lastSet != null && WorkoutLogic.isProgressionProposed(lastSet.reps)
                     val increment = machine?.defaultIncrementKg ?: 2.5f
-                    val overloadedWeight = if (lastSet != null) WorkoutTrackingLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true) else 0f
+                    val overloadedWeight = if (lastSet != null) WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true) else 0f
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -414,7 +415,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.menu_move_up)) },
                                                 onClick = {
-                                                    val reordered = WorkoutTrackingLogic.reorderInstances(sessionInstances, index, index - 1)
+                                                    val reordered = WorkoutLogic.reorderInstances(sessionInstances, index, index - 1)
                                                     sessionInstances.clear()
                                                     sessionInstances.addAll(reordered)
                                                     expandedMenuIndex = -1
@@ -426,7 +427,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.menu_move_down)) },
                                                 onClick = {
-                                                    val reordered = WorkoutTrackingLogic.reorderInstances(sessionInstances, index, index + 1)
+                                                    val reordered = WorkoutLogic.reorderInstances(sessionInstances, index, index + 1)
                                                     sessionInstances.clear()
                                                     sessionInstances.addAll(reordered)
                                                     expandedMenuIndex = -1
@@ -438,7 +439,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.menu_remove_exercise), color = MaterialTheme.colorScheme.error) },
                                             onClick = {
-                                                val removed = WorkoutTrackingLogic.removeInstanceFromSession(sessionInstances, index)
+                                                val removed = WorkoutLogic.removeInstanceFromSession(sessionInstances, index)
                                                 sessionInstances.clear()
                                                 sessionInstances.addAll(removed)
                                                 expandedMenuIndex = -1
@@ -459,7 +460,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         Text(
                                             text = stringResource(
                                                 R.string.progression_suggestion_format,
-                                                WorkoutTrackingLogic.formatWeight(overloadedWeight)
+                                                WorkoutLogic.formatWeight(overloadedWeight)
                                             ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -520,7 +521,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             sets.forEachIndexed { setIdx, set ->
                                 val prevSet = lastHistSets.getOrNull(setIdx)
                                 val prevText = if (prevSet != null) {
-                                    "${WorkoutTrackingLogic.formatWeight(prevSet.weightKg)} × ${prevSet.reps}"
+                                    "${WorkoutLogic.formatWeight(prevSet.weightKg)} × ${prevSet.reps}"
                                 } else "—"
 
                                 Surface(
@@ -553,7 +554,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             modifier = Modifier.weight(1f)
                                         )
                                         Text(
-                                            text = "${WorkoutTrackingLogic.formatWeight(set.weightKg)}",
+                                            text = "${WorkoutLogic.formatWeight(set.weightKg)}",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             modifier = Modifier.width(68.dp)
@@ -607,7 +608,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
                             // --- 5. Next Station Suggestion ---
                             if (sets.isNotEmpty()) {
-                                val nextStationIndex = WorkoutTrackingLogic.findNextUnfinishedStationIndex(index, sessionInstances, loggedSets)
+                                val nextStationIndex = WorkoutLogic.findNextUnfinishedStationIndex(index, sessionInstances, loggedSets)
                                 if (nextStationIndex != null && nextStationIndex in sessionInstances.indices) {
                                     val nextInst = sessionInstances[nextStationIndex]
                                     val nextMachine = machines.find { it.id == nextInst.machineId }
@@ -693,15 +694,15 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             )
         }
 
-        var weightInput by remember(prefillWeight) { mutableStateOf(WorkoutTrackingLogic.formatWeight(prefillWeight)) }
+        var weightInput by remember(prefillWeight) { mutableStateOf(WorkoutLogic.formatWeight(prefillWeight)) }
         var repsInput by remember(prefillReps) { mutableStateOf(prefillReps.toString()) }
 
         val currentWeight = weightInput.toFloatOrNull() ?: 0f
         val currentReps = repsInput.toIntOrNull() ?: 0
         val increment = machine?.defaultIncrementKg ?: 2.5f
 
-        val showProgressionSuggestion = WorkoutTrackingLogic.isProgressionProposed(currentReps)
-        val overloadedWeight = WorkoutTrackingLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true)
+        val showProgressionSuggestion = WorkoutLogic.isProgressionProposed(currentReps)
+        val overloadedWeight = WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true)
 
         AlertDialog(
             onDismissRequest = { selectedInstanceIndexForSet = -1 },
@@ -722,7 +723,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 Text(
                                     text = stringResource(
                                         R.string.progression_suggestion_format,
-                                        WorkoutTrackingLogic.formatWeight(overloadedWeight)
+                                        WorkoutLogic.formatWeight(overloadedWeight)
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -730,14 +731,14 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Button(
                                     onClick = {
-                                        weightInput = WorkoutTrackingLogic.formatWeight(overloadedWeight)
+                                        weightInput = WorkoutLogic.formatWeight(overloadedWeight)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                                 ) {
                                     Text(
                                         text = stringResource(
                                             R.string.btn_apply_overload,
-                                            WorkoutTrackingLogic.formatWeight(increment)
+                                            WorkoutLogic.formatWeight(increment)
                                         )
                                     )
                                 }
@@ -776,8 +777,8 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        val finalWeight = WorkoutTrackingLogic.clampWeight(weightInput.toFloatOrNull() ?: 0f)
-                        val finalReps = WorkoutTrackingLogic.clampReps(repsInput.toIntOrNull() ?: 1)
+                        val finalWeight = WorkoutLogic.clampWeight(weightInput.toFloatOrNull() ?: 0f)
+                        val finalReps = WorkoutLogic.clampReps(repsInput.toIntOrNull() ?: 1)
 
                         val newSet = WorkoutSet(
                             sessionMachineId = instance.id,
@@ -820,7 +821,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val increment = machine?.defaultIncrementKg ?: 2.5f
 
         if (setToEdit != null) {
-            var editWeightInput by remember(setToEdit) { mutableStateOf(WorkoutTrackingLogic.formatWeight(setToEdit.weightKg)) }
+            var editWeightInput by remember(setToEdit) { mutableStateOf(WorkoutLogic.formatWeight(setToEdit.weightKg)) }
             var editRepsInput by remember(setToEdit) { mutableStateOf(setToEdit.reps.toString()) }
 
             AlertDialog(
@@ -866,7 +867,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
                             onClick = {
-                                val updated = WorkoutTrackingLogic.deleteSetAndRenumber(currentList, editingSetIndex)
+                                val updated = WorkoutLogic.deleteSetAndRenumber(currentList, editingSetIndex)
                                 loggedSets[currentEditingInstanceId] = updated
                                 editingInstanceId = null
                                 editingSetIndex = -1
@@ -883,10 +884,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 confirmButton = {
                     Button(
                         onClick = {
-                            val finalWeight = WorkoutTrackingLogic.clampWeight(editWeightInput.toFloatOrNull() ?: 0f)
-                            val finalReps = WorkoutTrackingLogic.clampReps(editRepsInput.toIntOrNull() ?: 1)
+                            val finalWeight = WorkoutLogic.clampWeight(editWeightInput.toFloatOrNull() ?: 0f)
+                            val finalReps = WorkoutLogic.clampReps(editRepsInput.toIntOrNull() ?: 1)
 
-                            val updated = WorkoutTrackingLogic.updateSetInList(
+                            val updated = WorkoutLogic.updateSetInList(
                                 sets = currentList,
                                 targetIndex = editingSetIndex,
                                 weightKg = finalWeight,
@@ -931,7 +932,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
-                                val updated = WorkoutTrackingLogic.swapMachinePreservingSets(sessionInstances, showSwapDialogIndex, m)
+                                val updated = WorkoutLogic.swapMachinePreservingSets(sessionInstances, showSwapDialogIndex, m)
                                 sessionInstances.clear()
                                 sessionInstances.addAll(updated)
                                 showSwapDialogIndex = -1
@@ -1012,7 +1013,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
-                                    val appended = WorkoutTrackingLogic.appendMachineToSession(sessionInstances, currentSessionId, m)
+                                    val appended = WorkoutLogic.appendMachineToSession(sessionInstances, currentSessionId, m)
                                     sessionInstances.add(appended)
                                     loggedSets[appended.id] = emptyList()
                                     showAddExerciseDialog = false
@@ -1031,7 +1032,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 if (showNewMachineForm) {
                     Button(
                         onClick = {
-                            val validation = WorkoutTrackingLogic.validateNewMachine(newMachineName, machines.map { it.name })
+                            val validation = WorkoutLogic.validateNewMachine(newMachineName, machines.map { it.name })
                             if (validation is ValidationResult.EmptyName) {
                                 errorMessage = "Name cannot be empty"
                                 return@Button
@@ -1051,7 +1052,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
                             coroutineScope.launch {
                                 machineDao.insertMachine(newMachine.toEntity())
-                                val appended = WorkoutTrackingLogic.appendMachineToSession(sessionInstances, currentSessionId, newMachine)
+                                val appended = WorkoutLogic.appendMachineToSession(sessionInstances, currentSessionId, newMachine)
                                 sessionInstances.add(appended)
                                 loggedSets[appended.id] = emptyList()
                                 showAddExerciseDialog = false
@@ -1275,7 +1276,7 @@ private fun WeightStepperControls(
     onWeightChanged: (String) -> Unit
 ) {
     val (minusSteps, plusSteps) = remember(incrementKg) {
-        WorkoutTrackingLogic.calculateWeightSteppers(incrementKg)
+        WorkoutLogic.calculateWeightSteppers(incrementKg)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1288,14 +1289,14 @@ private fun WeightStepperControls(
                 OutlinedButton(
                     onClick = {
                         val current = weightInput.toFloatOrNull() ?: 0f
-                        val newW = WorkoutTrackingLogic.clampWeight(current + delta)
-                        onWeightChanged(WorkoutTrackingLogic.formatWeight(newW))
+                        val newW = WorkoutLogic.clampWeight(current + delta)
+                        onWeightChanged(WorkoutLogic.formatWeight(newW))
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = WorkoutTrackingLogic.formatDelta(delta),
+                        text = WorkoutLogic.formatDelta(delta),
                         fontSize = 13.sp,
                         maxLines = 1,
                         softWrap = false,
@@ -1314,14 +1315,14 @@ private fun WeightStepperControls(
                 OutlinedButton(
                     onClick = {
                         val current = weightInput.toFloatOrNull() ?: 0f
-                        val newW = WorkoutTrackingLogic.clampWeight(current + delta)
-                        onWeightChanged(WorkoutTrackingLogic.formatWeight(newW))
+                        val newW = WorkoutLogic.clampWeight(current + delta)
+                        onWeightChanged(WorkoutLogic.formatWeight(newW))
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = WorkoutTrackingLogic.formatDelta(delta),
+                        text = WorkoutLogic.formatDelta(delta),
                         fontSize = 13.sp,
                         maxLines = 1,
                         softWrap = false,
@@ -1346,7 +1347,7 @@ private fun RepsStepperControls(
             OutlinedButton(
                 onClick = {
                     val current = repsInput.toIntOrNull() ?: 0
-                    val newR = WorkoutTrackingLogic.clampReps(current + delta)
+                    val newR = WorkoutLogic.clampReps(current + delta)
                     onRepsChanged(newR.toString())
                 },
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),

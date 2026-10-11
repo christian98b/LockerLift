@@ -36,8 +36,8 @@ import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.wear.LockerLiftWearApp
 import com.lockerlift.wear.R
-import com.lockerlift.core.database.logic.CreateMachineMode
-import com.lockerlift.core.database.logic.ValidationResult
+import com.lockerlift.core.model.CreateMachineMode
+import com.lockerlift.core.model.ValidationResult
 import com.lockerlift.wear.logic.WearPreferences
 import com.lockerlift.wear.logic.WearWorkoutLogic
 import com.lockerlift.wear.logic.WorkoutPauseState

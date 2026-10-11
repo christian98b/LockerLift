@@ -2,20 +2,20 @@ package com.lockerlift.wear.logic
 
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.logic.WorkoutTrackingLogic
+import com.lockerlift.core.model.CreateMachineMode
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SessionMachineInstance
+import com.lockerlift.core.model.ValidationResult
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.WorkoutSet
-
-typealias CreateMachineMode = com.lockerlift.core.database.logic.CreateMachineMode
-typealias ValidationResult = com.lockerlift.core.database.logic.ValidationResult
 
 object WearWorkoutLogic {
 
-    const val DEFAULT_PROGRESSION_REP_THRESHOLD = WorkoutTrackingLogic.DEFAULT_PROGRESSION_REP_THRESHOLD
-    const val MIN_WEIGHT_KG = WorkoutTrackingLogic.MIN_WEIGHT_KG
-    const val MAX_WEIGHT_KG = WorkoutTrackingLogic.MAX_WEIGHT_KG
-    const val MIN_REPS = WorkoutTrackingLogic.MIN_REPS
-    const val MAX_REPS = WorkoutTrackingLogic.MAX_REPS
+    const val DEFAULT_PROGRESSION_REP_THRESHOLD = WorkoutLogic.DEFAULT_PROGRESSION_REP_THRESHOLD
+    const val MIN_WEIGHT_KG = WorkoutLogic.MIN_WEIGHT_KG
+    const val MAX_WEIGHT_KG = WorkoutLogic.MAX_WEIGHT_KG
+    const val MIN_REPS = WorkoutLogic.MIN_REPS
+    const val MAX_REPS = WorkoutLogic.MAX_REPS
 
     const val DEFAULT_REST_DURATION_SECONDS = 90
     const val MIN_REST_SECONDS = 5
@@ -23,54 +23,54 @@ object WearWorkoutLogic {
     const val REST_ADJUSTMENT_STEP_SECONDS = 15
     val PRESET_REST_DURATIONS = listOf(30, 60, 90, 120, 180)
 
-    fun formatWeight(weight: Float): String = WorkoutTrackingLogic.formatWeight(weight)
+    fun formatWeight(weight: Float): String = WorkoutLogic.formatWeight(weight)
 
     fun extractLastSessionSets(sets: List<WorkoutSetEntity>): List<WorkoutSetEntity> =
         WorkoutTrackingLogic.extractLastSessionSets(sets)
 
     fun extractLastSessionSetsFromDomain(sets: List<WorkoutSet>): List<WorkoutSet> =
-        WorkoutTrackingLogic.extractLastSessionSetsFromDomain(sets)
+        WorkoutLogic.extractLastSessionSets(sets)
 
     fun formatHistoricalSetsString(sets: List<WorkoutSetEntity>): String? =
         WorkoutTrackingLogic.formatHistoricalSetsString(sets)
 
     fun formatDomainHistoricalSetsString(sets: List<WorkoutSet>): String? =
-        WorkoutTrackingLogic.formatDomainHistoricalSetsString(sets)
+        WorkoutLogic.formatHistoricalSetsString(sets)
 
     fun formatPerformanceSummary(sets: List<WorkoutSetEntity>, prefix: String = "Last: "): String? =
         WorkoutTrackingLogic.formatPerformanceSummary(sets, prefix)
 
     fun formatDomainPerformanceSummary(sets: List<WorkoutSet>, prefix: String = "Last: "): String? =
-        WorkoutTrackingLogic.formatDomainPerformanceSummary(sets, prefix)
+        WorkoutLogic.formatPerformanceSummary(sets, prefix)
 
     fun isProgressionProposed(reps: Int, threshold: Int = DEFAULT_PROGRESSION_REP_THRESHOLD): Boolean =
-        WorkoutTrackingLogic.isProgressionProposed(reps, threshold)
+        WorkoutLogic.isProgressionProposed(reps, threshold)
 
     fun calculateNextWeight(currentWeight: Float, increment: Float, shouldProgress: Boolean): Float =
-        WorkoutTrackingLogic.calculateNextWeight(currentWeight, increment, shouldProgress)
+        WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress)
 
     fun validateNewMachine(name: String, existingMachineNames: List<String>): ValidationResult =
-        WorkoutTrackingLogic.validateNewMachine(name, existingMachineNames)
+        WorkoutLogic.validateNewMachine(name, existingMachineNames)
 
     fun replaceMachineInSession(
         instances: List<SessionMachineInstance>,
         targetIndex: Int,
         newMachine: Machine
     ): List<SessionMachineInstance> =
-        WorkoutTrackingLogic.replaceMachineInSession(instances, targetIndex, newMachine)
+        WorkoutLogic.replaceMachineInSession(instances, targetIndex, newMachine)
 
     fun appendMachineToSession(
         instances: List<SessionMachineInstance>,
         sessionId: String,
         machine: Machine
     ): SessionMachineInstance =
-        WorkoutTrackingLogic.appendMachineToSession(instances, sessionId, machine)
+        WorkoutLogic.appendMachineToSession(instances, sessionId, machine)
 
     fun toggleSkipStation(
         instances: List<SessionMachineInstance>,
         targetIndex: Int
     ): List<SessionMachineInstance> =
-        WorkoutTrackingLogic.toggleSkipStation(instances, targetIndex)
+        WorkoutLogic.toggleSkipStation(instances, targetIndex)
 
     fun determinePrefillWeightAndReps(
         currentSets: List<WorkoutSet>,
@@ -80,9 +80,9 @@ object WearWorkoutLogic {
     ): Pair<Float, Int> =
         WorkoutTrackingLogic.determinePrefillWeightAndReps(currentSets, historicalSets, defaultWeight, defaultReps)
 
-    fun clampWeight(weight: Float): Float = WorkoutTrackingLogic.clampWeight(weight)
+    fun clampWeight(weight: Float): Float = WorkoutLogic.clampWeight(weight)
 
-    fun clampReps(reps: Int): Int = WorkoutTrackingLogic.clampReps(reps)
+    fun clampReps(reps: Int): Int = WorkoutLogic.clampReps(reps)
 
     fun initializeSessionInstances(
         templateMachines: List<Machine>?,
@@ -120,7 +120,7 @@ object WearWorkoutLogic {
         weightKg: Float,
         reps: Int,
         cadence: String? = null
-    ): List<WorkoutSet> = WorkoutTrackingLogic.updateSetInList(sets, targetIndex, weightKg, reps, cadence)
+    ): List<WorkoutSet> = WorkoutLogic.updateSetInList(sets, targetIndex, weightKg, reps, cadence)
 
     /**
      * Updates an existing set identified by ID with clamped weight and reps (AK 3.11).
@@ -143,7 +143,7 @@ object WearWorkoutLogic {
     fun deleteSetAndRenumber(
         sets: List<WorkoutSet>,
         targetIndex: Int
-    ): List<WorkoutSet> = WorkoutTrackingLogic.deleteSetAndRenumber(sets, targetIndex)
+    ): List<WorkoutSet> = WorkoutLogic.deleteSetAndRenumber(sets, targetIndex)
 
     /**
      * Deletes a set identified by ID and renumbers subsequent sets sequentially (AK 3.12).

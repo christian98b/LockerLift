@@ -1,263 +1,123 @@
 package com.lockerlift.core.database.logic
 
 import com.lockerlift.core.database.entity.WorkoutSetEntity
-import com.lockerlift.core.model.Machine
-import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.WorkoutSet
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Tests the entity adapter seam in [WorkoutTrackingLogic]: Room entities coming
+ * straight from DAO queries must produce identical results to the pure domain
+ * logic in `com.lockerlift.core.model.WorkoutLogic`.
+ */
 class WorkoutTrackingLogicTest {
 
-    @Test
-    fun testFormatWeight() {
-        assertEquals("80", WorkoutTrackingLogic.formatWeight(80.0f))
-        assertEquals("82.5", WorkoutTrackingLogic.formatWeight(82.5f))
-        assertEquals("0", WorkoutTrackingLogic.formatWeight(0.0f))
-    }
+    private fun entitySet(
+        sessionMachineId: String,
+        setNumber: Int,
+        reps: Int,
+        weightKg: Float
+    ) = WorkoutSetEntity(
+        id = "set-$sessionMachineId-$setNumber",
+        sessionMachineId = sessionMachineId,
+        setNumber = setNumber,
+        reps = reps,
+        weightKg = weightKg,
+        completedAt = 1_000L
+    )
 
     @Test
-    fun testClamping() {
-        assertEquals(0.0f, WorkoutTrackingLogic.clampWeight(-5f), 0.001f)
-        assertEquals(1000.0f, WorkoutTrackingLogic.clampWeight(1200f), 0.001f)
-        assertEquals(75.5f, WorkoutTrackingLogic.clampWeight(75.5f), 0.001f)
-
-        assertEquals(1, WorkoutTrackingLogic.clampReps(0))
-        assertEquals(1, WorkoutTrackingLogic.clampReps(-10))
-        assertEquals(999, WorkoutTrackingLogic.clampReps(1000))
-        assertEquals(12, WorkoutTrackingLogic.clampReps(12))
-    }
-
-    @Test
-    fun testDoubleProgression() {
-        assertTrue(WorkoutTrackingLogic.isProgressionProposed(12, threshold = 12))
-        assertTrue(WorkoutTrackingLogic.isProgressionProposed(15, threshold = 12))
-        assertFalse(WorkoutTrackingLogic.isProgressionProposed(11, threshold = 12))
-
-        assertEquals(82.5f, WorkoutTrackingLogic.calculateNextWeight(80.0f, 2.5f, shouldProgress = true), 0.001f)
-        assertEquals(80.0f, WorkoutTrackingLogic.calculateNextWeight(80.0f, 2.5f, shouldProgress = false), 0.001f)
-    }
-
-    @Test
-    fun testValidateNewMachine() {
-        val existing = listOf("Bench Press", "Squat")
-        assertEquals(ValidationResult.EmptyName, WorkoutTrackingLogic.validateNewMachine("   ", existing))
-        assertEquals(ValidationResult.DuplicateName, WorkoutTrackingLogic.validateNewMachine("bench press", existing))
-        assertEquals(ValidationResult.Valid, WorkoutTrackingLogic.validateNewMachine("Deadlift", existing))
-    }
-
-    @Test
-    fun testStationOperations() {
-        val machine1 = Machine(id = "m1", name = "Bench", targetMuscleGroup = "Chest", machineSettingsNote = "Pin 3")
-        val machine2 = Machine(id = "m2", name = "Incline Bench", targetMuscleGroup = "Chest", machineSettingsNote = "Pin 4")
-
-        val initial = listOf(
-            SessionMachineInstance(sessionId = "s1", machineId = machine1.id, executionOrder = 0, customSettingsNote = machine1.machineSettingsNote)
+    fun testExtractLastSessionSets_whenEntitiesFromTwoSessions_returnsOnlyLatest() {
+        // Arrange: ordered as the DAO returns them (end_time DESC, set_number ASC)
+        val entities = listOf(
+            entitySet("smi-2", 1, 10, 80f),
+            entitySet("smi-2", 2, 9, 80f),
+            entitySet("smi-1", 1, 12, 75f)
         )
 
-        // Replace
-        val replaced = WorkoutTrackingLogic.replaceMachineInSession(initial, 0, machine2)
-        assertEquals("m2", replaced[0].machineId)
-        assertEquals("Pin 4", replaced[0].customSettingsNote)
+        // Act
+        val result = WorkoutTrackingLogic.extractLastSessionSets(entities)
 
-        // Skip toggle
-        val skipped = WorkoutTrackingLogic.toggleSkipStation(replaced, 0)
-        assertTrue(skipped[0].isSkipped)
-        val unskipped = WorkoutTrackingLogic.toggleSkipStation(skipped, 0)
-        assertFalse(unskipped[0].isSkipped)
-
-        // Append
-        val appended = WorkoutTrackingLogic.appendMachineToSession(initial, "s1", machine2)
-        assertEquals(1, appended.executionOrder)
-        assertEquals("m2", appended.machineId)
+        // Assert
+        assertEquals(2, result.size)
+        assertTrue(result.all { it.sessionMachineId == "smi-2" })
     }
 
     @Test
-    fun testUpdateSetInList() {
-        val sets = listOf(
-            WorkoutSet(sessionMachineId = "smi-1", setNumber = 1, weightKg = 60f, reps = 10, cadence = "2-0-2-0"),
-            WorkoutSet(sessionMachineId = "smi-1", setNumber = 2, weightKg = 60f, reps = 8, cadence = "2-0-2-0")
+    fun testFormatHistoricalSetsString_whenEntitiesPassed_formatsLikeDomainLogic() {
+        val entities = listOf(
+            entitySet("smi-1", 1, 10, 80f),
+            entitySet("smi-1", 2, 9, 82.5f)
         )
 
-        // Update set 1
-        val updated = WorkoutTrackingLogic.updateSetInList(sets, targetIndex = 0, weightKg = 65f, reps = 12)
-        assertEquals(2, updated.size)
-        assertEquals(65f, updated[0].weightKg, 0.001f)
-        assertEquals(12, updated[0].reps)
-        assertEquals(1, updated[0].setNumber)
-        assertEquals("2-0-2-0", updated[0].cadence)
+        val result = WorkoutTrackingLogic.formatHistoricalSetsString(entities)
 
-        // Target index out of bounds should return original list
-        val untouched = WorkoutTrackingLogic.updateSetInList(sets, targetIndex = 5, weightKg = 70f, reps = 10)
-        assertEquals(sets, untouched)
+        assertEquals("80 kg × 10, 82.5 kg × 9", result)
     }
 
     @Test
-    fun testDeleteSetAndRenumber() {
-        val sets = listOf(
-            WorkoutSet(sessionMachineId = "smi-1", setNumber = 1, weightKg = 80f, reps = 10),
-            WorkoutSet(sessionMachineId = "smi-1", setNumber = 2, weightKg = 85f, reps = 8),
-            WorkoutSet(sessionMachineId = "smi-1", setNumber = 3, weightKg = 90f, reps = 6)
-        )
-
-        // Delete middle set (set 2)
-        val afterDelete = WorkoutTrackingLogic.deleteSetAndRenumber(sets, targetIndex = 1)
-        assertEquals(2, afterDelete.size)
-        assertEquals(1, afterDelete[0].setNumber)
-        assertEquals(80f, afterDelete[0].weightKg, 0.001f)
-        assertEquals(2, afterDelete[1].setNumber)
-        assertEquals(90f, afterDelete[1].weightKg, 0.001f)
-
-        // Delete first set
-        val afterDeleteFirst = WorkoutTrackingLogic.deleteSetAndRenumber(afterDelete, targetIndex = 0)
-        assertEquals(1, afterDeleteFirst.size)
-        assertEquals(1, afterDeleteFirst[0].setNumber)
-        assertEquals(90f, afterDeleteFirst[0].weightKg, 0.001f)
-
-        // Invalid index returns original list
-        val untouched = WorkoutTrackingLogic.deleteSetAndRenumber(sets, targetIndex = -1)
-        assertEquals(sets, untouched)
+    fun testFormatPerformanceSummary_whenEmpty_returnsNull() {
+        assertNull(WorkoutTrackingLogic.formatPerformanceSummary(emptyList()))
     }
 
     @Test
-    fun testReorderInstances() {
-        val instances = listOf(
-            SessionMachineInstance(sessionId = "s1", machineId = "m1", executionOrder = 0),
-            SessionMachineInstance(sessionId = "s1", machineId = "m2", executionOrder = 1),
-            SessionMachineInstance(sessionId = "s1", machineId = "m3", executionOrder = 2)
-        )
+    fun testFormatPerformanceSummary_whenEntitiesPassed_includesPrefix() {
+        val entities = listOf(entitySet("smi-1", 1, 10, 80f))
 
-        // Move m3 to index 0
-        val reordered = WorkoutTrackingLogic.reorderInstances(instances, fromIndex = 2, toIndex = 0)
-        assertEquals(3, reordered.size)
-        assertEquals("m3", reordered[0].machineId)
-        assertEquals(0, reordered[0].executionOrder)
-        assertEquals("m1", reordered[1].machineId)
-        assertEquals(1, reordered[1].executionOrder)
-        assertEquals("m2", reordered[2].machineId)
-        assertEquals(2, reordered[2].executionOrder)
+        val result = WorkoutTrackingLogic.formatPerformanceSummary(entities, prefix = "Last: ")
 
-        // Invalid index
-        val untouched = WorkoutTrackingLogic.reorderInstances(instances, fromIndex = 0, toIndex = 10)
-        assertEquals(instances, untouched)
+        assertEquals("Last: 80 kg × 10", result)
     }
 
     @Test
-    fun testRemoveInstanceFromSession() {
-        val instances = listOf(
-            SessionMachineInstance(sessionId = "s1", machineId = "m1", executionOrder = 0),
-            SessionMachineInstance(sessionId = "s1", machineId = "m2", executionOrder = 1),
-            SessionMachineInstance(sessionId = "s1", machineId = "m3", executionOrder = 2)
+    fun testDeterminePrefillWeightAndReps_whenNoCurrentButHistoricalEntities_prefillsFromHistory() {
+        val historical = listOf(entitySet("smi-1", 1, 10, 80f))
+
+        val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
+            currentSets = emptyList(),
+            historicalSets = historical
         )
 
-        val removed = WorkoutTrackingLogic.removeInstanceFromSession(instances, targetIndex = 1)
-        assertEquals(2, removed.size)
-        assertEquals("m1", removed[0].machineId)
-        assertEquals(0, removed[0].executionOrder)
-        assertEquals("m3", removed[1].machineId)
-        assertEquals(1, removed[1].executionOrder)
+        assertEquals(80f, weight, 0.001f)
+        assertEquals(10, reps)
     }
 
     @Test
-    fun testSwapMachinePreservingSets() {
-        val originalMachine = Machine(id = "m1", name = "Bench Press", targetMuscleGroup = "Chest", machineSettingsNote = "Seat 2")
-        val newMachine = Machine(id = "m2", name = "Incline Bench", targetMuscleGroup = "Chest", machineSettingsNote = "Seat 4")
+    fun testDeterminePrefillWeightAndReps_whenCurrentDomainSetsExist_prefillsFromCurrent() {
+        val current = listOf(
+            WorkoutSet(
+                id = "cur-1",
+                sessionMachineId = "smi-1",
+                setNumber = 1,
+                reps = 8,
+                weightKg = 85f
+            )
+        )
+        val historical = listOf(entitySet("smi-1", 1, 10, 80f))
 
-        val instance = SessionMachineInstance(
-            id = "smi-fixed-uuid",
-            sessionId = "s1",
-            machineId = originalMachine.id,
-            executionOrder = 0,
-            customSettingsNote = originalMachine.machineSettingsNote
+        val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
+            currentSets = current,
+            historicalSets = historical
         )
 
-        val swapped = WorkoutTrackingLogic.swapMachinePreservingSets(listOf(instance), targetIndex = 0, newMachine = newMachine)
-        assertEquals(1, swapped.size)
-        // Verify that instance ID is preserved (preserving loggedSets map keys)
-        assertEquals("smi-fixed-uuid", swapped[0].id)
-        assertEquals("m2", swapped[0].machineId)
-        assertEquals("Seat 4", swapped[0].customSettingsNote)
+        assertEquals(85f, weight, 0.001f)
+        assertEquals(8, reps)
     }
 
     @Test
-    fun testFindNextUnfinishedStationIndex() {
-        val instances = listOf(
-            SessionMachineInstance(id = "smi-1", sessionId = "s1", machineId = "m1", executionOrder = 0),
-            SessionMachineInstance(id = "smi-2", sessionId = "s1", machineId = "m2", executionOrder = 1),
-            SessionMachineInstance(id = "smi-3", sessionId = "s1", machineId = "m3", executionOrder = 2)
+    fun testDeterminePrefillWeightAndReps_whenNoHistoryAtAll_returnsDefaults() {
+        val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
+            currentSets = emptyList(),
+            historicalSets = emptyList(),
+            defaultWeight = 60f,
+            defaultReps = 10
         )
 
-        val set = WorkoutSet(sessionMachineId = "smi-1", setNumber = 1, weightKg = 60f, reps = 10)
-        val loggedSets = mapOf(
-            "smi-1" to listOf(set),
-            "smi-2" to emptyList<WorkoutSet>(),
-            "smi-3" to emptyList<WorkoutSet>()
-        )
-
-        // From station 0, next unfinished should be station 1
-        val next = WorkoutTrackingLogic.findNextUnfinishedStationIndex(currentIndex = 0, instances = instances, loggedSets = loggedSets)
-        assertEquals(1, next)
-
-        // If station 2 is finished as well, wrap-around finds station 1
-        val loggedSets2 = mapOf(
-            "smi-1" to listOf(set),
-            "smi-2" to emptyList(),
-            "smi-3" to listOf(set)
-        )
-        val nextFrom2 = WorkoutTrackingLogic.findNextUnfinishedStationIndex(currentIndex = 2, instances = instances, loggedSets = loggedSets2)
-        assertEquals(1, nextFrom2)
-
-        // All finished
-        val allFinishedSets = mapOf(
-            "smi-1" to listOf(set),
-            "smi-2" to listOf(set),
-            "smi-3" to listOf(set)
-        )
-        val none = WorkoutTrackingLogic.findNextUnfinishedStationIndex(currentIndex = 0, instances = instances, loggedSets = allFinishedSets)
-        assertNull(none)
-    }
-
-    @Test
-    fun testCalculateWeightSteppers() {
-        // Default 2.5 kg increment
-        val (minus25, plus25) = WorkoutTrackingLogic.calculateWeightSteppers(2.5f)
-        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minus25)
-        assertEquals(listOf(1.25f, 2.5f, 5.0f), plus25)
-
-        // 1.25 kg increment (plate loaded / microplates)
-        val (minus125, plus125) = WorkoutTrackingLogic.calculateWeightSteppers(1.25f)
-        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minus125)
-        assertEquals(listOf(1.25f, 2.5f, 5.0f), plus125)
-
-        // 5.0 kg increment (heavy stacks)
-        val (minus5, plus5) = WorkoutTrackingLogic.calculateWeightSteppers(5.0f)
-        assertEquals(listOf(-10.0f, -5.0f, -2.5f), minus5)
-        assertEquals(listOf(2.5f, 5.0f, 10.0f), plus5)
-
-        // 1.0 kg increment (dumbbells)
-        val (minus1, plus1) = WorkoutTrackingLogic.calculateWeightSteppers(1.0f)
-        assertEquals(listOf(-5.0f, -2.0f, -1.0f), minus1)
-        assertEquals(listOf(1.0f, 2.0f, 5.0f), plus1)
-
-        // 0.5 kg increment
-        val (minus05, plus05) = WorkoutTrackingLogic.calculateWeightSteppers(0.5f)
-        assertEquals(listOf(-2.0f, -1.0f, -0.5f), minus05)
-        assertEquals(listOf(0.5f, 1.0f, 2.0f), plus05)
-
-        // Zero or negative fallback to 2.5 kg
-        val (minusFallback, plusFallback) = WorkoutTrackingLogic.calculateWeightSteppers(0f)
-        assertEquals(listOf(-5.0f, -2.5f, -1.25f), minusFallback)
-        assertEquals(listOf(1.25f, 2.5f, 5.0f), plusFallback)
-    }
-
-    @Test
-    fun testFormatDelta() {
-        assertEquals("+5", WorkoutTrackingLogic.formatDelta(5.0f))
-        assertEquals("-5", WorkoutTrackingLogic.formatDelta(-5.0f))
-        assertEquals("+2.5", WorkoutTrackingLogic.formatDelta(2.5f))
-        assertEquals("-2.5", WorkoutTrackingLogic.formatDelta(-2.5f))
-        assertEquals("+1.25", WorkoutTrackingLogic.formatDelta(1.25f))
-        assertEquals("-1.25", WorkoutTrackingLogic.formatDelta(-1.25f))
-        assertEquals("0", WorkoutTrackingLogic.formatDelta(0.0f))
+        assertNotNull(weight)
+        assertEquals(60f, weight, 0.001f)
+        assertEquals(10, reps)
     }
 }
