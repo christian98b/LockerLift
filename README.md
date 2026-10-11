@@ -13,6 +13,7 @@
 - Machine & exercise catalog with muscle groups, weight increments, and setup notes
 - Unlimited workout templates with reordering and on-the-fly modification
 - Editable workout history with cascade deletion
+- Insights dashboard: training calendar, regularity, volume/exercise progression charts, and a three-class training verdict — fully configurable widget order
 - Wear OS companion status, manual sync, and local backup & restore (SAF, GZip/JSON, SHA-256)
 - Health Connect export and synchronized deletion
 - English and German localization

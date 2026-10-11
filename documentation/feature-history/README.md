@@ -47,3 +47,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 29 | Sync Reliability Hardening & Deep Audit Remediation | [29-sync-reliability-hardening-audit.md](29-sync-reliability-hardening-audit.md) |
 | 30 | Code Examples: Sync Fixes (Reference Material) | [30-code-examples-sync-fixes.md](30-code-examples-sync-fixes.md) |
 | 31 | Sync Reliability Improvements (Reference Material) | [31-sync-reliability-improvements.md](31-sync-reliability-improvements.md) |
+| 32 | Insights Dashboard: Analytics, Graphs & Configurable Widgets | [32-insights-dashboard.md](32-insights-dashboard.md) |
