@@ -181,3 +181,4 @@ All commits must adhere to the **Conventional Commits** standard (v1.0.0). This 
 3. **Subject Length:** Keep the first line strictly under 72 characters.
 4. **Atomic Commits:** Each commit must encapsulate a single logical change.
 5. **Commit Tests with Features:** When introducing a new feature (`feat(...)`), the corresponding unit tests **MUST** be included in the exact same commit.
+6. **Pull Requests Mandatory for Features:** Every new feature, user story, or non-trivial change **MUST** be delivered via a pull request on a dedicated branch. **Never** push feature work directly to `main`. The pull request is opened as a draft and **must be reviewed and approved by the project owner before merging**.
