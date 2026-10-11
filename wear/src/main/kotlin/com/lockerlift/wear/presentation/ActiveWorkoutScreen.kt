@@ -17,8 +17,12 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.itemsIndexed
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.compose.material3.*
-import androidx.wear.compose.material.CompactButton
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.Card
+import androidx.wear.compose.material3.CardDefaults
+import androidx.wear.compose.material3.CompactButton
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import com.lockerlift.core.database.entity.SyncQueueEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.entity.toDomainModel
