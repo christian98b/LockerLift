@@ -2,6 +2,7 @@ package com.lockerlift.mobile
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -58,31 +61,33 @@ class MainActivity : ComponentActivity() {
                 var historySubTab by remember { mutableStateOf(HistorySubTab.SESSIONS) }
                 var showSettings by remember { mutableStateOf(false) }
 
+                BackHandler(enabled = showSettings) { showSettings = false }
+
                 Scaffold(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
                                 selected = selectedTab == MobileTab.CATALOG,
-                                onClick = { selectedTab = MobileTab.CATALOG },
+                                onClick = { showSettings = false; selectedTab = MobileTab.CATALOG },
                                 icon = { Icon(Icons.Default.FitnessCenter, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.CATALOG.labelRes)) }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == MobileTab.TEMPLATES,
-                                onClick = { selectedTab = MobileTab.TEMPLATES },
+                                onClick = { showSettings = false; selectedTab = MobileTab.TEMPLATES },
                                 icon = { Icon(Icons.Default.FormatListBulleted, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.TEMPLATES.labelRes)) }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == MobileTab.HISTORY,
-                                onClick = { selectedTab = MobileTab.HISTORY },
+                                onClick = { showSettings = false; selectedTab = MobileTab.HISTORY },
                                 icon = { Icon(Icons.Default.History, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.HISTORY.labelRes)) }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == MobileTab.TRACKING,
-                                onClick = { selectedTab = MobileTab.TRACKING },
+                                onClick = { showSettings = false; selectedTab = MobileTab.TRACKING },
                                 icon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.TRACKING.labelRes)) }
                             )
@@ -100,7 +105,12 @@ class MainActivity : ComponentActivity() {
                             selectedTab == MobileTab.CATALOG -> CatalogScreen(app)
                             selectedTab == MobileTab.TEMPLATES -> TemplateListScreen(app)
                             selectedTab == MobileTab.TRACKING -> MobileTrackingScreen(app)
-                            selectedTab == MobileTab.HISTORY -> Column(modifier = Modifier.fillMaxSize()) {
+                            selectedTab == MobileTab.HISTORY -> Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .windowInsetsPadding(WindowInsets.statusBars)
+                                    .consumeWindowInsets(WindowInsets.statusBars)
+                            ) {
                                 TabRow(selectedTabIndex = historySubTab.ordinal) {
                                     HistorySubTab.entries.forEach { subTab ->
                                         Tab(
