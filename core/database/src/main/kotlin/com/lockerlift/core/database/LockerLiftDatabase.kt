@@ -5,14 +5,18 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.lockerlift.core.database.security.DatabaseKeyManager
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import com.lockerlift.core.database.dao.ActiveSessionStateDao
 import com.lockerlift.core.database.dao.DeletedSessionDao
 import com.lockerlift.core.database.dao.MachineDao
 import com.lockerlift.core.database.dao.SyncQueueDao
 import com.lockerlift.core.database.dao.WorkoutSessionDao
 import com.lockerlift.core.database.dao.WorkoutTemplateDao
+import com.lockerlift.core.database.entity.ActiveSessionStateEntity
 import com.lockerlift.core.database.entity.DeletedSessionEntity
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
@@ -31,9 +35,10 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         SessionMachineInstanceEntity::class,
         WorkoutSetEntity::class,
         SyncQueueEntity::class,
-        DeletedSessionEntity::class
+        DeletedSessionEntity::class,
+        ActiveSessionStateEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -44,9 +49,29 @@ abstract class LockerLiftDatabase : RoomDatabase() {
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun syncQueueDao(): SyncQueueDao
     abstract fun deletedSessionDao(): DeletedSessionDao
+    abstract fun activeSessionStateDao(): ActiveSessionStateDao
 
     companion object {
         private const val DATABASE_NAME = "lockerlift.db"
+
+        /**
+         * v3 adds the active_session_state singleton table that durably
+         * persists the in-progress workout for crash recovery.
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `active_session_state` (
+                        `id` INTEGER NOT NULL,
+                        `payload_json` TEXT NOT NULL,
+                        `updated_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
 
         @Volatile
         private var INSTANCE: LockerLiftDatabase? = null
@@ -87,6 +112,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
+                .addMigrations(MIGRATION_2_3)
                 .build()
         }
 
