@@ -49,3 +49,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 31 | Sync Reliability Improvements (Reference Material) | [31-sync-reliability-improvements.md](31-sync-reliability-improvements.md) |
 | 32 | Insights Dashboard: Analytics, Graphs & Configurable Widgets | [32-insights-dashboard.md](32-insights-dashboard.md) |
 | 33 | Wear OS Material 3 Component Migration & Dynamic Color | [33-wear-material3-dynamic-theming.md](33-wear-material3-dynamic-theming.md) |
+| 34 | Gradle 9.6 / AGP 9.4.1 Upgrade: CI Alignment & Room KSP2 Remediation | [34-gradle9-agp9-ci-alignment.md](34-gradle9-agp9-ci-alignment.md) |
