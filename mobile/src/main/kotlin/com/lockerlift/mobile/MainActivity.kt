@@ -6,11 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.lockerlift.mobile.tracking.MobileTrackingScreen
@@ -34,8 +37,11 @@ enum class MobileTab(@StringRes val labelRes: Int) {
     CATALOG(R.string.tab_catalog),
     TEMPLATES(R.string.tab_templates),
     HISTORY(R.string.tab_history),
-    TRACKING(R.string.tab_tracking),
-    SETTINGS(R.string.tab_settings),
+    TRACKING(R.string.tab_tracking)
+}
+
+private enum class HistorySubTab(@StringRes val labelRes: Int) {
+    SESSIONS(R.string.tab_history),
     INSIGHTS(R.string.tab_insights)
 }
 
@@ -49,6 +55,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             LockerLiftTheme {
                 var selectedTab by remember { mutableStateOf(MobileTab.CATALOG) }
+                var historySubTab by remember { mutableStateOf(HistorySubTab.SESSIONS) }
+                var showSettings by remember { mutableStateOf(false) }
 
                 Scaffold(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -78,18 +86,6 @@ class MainActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
                                 label = { Text(stringResource(MobileTab.TRACKING.labelRes)) }
                             )
-                            NavigationBarItem(
-                                selected = selectedTab == MobileTab.SETTINGS,
-                                onClick = { selectedTab = MobileTab.SETTINGS },
-                                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                label = { Text(stringResource(MobileTab.SETTINGS.labelRes)) }
-                            )
-                            NavigationBarItem(
-                                selected = selectedTab == MobileTab.INSIGHTS,
-                                onClick = { selectedTab = MobileTab.INSIGHTS },
-                                icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
-                                label = { Text(stringResource(MobileTab.INSIGHTS.labelRes)) }
-                            )
                         }
                     }
                 ) { innerPadding ->
@@ -99,13 +95,39 @@ class MainActivity : ComponentActivity() {
                             .padding(bottom = innerPadding.calculateBottomPadding())
                             .consumeWindowInsets(PaddingValues(bottom = innerPadding.calculateBottomPadding()))
                     ) {
-                        when (selectedTab) {
-                            MobileTab.CATALOG -> CatalogScreen(app)
-                            MobileTab.TEMPLATES -> TemplateListScreen(app)
-                            MobileTab.HISTORY -> HistoryScreen(app)
-                            MobileTab.TRACKING -> MobileTrackingScreen(app)
-                            MobileTab.SETTINGS -> SettingsScreen(app)
-                            MobileTab.INSIGHTS -> InsightsScreen(app)
+                        when {
+                            showSettings -> SettingsScreen(app)
+                            selectedTab == MobileTab.CATALOG -> CatalogScreen(app)
+                            selectedTab == MobileTab.TEMPLATES -> TemplateListScreen(app)
+                            selectedTab == MobileTab.TRACKING -> MobileTrackingScreen(app)
+                            selectedTab == MobileTab.HISTORY -> Column(modifier = Modifier.fillMaxSize()) {
+                                TabRow(selectedTabIndex = historySubTab.ordinal) {
+                                    HistorySubTab.entries.forEach { subTab ->
+                                        Tab(
+                                            selected = historySubTab == subTab,
+                                            onClick = { historySubTab = subTab },
+                                            text = { Text(stringResource(subTab.labelRes)) }
+                                        )
+                                    }
+                                }
+                                when (historySubTab) {
+                                    HistorySubTab.SESSIONS -> HistoryScreen(app)
+                                    HistorySubTab.INSIGHTS -> InsightsScreen(app)
+                                }
+                            }
+                        }
+                        if (!showSettings) {
+                            IconButton(
+                                onClick = { showSettings = true },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .statusBarsPadding()
+                            ) {
+                                Icon(
+                                    Icons.Default.Settings,
+                                    contentDescription = stringResource(R.string.tab_settings)
+                                )
+                            }
                         }
                     }
                 }
