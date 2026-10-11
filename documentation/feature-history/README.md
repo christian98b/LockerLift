@@ -48,3 +48,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 30 | Code Examples: Sync Fixes (Reference Material) | [30-code-examples-sync-fixes.md](30-code-examples-sync-fixes.md) |
 | 31 | Sync Reliability Improvements (Reference Material) | [31-sync-reliability-improvements.md](31-sync-reliability-improvements.md) |
 | 32 | Insights Dashboard: Analytics, Graphs & Configurable Widgets | [32-insights-dashboard.md](32-insights-dashboard.md) |
+| 33 | Wear OS Material 3 Component Migration & Dynamic Color | [33-wear-material3-dynamic-theming.md](33-wear-material3-dynamic-theming.md) |

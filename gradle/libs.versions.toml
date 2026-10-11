@@ -7,6 +7,7 @@ lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2025.08.01"
 composeWear = "1.4.0"
+composeWearMaterial3 = "1.5.0"
 horologist = "0.6.22"
 room = "2.6.1"
 coroutines = "1.9.0"
@@ -39,7 +40,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-graphics-path = { group = "androidx.graphics", name = "graphics-path", version.ref = "graphicsPath" }
 
 # Wear OS Compose & Horologist
-androidx-wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "composeWear" }
+androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeWearMaterial3" }
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeWear" }
 androidx-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeWear" }
 horologist-composables = { group = "com.google.android.horologist", name = "horologist-composables", version.ref = "horologist" }

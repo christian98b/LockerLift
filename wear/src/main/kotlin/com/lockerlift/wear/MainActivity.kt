@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,8 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.compose.material3.*
-import androidx.wear.compose.material.CompactButton
+import androidx.wear.compose.material3.*
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.wear.presentation.ActiveWorkoutScreen
 import com.lockerlift.wear.presentation.WearSettingsScreen
@@ -38,44 +38,50 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LockerLiftWearTheme {
-                var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
-                var showSettings by remember { mutableStateOf(false) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
+                    var showSettings by remember { mutableStateOf(false) }
 
-                DisposableEffect(activeWorkoutParams != null) {
-                    if (activeWorkoutParams != null) {
-                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    DisposableEffect(activeWorkoutParams != null) {
+                        if (activeWorkoutParams != null) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                        onDispose {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
                     }
-                    onDispose {
-                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                }
 
-                val currentWorkoutParams = activeWorkoutParams
-                if (currentWorkoutParams != null) {
-                    val (templateId, templateName) = currentWorkoutParams
-                    ActiveWorkoutScreen(
-                        app = app,
-                        templateId = templateId,
-                        templateName = templateName,
-                        onFinishWorkout = {
-                            activeWorkoutParams = null
-                        }
-                    )
-                } else if (showSettings) {
-                    WearSettingsScreen(
-                        app = app,
-                        onNavigateBack = { showSettings = false }
-                    )
-                } else {
-                    TemplateSelectionScreen(
-                        app = app,
-                        onSelectTemplate = { id, name ->
-                            activeWorkoutParams = Pair(id, name)
-                        },
-                        onOpenSettings = {
-                            showSettings = true
-                        }
-                    )
+                    val currentWorkoutParams = activeWorkoutParams
+                    if (currentWorkoutParams != null) {
+                        val (templateId, templateName) = currentWorkoutParams
+                        ActiveWorkoutScreen(
+                            app = app,
+                            templateId = templateId,
+                            templateName = templateName,
+                            onFinishWorkout = {
+                                activeWorkoutParams = null
+                            }
+                        )
+                    } else if (showSettings) {
+                        WearSettingsScreen(
+                            app = app,
+                            onNavigateBack = { showSettings = false }
+                        )
+                    } else {
+                        TemplateSelectionScreen(
+                            app = app,
+                            onSelectTemplate = { id, name ->
+                                activeWorkoutParams = Pair(id, name)
+                            },
+                            onOpenSettings = {
+                                showSettings = true
+                            }
+                        )
+                    }
                 }
             }
         }
