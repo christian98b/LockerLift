@@ -29,6 +29,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.lockerlift.wear.R
 import com.mikepenz.aboutlibraries.Libs
+import com.mikepenz.aboutlibraries.util.withContext
 import kotlinx.coroutines.launch
 
 @Composable
