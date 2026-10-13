@@ -171,7 +171,7 @@ class CatalogViewModelTest {
 
         val emptyQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "  ")
         val prefixQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "bic")
-        val substringQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "ECK")
+        val substringQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "EST")
         val noMatchQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "arms")
 
         assertEquals(known, emptyQuery)
