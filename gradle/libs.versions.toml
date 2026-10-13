@@ -76,7 +76,7 @@ androidx-health-connect = { group = "androidx.health.connect", name = "connect-c
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 # AboutLibraries
-aboutlibraries-core = { group = "com.mikepenz.aboutlibraries", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
+aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
