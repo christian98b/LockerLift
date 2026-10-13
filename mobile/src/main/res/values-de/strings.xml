@@ -201,4 +201,10 @@
     <string name="sync_up_to_date">Alles aktuell</string>
     <string name="sync_watch_unreachable">Smartwatch nicht erreichbar</string>
     <string name="sync_error_format">Synchronisation fehlgeschlagen: %1$s</string>
+    <string name="btn_back">Zurück</string>
+    <string name="licenses_title">Open-Source-Lizenzen</string>
+    <string name="licenses_license_format">Lizenz: %1$s</string>
+    <string name="licenses_content_not_embedded">Vollständiger Lizenztext nicht eingebettet. Details unter der verlinkten Lizenz-URL.</string>
+    <string name="settings_licenses_section">Open-Source-Lizenzen</string>
+    <string name="settings_btn_open_licenses">Open-Source-Lizenzen anzeigen</string>
 </resources>

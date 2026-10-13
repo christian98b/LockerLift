@@ -35,7 +35,10 @@ private const val PREF_BACKUP_KEEP_COUNT = "pref_backup_keep_count"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(app: LockerLiftMobileApp) {
+fun SettingsScreen(
+    app: LockerLiftMobileApp,
+    onOpenLicenses: () -> Unit = {}
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val dataLayerManager = remember { WearableDataLayerManager(context) }
@@ -508,6 +511,19 @@ fun SettingsScreen(app: LockerLiftMobileApp) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.settings_btn_share))
+                    }
+                }
+            }
+            // ----------------------------------------------------------------
+            // Section: Open-Source Licenses (Issue #39)
+            // ----------------------------------------------------------------
+            item {
+                SectionCard(title = stringResource(R.string.settings_licenses_section)) {
+                    OutlinedButton(
+                        onClick = onOpenLicenses,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.settings_btn_open_licenses))
                     }
                 }
             }

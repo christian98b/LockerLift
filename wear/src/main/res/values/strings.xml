@@ -112,4 +112,8 @@
     <string name="settings_sync_never">Never</string>
     <string name="settings_version_format">Version: %1$s</string>
     <string name="btn_back">Back</string>
+    <string name="licenses_title">Open-Source Licenses</string>
+    <string name="licenses_license_format">License: %1$s</string>
+    <string name="licenses_content_not_embedded">Full license text not embedded. See the linked license URL for details.</string>
+    <string name="settings_btn_open_licenses">Open-Source Licenses</string>
 </resources>
