@@ -42,7 +42,8 @@ private enum class ActiveWorkoutSubScreen {
     REPLACE_MACHINE_PICKER,
     CREATE_MACHINE,
     EDIT_NOTE,
-    CONSOLIDATION_CONFIRM
+    CONSOLIDATION_CONFIRM,
+    FINISH_CONFIRM
 }
 
 @Composable
@@ -695,6 +696,59 @@ fun ActiveWorkoutScreen(
         return
     }
 
+    // Subscreen: Finish Confirmation (Issue 38: accidental-tap protection)
+    if (currentSubScreen == ActiveWorkoutSubScreen.FINISH_CONFIRM) {
+        val finishListState = rememberScalingLazyListState()
+        ScalingLazyColumn(
+            state = finishListState,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.dialog_finish_confirm_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.dialog_finish_confirm_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Button(
+                    onClick = {
+                        val isModified = templateId != null && (
+                            sessionInstances.size != initialMachines.size ||
+                            sessionInstances.any { it.isSkipped } ||
+                            sessionInstances.mapIndexed { idx, inst -> inst.machineId != initialMachines.getOrNull(idx)?.id }.any { it }
+                        )
+                        if (isModified) {
+                            currentSubScreen = ActiveWorkoutSubScreen.CONSOLIDATION_CONFIRM
+                        } else {
+                            viewModel.finishWorkout(onFinished = onFinishWorkout)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                ) {
+                    Text(stringResource(R.string.btn_yes))
+                }
+            }
+            item {
+                Button(
+                    onClick = { currentSubScreen = ActiveWorkoutSubScreen.OVERVIEW },
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                ) {
+                    Text(stringResource(R.string.btn_no))
+                }
+            }
+        }
+        return
+    }
+
     // Subscreen: Template Consolidation Confirmation (US 3.2, US 3.3)
     if (currentSubScreen == ActiveWorkoutSubScreen.CONSOLIDATION_CONFIRM) {
         val listState = rememberScalingLazyListState()
@@ -933,16 +987,7 @@ fun ActiveWorkoutScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
-                    val isModified = templateId != null && (
-                        sessionInstances.size != initialMachines.size ||
-                        sessionInstances.any { it.isSkipped } ||
-                        sessionInstances.mapIndexed { idx, inst -> inst.machineId != initialMachines.getOrNull(idx)?.id }.any { it }
-                    )
-                    if (isModified) {
-                        currentSubScreen = ActiveWorkoutSubScreen.CONSOLIDATION_CONFIRM
-                    } else {
-                        viewModel.finishWorkout(onFinished = onFinishWorkout)
-                    }
+                    currentSubScreen = ActiveWorkoutSubScreen.FINISH_CONFIRM
                 },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {

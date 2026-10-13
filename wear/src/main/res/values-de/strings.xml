@@ -91,6 +91,8 @@
 
     <!-- Template Consolidation Dialog (US 3.2, 3.3) -->
     <string name="dialog_consolidation_title">Vorlage aktualisieren?</string>
+    <string name="dialog_finish_confirm_title">Workout beenden?</string>
+    <string name="dialog_finish_confirm_message">Dein Training wird abgeschlossen und gespeichert.</string>
     <string name="dialog_consolidation_message">Änderungen in Trainingsplan übernehmen?</string>
     <string name="btn_yes">Ja</string>
     <string name="btn_no">Nein</string>
