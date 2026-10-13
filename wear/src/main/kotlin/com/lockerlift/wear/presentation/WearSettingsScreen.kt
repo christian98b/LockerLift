@@ -35,7 +35,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun WearSettingsScreen(
     app: LockerLiftWearApp,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onOpenLicenses: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val settingsViewModel: WearSettingsViewModel = viewModel(
@@ -239,6 +240,20 @@ fun WearSettingsScreen(
             }
         }
 
+        // Open-Source Licenses (Issue #39)
+        item {
+            Button(
+                onClick = onOpenLicenses,
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_btn_open_licenses),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
         // App Version
         item {
             Text(

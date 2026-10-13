@@ -3,11 +3,12 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.aboutlibraries)
 }
 
 android {
     namespace = "com.lockerlift.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.lockerlift"
@@ -50,6 +51,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:sync"))
     implementation(project(":core:healthconnect"))
+    implementation(libs.aboutlibraries.core)
     implementation(libs.androidx.health.connect)
 
     implementation(libs.androidx.core.ktx)

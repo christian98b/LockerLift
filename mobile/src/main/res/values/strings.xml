@@ -201,4 +201,10 @@
     <string name="sync_up_to_date">Everything is up to date</string>
     <string name="sync_watch_unreachable">Smartwatch not reachable</string>
     <string name="sync_error_format">Sync failed: %1$s</string>
+    <string name="btn_back">Back</string>
+    <string name="licenses_title">Open-Source Licenses</string>
+    <string name="licenses_license_format">License: %1$s</string>
+    <string name="licenses_content_not_embedded">Full license text not embedded; the license URL is shown instead.</string>
+    <string name="settings_licenses_section">Open-Source Licenses</string>
+    <string name="settings_btn_open_licenses">Show Open-Source Licenses</string>
 </resources>

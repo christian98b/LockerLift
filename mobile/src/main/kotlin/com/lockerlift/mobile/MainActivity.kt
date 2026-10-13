@@ -32,6 +32,7 @@ import com.lockerlift.mobile.tracking.MobileTrackingScreen
 import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
 import com.lockerlift.mobile.ui.insights.InsightsScreen
+import com.lockerlift.mobile.ui.licenses.OpenSourceLicensesScreen
 import com.lockerlift.mobile.ui.settings.SettingsScreen
 import com.lockerlift.mobile.ui.templates.TemplateListScreen
 import com.lockerlift.mobile.ui.theme.LockerLiftTheme
@@ -60,8 +61,11 @@ class MainActivity : ComponentActivity() {
                 var selectedTab by remember { mutableStateOf(MobileTab.CATALOG) }
                 var historySubTab by remember { mutableStateOf(HistorySubTab.SESSIONS) }
                 var showSettings by remember { mutableStateOf(false) }
+                var showLicenses by remember { mutableStateOf(false) }
 
-                BackHandler(enabled = showSettings) { showSettings = false }
+                BackHandler(enabled = showSettings || showLicenses) {
+                    if (showLicenses) showLicenses = false else showSettings = false
+                }
 
                 Scaffold(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -101,7 +105,13 @@ class MainActivity : ComponentActivity() {
                             .consumeWindowInsets(PaddingValues(bottom = innerPadding.calculateBottomPadding()))
                     ) {
                         when {
-                            showSettings -> SettingsScreen(app)
+                            showLicenses -> OpenSourceLicensesScreen(
+                                onNavigateBack = { showLicenses = false }
+                            )
+                            showSettings -> SettingsScreen(
+                                app = app,
+                                onOpenLicenses = { showLicenses = true }
+                            )
                             selectedTab == MobileTab.CATALOG -> CatalogScreen(app)
                             selectedTab == MobileTab.TEMPLATES -> TemplateListScreen(app)
                             selectedTab == MobileTab.TRACKING -> MobileTrackingScreen(app)

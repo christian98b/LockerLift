@@ -19,6 +19,7 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.state.ActiveSessionStateRepository
 import com.lockerlift.wear.presentation.ActiveWorkoutScreen
 import com.lockerlift.wear.presentation.WearSettingsScreen
+import com.lockerlift.wear.presentation.licenses.WearLicensesScreen
 import com.lockerlift.wear.theme.LockerLiftWearTheme
 
 class MainActivity : ComponentActivity() {
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var activeWorkoutParams by remember { mutableStateOf<Pair<String?, String?>?>(null) }
                     var showSettings by remember { mutableStateOf(false) }
+                    var showLicenses by remember { mutableStateOf(false) }
 
                     // Crash recovery: if an interrupted workout is durably
                     // persisted, re-enter it instead of the template picker.
@@ -76,10 +78,15 @@ class MainActivity : ComponentActivity() {
                                 activeWorkoutParams = null
                             }
                         )
+                    } else if (showLicenses) {
+                        WearLicensesScreen(
+                            onNavigateBack = { showLicenses = false }
+                        )
                     } else if (showSettings) {
                         WearSettingsScreen(
                             app = app,
-                            onNavigateBack = { showSettings = false }
+                            onNavigateBack = { showSettings = false },
+                            onOpenLicenses = { showLicenses = true }
                         )
                     } else {
                         TemplateSelectionScreen(
