@@ -91,6 +91,8 @@
 
     <!-- Template Consolidation Dialog (US 3.2, 3.3) -->
     <string name="dialog_consolidation_title">Update Template?</string>
+    <string name="dialog_finish_confirm_title">Finish workout?</string>
+    <string name="dialog_finish_confirm_message">Your workout will be completed and saved.</string>
     <string name="dialog_consolidation_message">Save changes back into workout template?</string>
     <string name="btn_yes">Yes</string>
     <string name="btn_no">No</string>

@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                        if (!showSettings) {
+                        if (!showSettings && selectedTab != MobileTab.TRACKING) {
                             IconButton(
                                 onClick = { showSettings = true },
                                 modifier = Modifier
