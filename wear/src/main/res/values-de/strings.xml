@@ -114,6 +114,6 @@
     <string name="btn_back">Zurück</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_license_format">Lizenz: %1$s</string>
-    <string name="licenses_content_not_embedded">Vollständiger Lizenztext nicht eingebettet. Details unter der verlinkten Lizenz-URL.</string>
+    <string name="licenses_content_not_embedded">Vollständiger Lizenztext nicht eingebettet; stattdessen wird die Lizenz-URL angezeigt.</string>
     <string name="settings_btn_open_licenses">Open-Source-Lizenzen</string>
 </resources>

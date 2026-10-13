@@ -27,5 +27,7 @@ object LicenseUtils {
         licenses.joinToString(", ") { it.name }
 
     fun formatLicenseContent(licenses: List<License>): String =
-        licenses.mapNotNull { it.licenseContent }.joinToString("\n\n")
+        licenses.mapNotNull { license ->
+            license.licenseContent ?: license.url
+        }.joinToString("\n\n")
 }
