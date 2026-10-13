@@ -37,6 +37,24 @@ class CatalogViewModel(
     val machines: StateFlow<List<MachineEntity>> = machineDao.getAllMachinesFlow()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    val knownMuscleGroups: StateFlow<List<String>> = machineDao.getAllTargetMuscleGroupsFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    companion object {
+        /**
+         * Case-insensitive substring filter over the distinct muscle groups
+         * already used in the catalog, used for the autocomplete dropdown.
+         */
+        fun filterMuscleGroupSuggestions(
+            knownMuscleGroups: List<String>,
+            query: String
+        ): List<String> {
+            val trimmedQuery = query.trim()
+            if (trimmedQuery.isEmpty()) return knownMuscleGroups
+            return knownMuscleGroups.filter { it.contains(trimmedQuery, ignoreCase = true) }
+        }
+    }
+
     /**
      * Validates and inserts a new machine, then pushes the updated catalog
      * to the Wear OS companion. The async duplicate check is reported back

@@ -19,6 +19,9 @@ interface MachineDao {
     @Query("SELECT * FROM machines ORDER BY name ASC")
     suspend fun getAllMachines(): List<MachineEntity>
 
+    @Query("SELECT DISTINCT target_muscle_group FROM machines ORDER BY target_muscle_group ASC")
+    fun getAllTargetMuscleGroupsFlow(): Flow<List<String>>
+
     @Query("SELECT * FROM machines WHERE id = :id LIMIT 1")
     suspend fun getMachineById(id: String): MachineEntity?
 

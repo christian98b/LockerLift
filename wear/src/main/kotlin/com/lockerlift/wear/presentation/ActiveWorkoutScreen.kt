@@ -414,6 +414,12 @@ fun ActiveWorkoutScreen(
         var machineName by remember { mutableStateOf("") }
         var incrementKg by remember { mutableFloatStateOf(2.5f) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        var selectedMuscleGroup by remember { mutableStateOf("") }
+        val knownMuscleGroups = catalogMachines
+            .map { it.targetMuscleGroup }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
         val listState = rememberScalingLazyListState()
 
         val quickPresets = listOf(
@@ -465,6 +471,31 @@ fun ActiveWorkoutScreen(
                 }
             }
 
+            // Muscle Group Suggestions (Issue #36)
+            if (knownMuscleGroups.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.hint_muscle_group),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                items(knownMuscleGroups) { group ->
+                    CompactButton(
+                        onClick = {
+                            selectedMuscleGroup = if (selectedMuscleGroup == group) "" else group
+                        },
+                        modifier = Modifier.fillMaxWidth(0.85f).padding(vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = group,
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedMuscleGroup == group) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
             // Quick Preset Suggestions
             item {
                 Text(
@@ -553,7 +584,7 @@ fun ActiveWorkoutScreen(
                                 viewModel.createMachine(
                                     name = machineName,
                                     incrementKg = incrementKg,
-                                    targetMuscleGroup = fullBodyMuscleGroup,
+                                    targetMuscleGroup = selectedMuscleGroup.ifBlank { fullBodyMuscleGroup },
                                     existingMachineNames = catalogMachines.map { it.name },
                                     mode = createMachineMode,
                                     targetIndex = targetInstanceIndex

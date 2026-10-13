@@ -21,6 +21,7 @@
     <string name="finish_workout_button">Finish Workout</string>
     <string name="general_muscle_group">General</string>
     <string name="full_body_muscle_group">Full Body</string>
+    <string name="hint_muscle_group">Muscle group</string>
 
     <!-- Pause / Resume Workout (AK 3.1, AK 3.2, AK 3.3) -->
     <string name="btn_pause">Pause</string>
