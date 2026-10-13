@@ -9,8 +9,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -31,6 +33,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
         }
     )
     val machinesState by catalogViewModel.machines.collectAsState()
+    val knownMuscleGroups by catalogViewModel.knownMuscleGroups.collectAsState()
+
+    var addMuscleGroupSuggestionSelected by remember { mutableStateOf(false) }
+    var editMuscleGroupSuggestionSelected by remember { mutableStateOf(false) }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var machineName by remember { mutableStateOf("") }
@@ -125,12 +131,18 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
+                        MuscleGroupAutocompleteField(
                             value = muscleGroup,
-                            onValueChange = { muscleGroup = it },
-                            label = { Text(stringResource(R.string.hint_muscle_group)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            onValueChange = {
+                                muscleGroup = it
+                                addMuscleGroupSuggestionSelected = false
+                            },
+                            onSuggestionSelected = {
+                                muscleGroup = it
+                                addMuscleGroupSuggestionSelected = true
+                            },
+                            knownMuscleGroups = knownMuscleGroups,
+                            suppressSuggestions = addMuscleGroupSuggestionSelected
                         )
                         OutlinedTextField(
                             value = settingsNote,
@@ -190,12 +202,18 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
+                        MuscleGroupAutocompleteField(
                             value = editMuscleGroup,
-                            onValueChange = { editMuscleGroup = it },
-                            label = { Text(stringResource(R.string.hint_muscle_group)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            onValueChange = {
+                                editMuscleGroup = it
+                                editMuscleGroupSuggestionSelected = false
+                            },
+                            onSuggestionSelected = {
+                                editMuscleGroup = it
+                                editMuscleGroupSuggestionSelected = true
+                            },
+                            knownMuscleGroups = knownMuscleGroups,
+                            suppressSuggestions = editMuscleGroupSuggestionSelected
                         )
                         OutlinedTextField(
                             value = editSettingsNote,
@@ -241,6 +259,65 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun MuscleGroupAutocompleteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSuggestionSelected: (String) -> Unit,
+    knownMuscleGroups: List<String>,
+    suppressSuggestions: Boolean
+) {
+    val label = stringResource(R.string.hint_muscle_group)
+    val noSuggestions = stringResource(R.string.muscle_group_no_suggestions)
+    var fieldFocused by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.zIndex(1f)) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { state -> fieldFocused = state.isFocused }
+        )
+        if (fieldFocused && !suppressSuggestions) {
+            val suggestions = CatalogViewModel.filterMuscleGroupSuggestions(knownMuscleGroups, value)
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                tonalElevation = 4.dp,
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopStart)
+            ) {
+                if (suggestions.isEmpty()) {
+                    Text(
+                        text = noSuggestions,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 160.dp)) {
+                        items(suggestions) { suggestion ->
+                            Text(
+                                text = suggestion,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSuggestionSelected(suggestion) }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

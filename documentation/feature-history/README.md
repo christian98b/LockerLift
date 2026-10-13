@@ -53,3 +53,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 35 | Mobile Navigation Fixes: Settings Trap & History Sub-Tab Bar | [35-mobile-settings-history-nav-fixes.md](35-mobile-settings-history-nav-fixes.md) |
 | 36 | Architecture Hardening: Durable Sessions, MVVM & Module Boundary Fix | [36-architecture-hardening-durable-sessions-mvvm.md](36-architecture-hardening-durable-sessions-mvvm.md) |
 | 37 | License-Page: Open-Source-Lizenzen (Issue #39) | [37-license-page-aboutlibraries.md](37-license-page-aboutlibraries.md) |
+| 38 | Muskelgruppen-Autocomplete beim Maschinen-Anlegen (Issue #36) | [38-muscle-group-autocomplete.md](38-muscle-group-autocomplete.md) |

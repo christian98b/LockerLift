@@ -153,6 +153,34 @@ class CatalogViewModelTest {
     }
 
     @Test
+    fun testKnownMuscleGroupsFlow_emitsDistinctUsedGroups() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        backgroundScope.launch { viewModel.knownMuscleGroups.collect {} }
+
+        viewModel.addMachine(name = "Bench Press", muscleGroup = "Chest", settingsNote = "", incrementKgText = "2.5") {}
+        viewModel.addMachine(name = "Chest Fly", muscleGroup = "Chest", settingsNote = "", incrementKgText = "2.5") {}
+        viewModel.addMachine(name = "Lat Pulldown", muscleGroup = "Back", settingsNote = "", incrementKgText = "2.5") {}
+        viewModel.awaitActions()
+
+        assertEquals(listOf("Back", "Chest"), viewModel.knownMuscleGroups.value)
+    }
+
+    @Test
+    fun testFilterMuscleGroupSuggestions_matchesCaseInsensitiveSubstring() {
+        val known = listOf("Back", "Biceps", "Chest", "Legs")
+
+        val emptyQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "  ")
+        val prefixQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "bic")
+        val substringQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "ECK")
+        val noMatchQuery = CatalogViewModel.filterMuscleGroupSuggestions(known, "arms")
+
+        assertEquals(known, emptyQuery)
+        assertEquals(listOf("Biceps"), prefixQuery)
+        assertEquals(listOf("Chest"), substringQuery)
+        assertEquals(emptyList<String>(), noMatchQuery)
+    }
+
+    @Test
     fun testMachinesFlow_emitsInsertedMachines() = runTest(testDispatcher) {
         // Arrange
         val viewModel = createViewModel()

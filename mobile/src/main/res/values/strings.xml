@@ -43,6 +43,7 @@
     <string name="dialog_new_machine_title">Add New Machine</string>
     <string name="hint_machine_name">Name (e.g. Lat Pulldown)</string>
     <string name="hint_muscle_group">Target muscle group (e.g. Back)</string>
+    <string name="muscle_group_no_suggestions">No existing muscle groups yet – keep typing to create a new one</string>
     <string name="hint_settings_note">Device settings (optional)</string>
     <string name="hint_increment">Increment in kg (e.g. 2.5)</string>
     <string name="error_required_fields">Name and muscle group are required.</string>
