@@ -6,10 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lockerlift.core.model.Machine
 
-@Entity(
-    tableName = "machines",
-    indices = [Index(value = ["name"], unique = true)]
-)
+@Entity(tableName = "machines")
 data class MachineEntity(
     @PrimaryKey
     @ColumnInfo(name = "id")
@@ -31,7 +28,14 @@ data class MachineEntity(
     val defaultCadence: String? = null,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    /**
+     * Soft-delete flag (Issue #40): a deleted machine disappears from the
+     * catalog and selection lists but stays in the database so historical
+     * workout sets remain readable (AK 2.2.2 semantics).
+     */
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false
 )
 
 fun MachineEntity.toDomainModel() = Machine(

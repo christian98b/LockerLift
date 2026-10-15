@@ -16,12 +16,15 @@ import kotlinx.coroutines.flow.Flow
 interface WorkoutTemplateDao {
 
     @Transaction
-    @Query("SELECT * FROM workout_templates WHERE is_archived = 0 ORDER BY updated_at DESC")
+    @Query("SELECT * FROM workout_templates WHERE is_archived = 0 AND is_deleted = 0 ORDER BY updated_at DESC")
     fun getAllActiveTemplatesWithMachinesFlow(): Flow<List<WorkoutTemplateWithMachines>>
 
     @Transaction
     @Query("SELECT * FROM workout_templates WHERE id = :id LIMIT 1")
     suspend fun getTemplateWithMachinesById(id: String): WorkoutTemplateWithMachines?
+
+    @Query("SELECT * FROM workout_templates WHERE id = :id LIMIT 1")
+    suspend fun getTemplateEntityById(id: String): WorkoutTemplateEntity?
 
     @Query("SELECT * FROM template_machine_cross_ref WHERE template_id = :templateId ORDER BY sort_order ASC")
     suspend fun getCrossRefsForTemplate(templateId: String): List<TemplateMachineCrossRefEntity>
@@ -43,6 +46,15 @@ interface WorkoutTemplateDao {
     @Query("DELETE FROM template_machine_cross_ref WHERE template_id = :templateId")
     suspend fun clearCrossRefsForTemplate(templateId: String)
 
+    /**
+     * Removes a machine from all templates (Issue #40, reverse direction of
+     * AK 2.2.2): deleting a machine in the catalog also removes it from
+     * every template that references it. The machine row itself stays in the
+     * database (soft-delete) so workout history remains readable.
+     */
+    @Query("DELETE FROM template_machine_cross_ref WHERE machine_id = :machineId")
+    suspend fun deleteCrossRefsByMachineId(machineId: String)
+
     @Update
     suspend fun updateTemplate(template: WorkoutTemplateEntity)
 
@@ -51,7 +63,21 @@ interface WorkoutTemplateDao {
 
     @Query("DELETE FROM workout_templates WHERE id = :id")
     suspend fun deleteTemplateById(id: String)
-    @Query("SELECT id FROM workout_templates WHERE is_archived = 0 ORDER BY updated_at DESC")
+
+    /**
+     * Soft-deletes a template (Issue #40): removes it from all lists and the
+     * watch sync while keeping the row, because historical workout sessions
+     * reference templates by id. Machine cross-refs are removed as well.
+     */
+    @Query("UPDATE workout_templates SET is_deleted = 1, updated_at = :timestamp WHERE id = :id")
+    suspend fun softDeleteTemplate(id: String, timestamp: Long)
+
+    @Transaction
+    suspend fun softDeleteTemplateWithCrossRefs(id: String) {
+        softDeleteTemplate(id, System.currentTimeMillis())
+        clearCrossRefsForTemplate(id)
+    }
+    @Query("SELECT id FROM workout_templates WHERE is_archived = 0 AND is_deleted = 0 ORDER BY updated_at DESC")
     suspend fun getActiveTemplateIds(): List<String>
 
     @Transaction

@@ -44,4 +44,16 @@ class ActiveSessionStateRepository(
     suspend fun clear() = withContext(Dispatchers.IO) {
         dao.clear()
     }
+
+    /**
+     * Returns the template id of the currently in-progress workout, if a
+     * workout is active and was started from a template (Issue #40: block
+     * deleting a template while a workout based on it is running).
+     */
+    suspend fun loadActiveTemplateId(): String? = withContext(Dispatchers.IO) {
+        val entity = dao.get() ?: return@withContext null
+        runCatching {
+            json.decodeFromString(ActiveSessionSnapshot.serializer(), entity.payloadJson).templateId
+        }.getOrNull()
+    }
 }

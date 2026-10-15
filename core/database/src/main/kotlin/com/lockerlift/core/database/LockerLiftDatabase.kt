@@ -38,7 +38,7 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         DeletedSessionEntity::class,
         ActiveSessionStateEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -55,9 +55,18 @@ abstract class LockerLiftDatabase : RoomDatabase() {
         private const val DATABASE_NAME = "lockerlift.db"
 
         /**
-         * v3 adds the active_session_state singleton table that durably
-         * persists the in-progress workout for crash recovery.
+         * v4 adds soft-delete flags (Issue #40): machines.is_deleted and
+         * workout_templates.is_deleted. The unique index on machines.name is
+         * dropped so a soft-deleted machine no longer blocks its name for
+         * newly created machines.
          */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS `index_machines_name`")
+                db.execSQL("ALTER TABLE machines ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE workout_templates ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -112,7 +121,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
 

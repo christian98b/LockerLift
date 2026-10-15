@@ -22,6 +22,13 @@ data class WorkoutTemplateEntity(
 
     @ColumnInfo(name = "is_archived")
     val isArchived: Boolean = false,
+    /**
+     * Soft-delete flag (Issue #40): deleted templates disappear from all
+     * lists, but historical workout sessions reference templates by id and
+     * keep their history readable, so the row is retained.
+     */
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),

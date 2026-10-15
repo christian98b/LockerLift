@@ -10,6 +10,7 @@ import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.WearableDataLayerManager
+import com.lockerlift.mobile.sync.MobileMasterDataSync
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,11 @@ enum class MachineEditResult {
     SUCCESS,
     EMPTY_FIELDS,
     DUPLICATE_NAME
+}
+
+enum class MachineDeleteResult {
+    SUCCESS,
+    BLOCKED_ACTIVE_WORKOUT
 }
 
 /**
@@ -122,6 +128,32 @@ class CatalogViewModel(
             machineDao.updateMachine(updated)
             syncCatalogToWear()
             onResult(MachineEditResult.SUCCESS)
+        }
+    }
+
+    /**
+     * Soft-deletes a machine (Issue #40): the machine disappears from the
+     * catalog and all selection lists while historical workout sets stay
+     * readable. It is removed from all templates; deleting is blocked while
+     * a running workout uses the machine. Afterwards the updated master data
+     * is pushed to the watch.
+     */
+    fun deleteMachine(machine: MachineEntity, onResult: (MachineDeleteResult) -> Unit) {
+        actionJob = viewModelScope.launch {
+            val sessionDao = database.workoutSessionDao()
+            val activeInstance = sessionDao.getActiveMachineInstanceByMachineId(machine.id)
+            if (activeInstance != null) {
+                onResult(MachineDeleteResult.BLOCKED_ACTIVE_WORKOUT)
+                return@launch
+            }
+            database.workoutTemplateDao().deleteCrossRefsByMachineId(machine.id)
+            machineDao.softDeleteMachine(machine.id, System.currentTimeMillis())
+            MobileMasterDataSync.pushAllMasterData(
+                getApplication(),
+                database,
+                WearableDataLayerManager(getApplication())
+            )
+            onResult(MachineDeleteResult.SUCCESS)
         }
     }
 

@@ -48,6 +48,11 @@
     <string name="hint_increment">Increment in kg (e.g. 2.5)</string>
     <string name="error_required_fields">Name and muscle group are required.</string>
     <string name="error_machine_exists">A machine with this name already exists.</string>
+    <string name="dialog_delete_machine_title">Delete Machine</string>
+    <string name="dialog_delete_machine_confirm">Delete "%1$s"? It disappears from the catalog and all templates. Your workout history stays fully readable — this only hides the machine from all lists.</string>
+    <string name="machine_deleted_history_kept">"%1$s" deleted. Your history remains complete.</string>
+    <string name="machine_delete_blocked_active_workout">This machine is part of the workout currently in progress. Finish the workout before deleting it.</string>
+    <string name="swipe_delete_hint">Swipe left to delete</string>
     <string name="dialog_edit_machine_title">Edit Machine</string>
     <string name="btn_save">Save</string>
     <string name="btn_cancel">Cancel</string>
@@ -70,6 +75,10 @@
     <string name="action_remove">Remove</string>
     <string name="dialog_select_machine_title">Select Exercise from Catalog</string>
     <string name="no_machines_in_catalog">No machines in catalog. Add some first.</string>
+    <string name="dialog_delete_template_title">Delete Template</string>
+    <string name="dialog_delete_template_confirm">Delete template "%1$s"? Assigned machines and workout history are not affected.</string>
+    <string name="template_deleted">Template "%1$s" deleted.</string>
+    <string name="template_delete_blocked_active_workout">A workout based on this template is currently running. Finish it before deleting the template.</string>
 
     <!-- History Screen -->
     <string name="history_title">Workout History</string>

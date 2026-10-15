@@ -54,3 +54,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 36 | Architecture Hardening: Durable Sessions, MVVM & Module Boundary Fix | [36-architecture-hardening-durable-sessions-mvvm.md](36-architecture-hardening-durable-sessions-mvvm.md) |
 | 37 | License-Page: Open-Source-Lizenzen (Issue #39) | [37-license-page-aboutlibraries.md](37-license-page-aboutlibraries.md) |
 | 38 | Muskelgruppen-Autocomplete beim Maschinen-Anlegen (Issue #36) | [38-muscle-group-autocomplete.md](38-muscle-group-autocomplete.md) |
+| 39 | Machine & Template Deletion with Soft-Delete (Issue #40) | [39-machine-template-deletion-soft-delete.md](39-machine-template-deletion-soft-delete.md) |
