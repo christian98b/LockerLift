@@ -18,10 +18,10 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.itemsIndexed
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.CompactButton
-import androidx.wear.compose.material3.CompactChip
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -538,22 +538,24 @@ fun ActiveWorkoutScreen(
                         WeightUnit.LBS
                     ).forEach { unitOption ->
                         val isSelected = weightUnit == unitOption
-                        CompactChip(
-                            label = {
-                                Text(
-                                    WeightConversion.unitSuffix(unitOption) +
-                                        if (isSelected) " ✓" else "",
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
+                        CompactButton(
                             onClick = {
                                 val currentKg = WeightConversion.toKg(incrementKg, weightUnit)
                                 weightUnit = unitOption
                                 incrementKg = WeightConversion.fromKg(currentKg, unitOption)
                             },
+                            colors = if (isSelected) ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            ) else ButtonDefaults.buttonColors(),
                             modifier = Modifier.padding(horizontal = 2.dp)
-                        )
+                        ) {
+                            Text(
+                                text = WeightConversion.unitSuffix(unitOption) +
+                                    if (isSelected) " ✓" else "",
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
                     }
                 }
             }

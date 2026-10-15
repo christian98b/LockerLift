@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.MachineEntity
+import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.WeightConversion
 import com.lockerlift.core.database.entity.toDomainModel
@@ -250,7 +251,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_settings_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightUnitSelector(
                                 selected = addWeightUnit,
                                 onSelected = { unit ->
@@ -259,7 +260,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                                         addWeightUnit
                                     )
                                     addWeightUnit = unit
-                                    incrementKgText = WeightConversion.formatWeight(
+                                    incrementKgText = WorkoutLogic.formatWeight(
                                         WeightConversion.fromKg(kg, unit)
                                     )
                                 }
@@ -344,7 +345,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_settings_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightUnitSelector(
                                 selected = editWeightUnit,
                                 onSelected = { unit ->
@@ -353,7 +354,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                                         editWeightUnit
                                     )
                                     editWeightUnit = unit
-                                    editIncrementKgText = WeightConversion.formatWeight(
+                                    editIncrementKgText = WorkoutLogic.formatWeight(
                                         WeightConversion.fromKg(currentKg, unit)
                                     )
                                 }
