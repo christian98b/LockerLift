@@ -7,6 +7,24 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.11.0] - 2026-10-15
+
+### 🚀 Neue Features
+
+#### Smartphone (`:mobile`)
+- **Gewichtseinheit pro Maschine (kg/lbs):** Jede Maschine verfügt jetzt über eine eigene Gewichtseinheit mit einheiten-spezifischen Schrittweiten (Issue #37) — US-Stacks in lbs, Metrisches in kg, ohne globale Umstellung.
+- **Muskelgruppen-Autocomplete:** Die Maschinen-Formulare schlagen beim Tippen passende Muskelgruppen vor (Issue #36).
+- **Open-Source-Lizenzseite:** Vollständige Lizenzübersicht aller eingebundenen Bibliotheken via AboutLibraries, inklusive Fallback auf die Lizenz-URL, wenn der Inhalt nicht eingebettet ist.
+- **Soft-Delete für Maschinen und Templates:** Löschen per Swipe-to-Delete mit Absicherung — Maschinen mit laufendem Training bleiben unangetastet (Issue #40).
+
+#### Wear OS (`:wear`)
+- **Finish-Schutz:** Der Settings-Button ist vom „Workout beenden"-Button weggerückt, und ein Bestätigungsdialog verhindert versehentliches Beenden des Trainings (Issue #38).
+
+### 🔧 Toolchain
+- `compileSdk` auf 36 angehoben für die `aboutlibraries-core`-AAR-Anforderung.
+
+---
+
 ## [1.10.0] - 2026-10-11
 
 ### 🚀 Neue Features
