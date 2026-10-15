@@ -498,6 +498,7 @@ private fun WeightDirectionSelector(
     }
 }
 
+@Composable
 private fun WeightUnitSelector(
     selected: WeightUnit,
     onSelected: (WeightUnit) -> Unit
