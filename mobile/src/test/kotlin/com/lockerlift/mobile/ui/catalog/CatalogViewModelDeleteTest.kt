@@ -96,9 +96,10 @@ class CatalogViewModelDeleteTest {
         viewModel.awaitActions()
 
         assertEquals(MachineDeleteResult.BLOCKED_ACTIVE_WORKOUT, result)
-        assertNull(database.machineDao().getMachineByName("Bench Press")?.takeIf { it.isDeleted.not() })
-        assertNotNull(database.machineDao().getMachineById("m-1"))
-        assertEquals("m-1", database.machineDao().getMachineById("m-1")!!.id)
+        val machineAfter = database.machineDao().getMachineById("m-1")
+        assertNotNull(machineAfter)
+        assertEquals(false, machineAfter!!.isDeleted)
+        assertEquals("Bench Press", database.machineDao().getMachineByName("Bench Press")?.name)
     }
 
     private fun assertTrueOrEmpty(machines: List<com.lockerlift.core.database.entity.MachineEntity>) {
