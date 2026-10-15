@@ -7,6 +7,17 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.12.0] - 2026-10-15
+
+### 🚀 Neue Features
+
+#### Smartphone (`:mobile`) & Wear OS (`:wear`)
+- **Assistierte Maschinen (inverse Gewichtsprogression):** Pro Maschine ist die Progressionsrichtung konfigurierbar (`NORMAL` = mehr Gewicht ist mehr Fortschritt, Default; `INVERSE` = assistierte Maschinen wie Assist-Dip oder Assist-Chin/Pull-Up, bei denen weniger Gewicht mehr Unterstützung bedeutet). Die Doppelte-Progression-Logik schlägt auf `INVERSE`-Maschinen nach erreichtem Overload-Ziel nun niedrigere Gewichte vor (z. B. 40 kg → 20 kg → 0 kg) — auf Smartphone und Watch (Issue #35).
+- **Master-Data-Sync:** Das Richtungs-Flag wird beim Master-Data-Sync (Phone → Wear) übertragen, sodass die Uhr die invertierte Vorschlagslogik ebenfalls verwendet.
+- Historische Daten bleiben unangetastet (additive Room-Migration mit Default `NORMAL`).
+
+---
+
 ## [1.11.0] - 2026-10-15
 
 ### 🚀 Neue Features
