@@ -18,6 +18,7 @@ import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.model.WorkoutSession
 import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.core.sync.SessionMachineInstancePayload
@@ -289,6 +290,7 @@ class ActiveWorkoutViewModel(
         name: String,
         incrementKg: Float,
         weightUnit: WeightUnit = WeightUnit.KG,
+        weightDirection: WeightDirection = WeightDirection.NORMAL,
         targetMuscleGroup: String,
         existingMachineNames: List<String>,
         mode: CreateMachineMode,
@@ -302,7 +304,8 @@ class ActiveWorkoutViewModel(
                 name = name.trim(),
                 targetMuscleGroup = targetMuscleGroup,
                 defaultIncrementKg = WeightConversion.toKg(incrementKg, weightUnit),
-                weightUnit = weightUnit
+                weightUnit = weightUnit,
+                weightDirection = weightDirection
             )
             machineDao.insertMachine(newMachine.toEntity())
             withContext(Dispatchers.Main) {

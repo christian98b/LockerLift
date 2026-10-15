@@ -38,6 +38,14 @@ class WorkoutLogicTest {
     }
 
     @Test
+    fun testInverseProgressionForAssistedMachines() {
+        assertEquals(77.5f, WorkoutLogic.calculateNextWeight(80.0f, 2.5f, shouldProgress = true, weightDirection = WeightDirection.INVERSE), 0.001f)
+        assertEquals(80.0f, WorkoutLogic.calculateNextWeight(80.0f, 2.5f, shouldProgress = false, weightDirection = WeightDirection.INVERSE), 0.001f)
+        assertEquals(82.5f, WorkoutLogic.calculateNextWeight(80.0f, 2.5f, shouldProgress = true, weightDirection = WeightDirection.NORMAL), 0.001f)
+        assertEquals(0.0f, WorkoutLogic.calculateNextWeight(1.0f, 2.5f, shouldProgress = true, weightDirection = WeightDirection.INVERSE), 0.001f)
+    }
+
+    @Test
     fun testValidateNewMachine() {
         val existing = listOf("Bench Press", "Squat")
         assertEquals(ValidationResult.EmptyName, WorkoutLogic.validateNewMachine("   ", existing))

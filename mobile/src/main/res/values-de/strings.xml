@@ -147,6 +147,7 @@
     <string name="weight_label_unit_format">Gewicht (%1$s)</string>
     <string name="hint_increment_unit_format">Schrittweite in %1$s (z.B. 2.5)</string>
     <string name="reps_label">Wiederholungen</string>
+    <string name="assisted_machine_chip">Unterstützte Maschine</string>
     <string name="progression_suggestion_format">Doppelte Progression: Ziel erreicht! Gewicht auf %1$s steigern?</string>
     <string name="btn_apply_overload">+%1$s anwenden</string>
     <string name="rest_timer_label">Satzpause</string>

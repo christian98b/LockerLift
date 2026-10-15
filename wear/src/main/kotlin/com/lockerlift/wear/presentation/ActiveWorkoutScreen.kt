@@ -415,6 +415,7 @@ fun ActiveWorkoutScreen(
         var machineName by remember { mutableStateOf("") }
         var incrementKg by remember { mutableFloatStateOf(2.5f) }
         var weightUnit by remember { mutableStateOf(WeightUnit.KG) }
+        var isAssisted by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var selectedMuscleGroup by remember { mutableStateOf("") }
         val knownMuscleGroups = catalogMachines
@@ -533,6 +534,20 @@ fun ActiveWorkoutScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    CompactButton(
+                        onClick = { isAssisted = !isAssisted },
+                        colors = if (isAssisted) ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ) else ButtonDefaults.buttonColors(),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.assisted_machine_chip) +
+                                if (isAssisted) " ✓" else "",
+                            fontSize = 12.sp,
+                            fontWeight = if (isAssisted) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
                     listOf(
                         WeightUnit.KG,
                         WeightUnit.LBS
@@ -620,6 +635,7 @@ fun ActiveWorkoutScreen(
                                     name = machineName,
                                     incrementKg = incrementKg,
                                     weightUnit = weightUnit,
+                                    weightDirection = if (isAssisted) WeightDirection.INVERSE else WeightDirection.NORMAL,
                                     targetMuscleGroup = selectedMuscleGroup.ifBlank { fullBodyMuscleGroup },
                                     existingMachineNames = catalogMachines.map { it.name },
                                     mode = createMachineMode,

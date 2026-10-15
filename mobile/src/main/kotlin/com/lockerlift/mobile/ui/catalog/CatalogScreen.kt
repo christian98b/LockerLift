@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.model.WorkoutLogic
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.WeightConversion
 import com.lockerlift.core.database.entity.toDomainModel
@@ -53,6 +54,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var settingsNote by remember { mutableStateOf("") }
     var incrementKgText by remember { mutableStateOf("2.5") }
     var addWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
+    var addWeightDirection by remember { mutableStateOf(WeightDirection.NORMAL) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var deleteCandidate by remember { mutableStateOf<MachineEntity?>(null) }
@@ -65,6 +67,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var editSettingsNote by remember { mutableStateOf("") }
     var editIncrementKgText by remember { mutableStateOf("2.5") }
     var editWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
+    var editWeightDirection by remember { mutableStateOf(WeightDirection.NORMAL) }
     var editErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val errorRequiredFields = stringResource(R.string.error_required_fields)
@@ -83,6 +86,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 settingsNote = ""
                 incrementKgText = "2.5"
                 addWeightUnit = WeightUnit.KG
+                addWeightDirection = WeightDirection.NORMAL
                 errorMessage = null
                 showAddDialog = true
             }) {
@@ -142,6 +146,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                                 machineEntity.weightUnit
                             ).toString()
                             editWeightUnit = machineEntity.weightUnit
+                            editWeightDirection = machineEntity.weightDirection
                             editErrorMessage = null
                         },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -252,6 +257,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeightDirectionSelector(
+                                selected = addWeightDirection,
+                                onSelected = { addWeightDirection = it }
+                            )
                             WeightUnitSelector(
                                 selected = addWeightUnit,
                                 onSelected = { unit ->
@@ -292,7 +301,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             muscleGroup = muscleGroup,
                             settingsNote = settingsNote,
                             incrementKgText = incrementKgText,
-                            weightUnit = addWeightUnit
+                            weightUnit = addWeightUnit,
+                            weightDirection = addWeightDirection
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> errorMessage = errorRequiredFields
@@ -346,6 +356,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeightDirectionSelector(
+                                selected = editWeightDirection,
+                                onSelected = { editWeightDirection = it }
+                            )
                             WeightUnitSelector(
                                 selected = editWeightUnit,
                                 onSelected = { unit ->
@@ -388,7 +402,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             muscleGroup = editMuscleGroup,
                             settingsNote = editSettingsNote,
                             incrementKgText = editIncrementKgText,
-                            weightUnit = editWeightUnit
+                            weightUnit = editWeightUnit,
+                            weightDirection = editWeightDirection
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> editErrorMessage = errorRequiredFields
@@ -466,6 +481,20 @@ private fun MuscleGroupAutocompleteField(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun WeightDirectionSelector(
+    selected: WeightDirection,
+    onSelected: (WeightDirection) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = selected == WeightDirection.INVERSE,
+            onClick = { onSelected(WeightDirection.INVERSE) },
+            label = { Text(stringResource(R.string.assisted_machine_chip)) }
+        )
     }
 }
 

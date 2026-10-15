@@ -303,7 +303,8 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     val unit = machine?.weightUnit ?: WeightUnit.KG
                     val unitSuffix = WeightConversion.unitSuffix(unit)
                     val increment = machine?.defaultIncrementKg ?: 2.5f
-                    val overloadedWeight = if (lastSet != null) WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true) else 0f
+                    val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
+                    val overloadedWeight = if (lastSet != null) WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true, weightDirection = weightDirection) else 0f
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -654,9 +655,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val currentWeight = weightInput.toFloatOrNull() ?: 0f
         val currentReps = repsInput.toIntOrNull() ?: 0
         val increment = machine?.defaultIncrementKg ?: 2.5f
+        val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
 
         val showProgressionSuggestion = WorkoutLogic.isProgressionProposed(currentReps)
-        val overloadedWeight = WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true)
+        val overloadedWeight = WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true, weightDirection = weightDirection)
 
         AlertDialog(
             onDismissRequest = { selectedInstanceIndexForSet = -1 },

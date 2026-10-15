@@ -9,6 +9,7 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.sync.SyncPayloadSerializer
 import com.lockerlift.core.sync.WearableDataLayerManager
@@ -74,6 +75,7 @@ class CatalogViewModel(
         settingsNote: String,
         incrementKgText: String,
         weightUnit: WeightUnit = WeightUnit.KG,
+        weightDirection: WeightDirection = WeightDirection.NORMAL,
         onResult: (MachineEditResult) -> Unit
     ) {
         if (name.isBlank() || muscleGroup.isBlank()) {
@@ -94,7 +96,8 @@ class CatalogViewModel(
                     incrementKgText.toFloatOrNull() ?: 2.5f,
                     weightUnit
                 ),
-                weightUnit = weightUnit
+                weightUnit = weightUnit,
+                weightDirection = weightDirection
             )
             machineDao.insertMachine(newMachine.toEntity())
             syncCatalogToWear()
@@ -113,6 +116,7 @@ class CatalogViewModel(
         settingsNote: String,
         incrementKgText: String,
         weightUnit: WeightUnit = WeightUnit.KG,
+        weightDirection: WeightDirection = WeightDirection.NORMAL,
         onResult: (MachineEditResult) -> Unit
     ) {
         if (name.isBlank() || muscleGroup.isBlank()) {
@@ -135,6 +139,7 @@ class CatalogViewModel(
                     weightUnit
                 ),
                 weightUnit = weightUnit,
+                weightDirection = weightDirection,
                 updatedAt = System.currentTimeMillis()
             )
             machineDao.updateMachine(updated)

@@ -33,6 +33,7 @@
     <string name="set_header_format">%1$s • Set %2$d</string>
     <string name="edit_set_header_format">Edit %1$s • Set %2$d</string>
     <string name="tempo_format">Tempo: %1$s</string>
+    <string name="assisted_machine_chip">Assisted</string>
     <string name="progression_suggestion_format">Suggestion: Increase +%1$s?</string>
     <string name="reps_count_format">%1$d reps</string>
     <string name="btn_finish_set">Complete Set</string>

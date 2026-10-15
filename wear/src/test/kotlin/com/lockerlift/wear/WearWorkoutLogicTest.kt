@@ -6,6 +6,7 @@ import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.core.model.ValidationResult
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.wear.logic.WearWorkoutLogic
 import com.lockerlift.wear.logic.WorkoutPauseState
 import org.junit.Assert.*
@@ -112,6 +113,7 @@ class WearWorkoutLogicTest {
 
         assertEquals(82.5f, WearWorkoutLogic.calculateNextWeight(80f, 2.5f, shouldProgress = true), 0.001f)
         assertEquals(80.0f, WearWorkoutLogic.calculateNextWeight(80f, 2.5f, shouldProgress = false), 0.001f)
+        assertEquals(77.5f, WearWorkoutLogic.calculateNextWeight(80f, 2.5f, shouldProgress = true, weightDirection = WeightDirection.INVERSE), 0.001f)
     }
 
     @Test

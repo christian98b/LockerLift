@@ -120,7 +120,9 @@ fun RepsWeightInputScreen(
             item {
                 Card(
                     onClick = {
-                        weightKg = WearWorkoutLogic.calculateNextWeight(weightKg, increment, true)
+                        weightKg = WearWorkoutLogic.calculateNextWeight(
+                            weightKg, increment, true, machine.weightDirection
+                        )
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
