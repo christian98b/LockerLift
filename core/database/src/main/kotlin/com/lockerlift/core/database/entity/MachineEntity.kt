@@ -73,5 +73,6 @@ fun Machine.toEntity() = MachineEntity(
     defaultIncrementKg = defaultIncrementKg,
     defaultCadence = defaultCadence,
     weightUnit = weightUnit,
+    weightDirection = weightDirection,
     updatedAt = updatedAt
 )
