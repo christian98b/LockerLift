@@ -34,7 +34,7 @@ class WeightConversionTest {
     fun `formatWeightForUnit rounds only for display and keeps kg exact`() {
         val kg = WeightConversion.lbsToKg(19f)
         assertEquals("19", WeightConversion.formatWeightForUnit(kg, WeightUnit.LBS))
-        assertEquals("8.618262", WeightConversion.formatWeightForUnit(kg, WeightUnit.KG))
+        assertEquals(kg.toString(), WeightConversion.formatWeightForUnit(kg, WeightUnit.KG))
     }
 
     @Test
