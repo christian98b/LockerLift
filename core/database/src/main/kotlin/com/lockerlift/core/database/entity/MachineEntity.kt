@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lockerlift.core.model.Machine
+import com.lockerlift.core.model.WeightUnit
 
 @Entity(tableName = "machines")
 data class MachineEntity(
@@ -26,6 +27,12 @@ data class MachineEntity(
 
     @ColumnInfo(name = "default_cadence")
     val defaultCadence: String? = null,
+    /**
+     * Unit of the machine's weight stack scale (Issue #37): KG or LBS.
+     * Weights are always stored in kg; this only governs input/display.
+     */
+    @ColumnInfo(name = "weight_unit")
+    val weightUnit: WeightUnit = WeightUnit.KG,
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
@@ -45,6 +52,7 @@ fun MachineEntity.toDomainModel() = Machine(
     machineSettingsNote = machineSettingsNote,
     defaultIncrementKg = defaultIncrementKg,
     defaultCadence = defaultCadence,
+    weightUnit = weightUnit,
     updatedAt = updatedAt
 )
 
@@ -55,5 +63,6 @@ fun Machine.toEntity() = MachineEntity(
     machineSettingsNote = machineSettingsNote,
     defaultIncrementKg = defaultIncrementKg,
     defaultCadence = defaultCadence,
+    weightUnit = weightUnit,
     updatedAt = updatedAt
 )

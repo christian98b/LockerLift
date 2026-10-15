@@ -38,7 +38,7 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         DeletedSessionEntity::class,
         ActiveSessionStateEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -60,6 +60,16 @@ abstract class LockerLiftDatabase : RoomDatabase() {
          * dropped so a soft-deleted machine no longer blocks its name for
          * newly created machines.
          */
+        /**
+         * v5 adds per-machine weight unit (Issue #37): machines.weight_unit
+         * with default KG so existing historical data stays untouched.
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE machines ADD COLUMN weight_unit TEXT NOT NULL DEFAULT 'KG'")
+            }
+        }
+
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP INDEX IF EXISTS `index_machines_name`")
@@ -121,7 +131,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
         }
 

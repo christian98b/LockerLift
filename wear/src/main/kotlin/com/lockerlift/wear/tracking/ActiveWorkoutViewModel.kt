@@ -17,6 +17,8 @@ import com.lockerlift.core.model.QueueStatus
 import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.SyncStatus
 import com.lockerlift.core.model.WorkoutSession
+import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.core.sync.SessionMachineInstancePayload
 import com.lockerlift.core.sync.SyncConstants
@@ -286,6 +288,7 @@ class ActiveWorkoutViewModel(
     fun createMachine(
         name: String,
         incrementKg: Float,
+        weightUnit: WeightUnit = WeightUnit.KG,
         targetMuscleGroup: String,
         existingMachineNames: List<String>,
         mode: CreateMachineMode,
@@ -298,7 +301,8 @@ class ActiveWorkoutViewModel(
             val newMachine = Machine(
                 name = name.trim(),
                 targetMuscleGroup = targetMuscleGroup,
-                defaultIncrementKg = incrementKg
+                defaultIncrementKg = WeightConversion.toKg(incrementKg, weightUnit),
+                weightUnit = weightUnit
             )
             machineDao.insertMachine(newMachine.toEntity())
             withContext(Dispatchers.Main) {

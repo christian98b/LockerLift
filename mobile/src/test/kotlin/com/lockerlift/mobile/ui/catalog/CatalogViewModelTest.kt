@@ -82,6 +82,41 @@ class CatalogViewModelTest {
         assertEquals("Bench Press", machines.first().name)
         assertEquals("Seat 3", machines.first().machineSettingsNote)
     }
+    @Test
+    fun testAddMachine_lbsUnit_convertsIncrementToKg() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        var result: MachineEditResult? = null
+        viewModel.addMachine(
+            name = "Lbs Press",
+            muscleGroup = "Chest",
+            settingsNote = "",
+            incrementKgText = "7",
+            weightUnit = com.lockerlift.core.model.WeightUnit.LBS
+        ) { result = it }
+        viewModel.awaitActions()
+        assertEquals(MachineEditResult.SUCCESS, result)
+        val machine = database.machineDao().getAllMachines().first()
+        assertEquals(com.lockerlift.core.model.WeightUnit.LBS, machine.weightUnit)
+        assertEquals(7f * 0.45359237f, machine.defaultIncrementKg, 0.001f)
+    }
+
+    @Test
+    fun testAddMachine_kgUnit_keepsIncrementUnconverted() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        var result: MachineEditResult? = null
+        viewModel.addMachine(
+            name = "Kg Press",
+            muscleGroup = "Chest",
+            settingsNote = "",
+            incrementKgText = "2.5",
+            weightUnit = com.lockerlift.core.model.WeightUnit.KG
+        ) { result = it }
+        viewModel.awaitActions()
+        assertEquals(MachineEditResult.SUCCESS, result)
+        val machine = database.machineDao().getAllMachines().first()
+        assertEquals(com.lockerlift.core.model.WeightUnit.KG, machine.weightUnit)
+        assertEquals(2.5f, machine.defaultIncrementKg, 0.001f)
+    }
 
     @Test
     fun testAddMachine_whenDuplicateName_reportsDuplicate() = runTest(testDispatcher) {

@@ -140,6 +140,7 @@ object SyncIngestionEngine {
                             targetMuscleGroup = machine.targetMuscleGroup,
                             machineSettingsNote = machine.machineSettingsNote,
                             defaultIncrementKg = machine.defaultIncrementKg,
+                            weightUnit = machine.weightUnit,
                             updatedAt = System.currentTimeMillis()
                         )
                     )

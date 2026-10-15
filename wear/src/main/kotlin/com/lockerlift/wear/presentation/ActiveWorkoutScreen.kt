@@ -18,6 +18,7 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.itemsIndexed
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.CompactButton
@@ -413,6 +414,7 @@ fun ActiveWorkoutScreen(
     if (currentSubScreen == ActiveWorkoutSubScreen.CREATE_MACHINE) {
         var machineName by remember { mutableStateOf("") }
         var incrementKg by remember { mutableFloatStateOf(2.5f) }
+        var weightUnit by remember { mutableStateOf(WeightUnit.KG) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var selectedMuscleGroup by remember { mutableStateOf("") }
         val knownMuscleGroups = catalogMachines
@@ -531,6 +533,37 @@ fun ActiveWorkoutScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    listOf(
+                        WeightUnit.KG,
+                        WeightUnit.LBS
+                    ).forEach { unitOption ->
+                        val isSelected = weightUnit == unitOption
+                        CompactButton(
+                            onClick = {
+                                val currentKg = WeightConversion.toKg(incrementKg, weightUnit)
+                                weightUnit = unitOption
+                                incrementKg = WeightConversion.fromKg(currentKg, unitOption)
+                            },
+                            colors = if (isSelected) ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            ) else ButtonDefaults.buttonColors(),
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        ) {
+                            Text(
+                                text = WeightConversion.unitSuffix(unitOption) +
+                                    if (isSelected) " ✓" else "",
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Button(
                         onClick = { if (incrementKg > 1.25f) incrementKg -= 1.25f },
                         modifier = Modifier.size(32.dp)
@@ -539,7 +572,9 @@ fun ActiveWorkoutScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${WearWorkoutLogic.formatWeight(incrementKg)} kg",
+                        text = WeightConversion.formatWeightForUnit(
+                            incrementKg, weightUnit
+                        ) + " " + WeightConversion.unitSuffix(weightUnit),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -584,6 +619,7 @@ fun ActiveWorkoutScreen(
                                 viewModel.createMachine(
                                     name = machineName,
                                     incrementKg = incrementKg,
+                                    weightUnit = weightUnit,
                                     targetMuscleGroup = selectedMuscleGroup.ifBlank { fullBodyMuscleGroup },
                                     existingMachineNames = catalogMachines.map { it.name },
                                     mode = createMachineMode,
@@ -928,7 +964,7 @@ fun ActiveWorkoutScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "S${set.setNumber}: ${WearWorkoutLogic.formatWeight(set.weightKg)} kg × ${set.reps}",
+                                            text = "S${set.setNumber}: ${WeightConversion.formatWeightForUnit(set.weightKg, machine?.weightUnit ?: WeightUnit.KG)} ${WeightConversion.unitSuffix(machine?.weightUnit ?: WeightUnit.KG)} × ${set.reps}",
                                             fontSize = 11.sp
                                         )
                                         Text(

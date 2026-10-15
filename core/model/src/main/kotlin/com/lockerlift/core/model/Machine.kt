@@ -11,5 +11,10 @@ data class Machine(
     val machineSettingsNote: String? = null,
     val defaultIncrementKg: Float = 2.5f,
     val defaultCadence: String? = null,
+    /**
+     * Unit of the machine's weight stack scale (Issue #37). Stored internally
+     * in kg even for LBS machines; the unit only governs user input/display.
+     */
+    val weightUnit: WeightUnit = WeightUnit.KG,
     val updatedAt: Long = System.currentTimeMillis()
 )

@@ -19,6 +19,7 @@ class EntityMappingTest {
             machineSettingsNote = "Stufe 10",
             defaultIncrementKg = 1.25f,
             defaultCadence = "2-1-2-1",
+            weightUnit = WeightUnit.LBS,
             updatedAt = 123456789L
         )
 
@@ -29,6 +30,7 @@ class EntityMappingTest {
         assertEquals(domainMachine.machineSettingsNote, entity.machineSettingsNote)
         assertEquals(domainMachine.defaultIncrementKg, entity.defaultIncrementKg, 0.001f)
         assertEquals(domainMachine.defaultCadence, entity.defaultCadence)
+        assertEquals(domainMachine.weightUnit, entity.weightUnit)
         assertEquals(domainMachine.updatedAt, entity.updatedAt)
 
         val mappedBack = entity.toDomainModel()
@@ -78,6 +80,9 @@ class EntityMappingTest {
 
         assertEquals("PENDING", converters.fromQueueStatus(QueueStatus.PENDING))
         assertEquals(QueueStatus.IN_TRANSIT, converters.toQueueStatus("IN_TRANSIT"))
+        assertEquals("KG", converters.fromWeightUnit(WeightUnit.KG))
+        assertEquals(WeightUnit.LBS, converters.toWeightUnit("LBS"))
+        assertEquals("Unknown values fall back to KG", WeightUnit.KG, converters.toWeightUnit("BOGUS"))
     }
 
     @Test
