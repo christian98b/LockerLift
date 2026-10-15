@@ -61,7 +61,7 @@ class CatalogViewModelDeleteTest {
         val viewModel = createViewModel()
         var result: MachineDeleteResult? = null
 
-        viewModel.deleteMachine(database.machineDao().getMachineById("m-1")!!.toEntity()) {
+        viewModel.deleteMachine(database.machineDao().getMachineById("m-1")!!) {
             result = it
         }
         viewModel.awaitActions()
@@ -90,7 +90,7 @@ class CatalogViewModelDeleteTest {
         val viewModel = createViewModel()
         var result: MachineDeleteResult? = null
 
-        viewModel.deleteMachine(database.machineDao().getMachineById("m-1")!!.toEntity()) {
+        viewModel.deleteMachine(database.machineDao().getMachineById("m-1")!!) {
             result = it
         }
         viewModel.awaitActions()
