@@ -141,6 +141,7 @@ object SyncIngestionEngine {
                             machineSettingsNote = machine.machineSettingsNote,
                             defaultIncrementKg = machine.defaultIncrementKg,
                             weightUnit = machine.weightUnit,
+                            weightDirection = machine.weightDirection,
                             updatedAt = System.currentTimeMillis()
                         )
                     )

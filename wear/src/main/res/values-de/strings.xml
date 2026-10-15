@@ -33,6 +33,7 @@
     <string name="set_header_format">%1$s • Satz %2$d</string>
     <string name="edit_set_header_format">%1$s • Satz %2$d bearbeiten</string>
     <string name="tempo_format">Tempo: %1$s</string>
+    <string name="assisted_machine_chip">Unterstützt</string>
     <string name="progression_suggestion_format">Vorschlag: +%1$s steigern?</string>
     <string name="reps_count_format">%1$d Wdh.</string>
     <string name="btn_finish_set">Satz abschließen</string>

@@ -16,5 +16,11 @@ data class Machine(
      * in kg even for LBS machines; the unit only governs user input/display.
      */
     val weightUnit: WeightUnit = WeightUnit.KG,
+    /**
+     * Direction of progress for the weight stack (Issue #35): NORMAL for
+     * regular machines, INVERSE for assisted machines (Assist-Dip,
+     * Assist-Chin) where less selected weight means more load.
+     */
+    val weightDirection: WeightDirection = WeightDirection.NORMAL,
     val updatedAt: Long = System.currentTimeMillis()
 )

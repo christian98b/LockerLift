@@ -38,7 +38,7 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         DeletedSessionEntity::class,
         ActiveSessionStateEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -64,6 +64,19 @@ abstract class LockerLiftDatabase : RoomDatabase() {
          * v5 adds per-machine weight unit (Issue #37): machines.weight_unit
          * with default KG so existing historical data stays untouched.
          */
+        /**
+         * v6 adds the weight direction flag (Issue #35):
+         * machines.weight_direction with default NORMAL. Machines flagged
+         * INVERSE are assisted machines (Assist-Dip, Assist-Chin) where less
+         * selected weight means more load; the default keeps existing data
+         * untouched.
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE machines ADD COLUMN weight_direction TEXT NOT NULL DEFAULT 'NORMAL'")
+            }
+        }
+
         private val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE machines ADD COLUMN weight_unit TEXT NOT NULL DEFAULT 'KG'")
@@ -131,7 +144,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
         }
 

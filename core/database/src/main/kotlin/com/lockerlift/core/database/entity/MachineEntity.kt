@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lockerlift.core.model.Machine
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 
 @Entity(tableName = "machines")
@@ -33,6 +34,13 @@ data class MachineEntity(
      */
     @ColumnInfo(name = "weight_unit")
     val weightUnit: WeightUnit = WeightUnit.KG,
+    /**
+     * Direction of progress for the weight stack (Issue #35): NORMAL for
+     * regular machines, INVERSE for assisted machines where less selected
+     * weight means more load.
+     */
+    @ColumnInfo(name = "weight_direction")
+    val weightDirection: WeightDirection = WeightDirection.NORMAL,
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
@@ -53,6 +61,7 @@ fun MachineEntity.toDomainModel() = Machine(
     defaultIncrementKg = defaultIncrementKg,
     defaultCadence = defaultCadence,
     weightUnit = weightUnit,
+    weightDirection = weightDirection,
     updatedAt = updatedAt
 )
 

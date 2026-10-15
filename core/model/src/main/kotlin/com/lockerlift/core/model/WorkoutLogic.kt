@@ -77,10 +77,22 @@ object WorkoutLogic {
 
     /**
      * Calculates the weight for the next set based on whether overload was accepted.
+     * For INVERSE machines (Issue #35, assisted machines like Assist-Dip),
+     * progress means decreasing the selected assistance weight instead of
+     * increasing it.
      */
-    fun calculateNextWeight(currentWeight: Float, increment: Float, shouldProgress: Boolean): Float {
-        val target = if (shouldProgress) currentWeight + increment else currentWeight
-        return clampWeight(target)
+    fun calculateNextWeight(
+        currentWeight: Float,
+        increment: Float,
+        shouldProgress: Boolean,
+        weightDirection: WeightDirection = WeightDirection.NORMAL
+    ): Float {
+        if (!shouldProgress) return clampWeight(currentWeight)
+        val delta = when (weightDirection) {
+            WeightDirection.NORMAL -> increment
+            WeightDirection.INVERSE -> -increment
+        }
+        return clampWeight(currentWeight + delta)
     }
 
     /**

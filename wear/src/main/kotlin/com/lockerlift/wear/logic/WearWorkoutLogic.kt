@@ -6,6 +6,7 @@ import com.lockerlift.core.model.CreateMachineMode
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.SessionMachineInstance
 import com.lockerlift.core.model.ValidationResult
+import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.WorkoutSet
 
@@ -46,8 +47,13 @@ object WearWorkoutLogic {
     fun isProgressionProposed(reps: Int, threshold: Int = DEFAULT_PROGRESSION_REP_THRESHOLD): Boolean =
         WorkoutLogic.isProgressionProposed(reps, threshold)
 
-    fun calculateNextWeight(currentWeight: Float, increment: Float, shouldProgress: Boolean): Float =
-        WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress)
+    fun calculateNextWeight(
+        currentWeight: Float,
+        increment: Float,
+        shouldProgress: Boolean,
+        weightDirection: WeightDirection = WeightDirection.NORMAL
+    ): Float =
+        WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress, weightDirection)
 
     fun validateNewMachine(name: String, existingMachineNames: List<String>): ValidationResult =
         WorkoutLogic.validateNewMachine(name, existingMachineNames)

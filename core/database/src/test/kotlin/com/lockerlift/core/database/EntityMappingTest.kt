@@ -20,6 +20,7 @@ class EntityMappingTest {
             defaultIncrementKg = 1.25f,
             defaultCadence = "2-1-2-1",
             weightUnit = WeightUnit.LBS,
+            weightDirection = WeightDirection.INVERSE,
             updatedAt = 123456789L
         )
 
@@ -31,6 +32,7 @@ class EntityMappingTest {
         assertEquals(domainMachine.defaultIncrementKg, entity.defaultIncrementKg, 0.001f)
         assertEquals(domainMachine.defaultCadence, entity.defaultCadence)
         assertEquals(domainMachine.weightUnit, entity.weightUnit)
+        assertEquals(domainMachine.weightDirection, entity.weightDirection)
         assertEquals(domainMachine.updatedAt, entity.updatedAt)
 
         val mappedBack = entity.toDomainModel()
