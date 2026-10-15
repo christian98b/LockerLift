@@ -6,13 +6,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -46,6 +51,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var incrementKgText by remember { mutableStateOf("2.5") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    var deleteCandidate by remember { mutableStateOf<MachineEntity?>(null) }
+    var infoMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
     var editingMachine by remember { mutableStateOf<MachineEntity?>(null) }
     var editMachineName by remember { mutableStateOf("") }
     var editMuscleGroup by remember { mutableStateOf("") }
@@ -55,8 +64,10 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
 
     val errorRequiredFields = stringResource(R.string.error_required_fields)
     val errorMachineExists = stringResource(R.string.error_machine_exists)
+    val context = LocalContext.current
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.catalog_title)) })
         },
@@ -81,6 +92,36 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
         ) {
             items(machinesState, key = { it.id }) { machineEntity ->
                 val machine = machineEntity.toDomainModel()
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = { value ->
+                        if (value == SwipeToDismissBoxValue.EndToStart) {
+                            deleteCandidate = machineEntity
+                        }
+                        false
+                    }
+                )
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    backgroundContent = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.errorContainer,
+                                    MaterialTheme.shapes.medium
+                                ),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.btn_delete),
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                ) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -115,7 +156,49 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                         )
                     }
                 }
+                }
             }
+        }
+
+        LaunchedEffect(infoMessage) {
+            infoMessage?.let {
+                snackbarHostState.showSnackbar(it)
+                infoMessage = null
+            }
+        }
+
+        // Delete Machine Confirmation Dialog (Issue #40)
+        val machineToDelete = deleteCandidate
+        if (machineToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { deleteCandidate = null },
+                title = { Text(stringResource(R.string.dialog_delete_machine_title)) },
+                text = { Text(stringResource(R.string.dialog_delete_machine_confirm, machineToDelete.name)) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val target = deleteCandidate
+                            deleteCandidate = null
+                            if (target != null) {
+                                catalogViewModel.deleteMachine(target) { result ->
+                                    if (result == MachineDeleteResult.BLOCKED_ACTIVE_WORKOUT) {
+                                        infoMessage = context.getString(R.string.machine_delete_blocked_active_workout)
+                                    } else {
+                                        infoMessage = context.getString(R.string.machine_deleted_history_kept, target.name)
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.btn_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteCandidate = null }) {
+                        Text(stringResource(R.string.btn_cancel))
+                    }
+                }
+            )
         }
 
         // Add New Machine Dialog

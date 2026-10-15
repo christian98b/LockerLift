@@ -48,6 +48,11 @@
     <string name="hint_increment">Schrittweite in kg (z.B. 2.5)</string>
     <string name="error_required_fields">Name und Muskelgruppe sind Pflichtfelder.</string>
     <string name="error_machine_exists">Eine Maschine mit diesem Namen existiert bereits.</string>
+    <string name="dialog_delete_machine_title">Maschine löschen</string>
+    <string name="dialog_delete_machine_confirm">"%1$s" löschen? Sie verschwindet aus dem Katalog und allen Templates. Deine Trainings-Historie bleibt vollständig lesbar — die Maschine wird nur aus allen Listen ausgeblendet.</string>
+    <string name="machine_deleted_history_kept">"%1$s" gelöscht. Deine Historie bleibt vollständig erhalten.</string>
+    <string name="machine_delete_blocked_active_workout">Diese Maschine ist Teil des aktuell laufenden Workouts. Beende das Workout, bevor du sie löschst.</string>
+    <string name="swipe_delete_hint">Nach links wischen zum Löschen</string>
     <string name="dialog_edit_machine_title">Maschine bearbeiten</string>
     <string name="btn_save">Speichern</string>
     <string name="btn_cancel">Abbrechen</string>
@@ -70,6 +75,10 @@
     <string name="action_remove">Entfernen</string>
     <string name="dialog_select_machine_title">Übung aus Katalog auswählen</string>
     <string name="no_machines_in_catalog">Keine Maschinen im Katalog vorhanden. Bitte lege zuerst welche an.</string>
+    <string name="dialog_delete_template_title">Template löschen</string>
+    <string name="dialog_delete_template_confirm">Template "%1$s" löschen? Zugeordnete Maschinen und die Trainings-Historie bleiben unberührt.</string>
+    <string name="template_deleted">Template "%1$s" gelöscht.</string>
+    <string name="template_delete_blocked_active_workout">Ein Workout auf Basis dieses Templates läuft gerade. Beende es, bevor du das Template löschst.</string>
 
     <!-- History Screen -->
     <string name="history_title">Trainingshistorie</string>

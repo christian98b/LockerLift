@@ -112,12 +112,25 @@ object SyncIngestionEngine {
         catalogJson: String
     ): Int {
         val machines = SyncPayloadSerializer.decodeMachines(catalogJson)
+        val machineDao = database.machineDao()
+        // Issue #40: machines missing from the incoming catalog were deleted
+        // on the phone — soft-delete them locally so they disappear from the
+        // watch catalog too. Historical sets remain untouched.
+        val incomingIds = machines.map { it.id }.toSet()
+        for (localMachine in machineDao.getAllMachines()) {
+            if (localMachine.id !in incomingIds) {
+                machineDao.softDeleteMachine(localMachine.id, System.currentTimeMillis())
+            }
+        }
         if (machines.isNotEmpty()) {
             // Use upsert to handle existing machines gracefully
-            val machineDao = database.machineDao()
             for (machine in machines) {
                 val existingMachine = machineDao.getMachineByName(machine.name)
-                if (existingMachine == null) {
+                val deletedMachine = machineDao.getMachineByNameIncludingDeleted(machine.name)
+                if (deletedMachine?.isDeleted == true) {
+                    // Locally soft-deleted machines (Issue #40) must not be
+                    // resurrected by an incoming master catalog sync.
+                } else if (existingMachine == null) {
                     machineDao.insertMachine(machine.toEntity())
                 } else {
                     // Update existing machine if needed
@@ -155,6 +168,12 @@ object SyncIngestionEngine {
         }
 
         for (payload in payloads) {
+            val existing = database.workoutTemplateDao().getTemplateEntityById(payload.template.id)
+            if (existing?.isDeleted == true) {
+                // Locally soft-deleted templates (Issue #40) must not be
+                // resurrected by an incoming template sync.
+                continue
+            }
             database.workoutTemplateDao().saveTemplateWithMachines(
                 template = payload.template.toEntity(),
                 machineIdsInOrder = payload.machineIdsInOrder

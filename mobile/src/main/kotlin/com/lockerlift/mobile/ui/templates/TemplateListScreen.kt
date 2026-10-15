@@ -1,5 +1,6 @@
 package com.lockerlift.mobile.ui.templates
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +13,8 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +35,7 @@ import com.lockerlift.core.sync.WorkoutTemplatePayload
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
 import com.lockerlift.mobile.sync.MobileMasterDataSync
+import com.lockerlift.core.database.state.ActiveSessionStateRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -56,7 +60,10 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
     var showMachinePicker by remember { mutableStateOf(false) }
 
     var isRefreshing by remember { mutableStateOf(false) }
+    var deleteTemplateCandidate by remember { mutableStateOf<WorkoutTemplateWithMachines?>(null) }
+    var infoMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val activeSessionRepository = remember { ActiveSessionStateRepository(app.database.activeSessionStateDao()) }
 
     LaunchedEffect(editingTemplate) {
         editingTemplate?.let { item ->
@@ -132,6 +139,35 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
             ) {
                 items(templatesState, key = { it.template.id }) { item ->
                     val template = item.template.toDomainModel()
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                deleteTemplateCandidate = item
+                            }
+                            false
+                        }
+                    )
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        MaterialTheme.colorScheme.errorContainer,
+                                        MaterialTheme.shapes.medium
+                                    ),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.btn_delete),
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    ) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -156,8 +192,53 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                             )
                         }
                     }
+                    }
                 }
             }
+        }
+
+        LaunchedEffect(infoMessage) {
+            infoMessage?.let {
+                snackbarHostState.showSnackbar(it)
+                infoMessage = null
+            }
+        }
+
+        // Delete Template Confirmation Dialog (Issue #40)
+        val templateToDelete = deleteTemplateCandidate
+        if (templateToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { deleteTemplateCandidate = null },
+                title = { Text(stringResource(R.string.dialog_delete_template_title)) },
+                text = { Text(stringResource(R.string.dialog_delete_template_confirm, templateToDelete.template.name)) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val target = deleteTemplateCandidate
+                            deleteTemplateCandidate = null
+                            if (target != null) {
+                                coroutineScope.launch {
+                                    val activeTemplateId = activeSessionRepository.loadActiveTemplateId()
+                                    if (activeTemplateId == target.template.id) {
+                                        infoMessage = context.getString(R.string.template_delete_blocked_active_workout)
+                                    } else {
+                                        templateDao.softDeleteTemplateWithCrossRefs(target.template.id)
+                                        syncAllTemplatesToWear()
+                                        infoMessage = context.getString(R.string.template_deleted, target.template.name)
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.btn_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteTemplateCandidate = null }) {
+                        Text(stringResource(R.string.btn_cancel))
+                    }
+                }
+            )
         }
 
         // Create New Template Dialog

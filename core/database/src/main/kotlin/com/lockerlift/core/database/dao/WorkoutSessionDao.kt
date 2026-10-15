@@ -28,6 +28,27 @@ interface WorkoutSessionDao {
     @Query("SELECT * FROM workout_sessions WHERE end_time IS NULL ORDER BY start_time DESC LIMIT 1")
     suspend fun getActiveSessionWithDetails(): WorkoutSessionWithDetails?
 
+    /**
+     * Returns the template id of the currently active workout session, if a
+     * workout is running and was started from a template (Issue #40).
+     */
+    @Query("SELECT template_id FROM workout_sessions WHERE end_time IS NULL ORDER BY start_time DESC LIMIT 1")
+    suspend fun getActiveSessionTemplateId(): String?
+
+    /**
+     * Returns the session machine instance for the given machine in the
+     * currently active (not yet finished) workout, if any (Issue #40).
+     */
+    @Query(
+        """
+        SELECT smi.* FROM session_machine_instances smi
+        INNER JOIN workout_sessions s ON smi.session_id = s.id
+        WHERE s.end_time IS NULL AND smi.machine_id = :machineId
+        LIMIT 1
+        """
+    )
+    suspend fun getActiveMachineInstanceByMachineId(machineId: String): SessionMachineInstanceEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSession(session: WorkoutSessionEntity)
 
