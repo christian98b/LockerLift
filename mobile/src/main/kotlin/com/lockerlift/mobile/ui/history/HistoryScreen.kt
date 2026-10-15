@@ -28,6 +28,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.lockerlift.core.database.entity.*
 import com.lockerlift.core.model.WorkoutLogic
+import com.lockerlift.core.model.WeightConversion
 import com.lockerlift.core.database.model.WorkoutSessionWithDetails
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
@@ -194,8 +195,9 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
                             item.machineInstances.forEach { instanceWithDetails ->
                                 val machineName = instanceWithDetails.machine.name
                                 val sets = instanceWithDetails.sets.sortedBy { it.setNumber }
+                                val unitSuffix = WeightConversion.unitSuffix(instanceWithDetails.machine.weightUnit)
                                 val setsSummary = sets.joinToString(", ") {
-                                    "${WorkoutLogic.formatWeight(it.weightKg)}kg × ${it.reps}"
+                                    "${WeightConversion.formatWeightForUnit(it.weightKg, instanceWithDetails.machine.weightUnit)}$unitSuffix × ${it.reps}"
                                 }
 
                                 Text(

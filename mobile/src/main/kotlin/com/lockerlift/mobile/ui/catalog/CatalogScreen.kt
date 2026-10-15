@@ -23,6 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.MachineEntity
+import com.lockerlift.core.model.WeightUnit
+import com.lockerlift.core.model.WeightConversion
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
@@ -49,6 +51,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var muscleGroup by remember { mutableStateOf("") }
     var settingsNote by remember { mutableStateOf("") }
     var incrementKgText by remember { mutableStateOf("2.5") }
+    var addWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var deleteCandidate by remember { mutableStateOf<MachineEntity?>(null) }
@@ -60,6 +63,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var editMuscleGroup by remember { mutableStateOf("") }
     var editSettingsNote by remember { mutableStateOf("") }
     var editIncrementKgText by remember { mutableStateOf("2.5") }
+    var editWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
     var editErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val errorRequiredFields = stringResource(R.string.error_required_fields)
@@ -76,6 +80,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 machineName = ""
                 muscleGroup = ""
                 settingsNote = ""
+                incrementKgText = "2.5"
+                addWeightUnit = WeightUnit.KG
                 errorMessage = null
                 showAddDialog = true
             }) {
@@ -130,7 +136,11 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             editMachineName = machineEntity.name
                             editMuscleGroup = machineEntity.targetMuscleGroup
                             editSettingsNote = machineEntity.machineSettingsNote ?: ""
-                            editIncrementKgText = machineEntity.defaultIncrementKg.toString()
+                            editIncrementKgText = WeightConversion.fromKg(
+                                machineEntity.defaultIncrementKg,
+                                machineEntity.weightUnit
+                            ).toString()
+                            editWeightUnit = machineEntity.weightUnit
                             editErrorMessage = null
                         },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -151,7 +161,13 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             )
                         }
                         Text(
-                            text = stringResource(R.string.increment_format, machine.defaultIncrementKg.toString()),
+                            text = stringResource(
+                                R.string.increment_format,
+                                WeightConversion.formatWeightForUnit(
+                                    machine.defaultIncrementKg,
+                                    machine.weightUnit
+                                ) + " " + WeightConversion.unitSuffix(machine.weightUnit)
+                            ),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -234,10 +250,32 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_settings_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Row(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeightUnitSelector(
+                                selected = addWeightUnit,
+                                onSelected = { unit ->
+                                    val kg = WeightConversion.toKg(
+                                        incrementKgText.toFloatOrNull() ?: 2.5f,
+                                        addWeightUnit
+                                    )
+                                    addWeightUnit = unit
+                                    incrementKgText = WeightConversion.formatWeight(
+                                        WeightConversion.fromKg(kg, unit)
+                                    )
+                                }
+                            )
+                        }
                         OutlinedTextField(
                             value = incrementKgText,
                             onValueChange = { incrementKgText = it },
-                            label = { Text(stringResource(R.string.hint_increment)) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        R.string.hint_increment_unit_format,
+                                        WeightConversion.unitSuffix(addWeightUnit)
+                                    )
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                         val currentErrorMessage = errorMessage
@@ -252,7 +290,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             name = machineName,
                             muscleGroup = muscleGroup,
                             settingsNote = settingsNote,
-                            incrementKgText = incrementKgText
+                            incrementKgText = incrementKgText,
+                            weightUnit = addWeightUnit
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> errorMessage = errorRequiredFields
@@ -305,10 +344,32 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             label = { Text(stringResource(R.string.hint_settings_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Row(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WeightUnitSelector(
+                                selected = editWeightUnit,
+                                onSelected = { unit ->
+                                    val currentKg = WeightConversion.toKg(
+                                        editIncrementKgText.toFloatOrNull() ?: 2.5f,
+                                        editWeightUnit
+                                    )
+                                    editWeightUnit = unit
+                                    editIncrementKgText = WeightConversion.formatWeight(
+                                        WeightConversion.fromKg(currentKg, unit)
+                                    )
+                                }
+                            )
+                        }
                         OutlinedTextField(
                             value = editIncrementKgText,
                             onValueChange = { editIncrementKgText = it },
-                            label = { Text(stringResource(R.string.hint_increment)) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        R.string.hint_increment_unit_format,
+                                        WeightConversion.unitSuffix(editWeightUnit)
+                                    )
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                         val currentEditErrorMessage = editErrorMessage
@@ -325,7 +386,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             name = editMachineName,
                             muscleGroup = editMuscleGroup,
                             settingsNote = editSettingsNote,
-                            incrementKgText = editIncrementKgText
+                            incrementKgText = editIncrementKgText,
+                            weightUnit = editWeightUnit
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> editErrorMessage = errorRequiredFields
@@ -402,6 +464,22 @@ private fun MuscleGroupAutocompleteField(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WeightUnitSelector(
+    selected: WeightUnit,
+    onSelected: (WeightUnit) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(WeightUnit.KG, WeightUnit.LBS).forEach { unit ->
+            FilterChip(
+                selected = selected == unit,
+                onClick = { onSelected(unit) },
+                label = { Text(WeightConversion.unitSuffix(unit)) }
+            )
         }
     }
 }

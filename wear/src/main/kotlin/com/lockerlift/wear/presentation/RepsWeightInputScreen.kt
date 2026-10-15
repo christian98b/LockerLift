@@ -23,6 +23,8 @@ import androidx.wear.compose.material3.CompactButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.lockerlift.core.model.Machine
+import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
 import com.lockerlift.wear.R
@@ -42,7 +44,9 @@ fun RepsWeightInputScreen(
     onDeleteSet: (() -> Unit)? = null,
     onCancel: () -> Unit
 ) {
-    var weight by remember(lastWeight) { mutableFloatStateOf(WearWorkoutLogic.clampWeight(lastWeight)) }
+    val unit = machine.weightUnit
+    val unitSuffix = WeightConversion.unitSuffix(unit)
+    var weightKg by remember(lastWeight) { mutableFloatStateOf(WearWorkoutLogic.clampWeight(lastWeight)) }
     var reps by remember(lastReps) { mutableIntStateOf(WearWorkoutLogic.clampReps(lastReps)) }
     val increment = machine.defaultIncrementKg
     val isProgressionProposed = !isEditing && WearWorkoutLogic.isProgressionProposed(reps)
@@ -116,7 +120,7 @@ fun RepsWeightInputScreen(
             item {
                 Card(
                     onClick = {
-                        weight = WearWorkoutLogic.calculateNextWeight(weight, increment, true)
+                        weightKg = WearWorkoutLogic.calculateNextWeight(weightKg, increment, true)
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
@@ -124,7 +128,7 @@ fun RepsWeightInputScreen(
                     Text(
                         text = stringResource(
                             R.string.progression_suggestion_format,
-                            WearWorkoutLogic.formatWeight(increment)
+                            WeightConversion.formatWeightForUnit(increment, unit)
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -142,8 +146,8 @@ fun RepsWeightInputScreen(
             ) {
                 Button(
                     onClick = {
-                        if (weight > increment) {
-                            weight = WearWorkoutLogic.clampWeight(weight - increment)
+                        if (weightKg > increment) {
+                            weightKg = WearWorkoutLogic.clampWeight(weightKg - increment)
                         }
                     },
                     modifier = Modifier.size(36.dp)
@@ -153,7 +157,7 @@ fun RepsWeightInputScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${WearWorkoutLogic.formatWeight(weight)} kg",
+                        text = "${WeightConversion.formatWeightForUnit(weightKg, unit)} $unitSuffix",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -161,7 +165,7 @@ fun RepsWeightInputScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = {
-                        weight = WearWorkoutLogic.clampWeight(weight + increment)
+                        weightKg = WearWorkoutLogic.clampWeight(weightKg + increment)
                     },
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -214,7 +218,7 @@ fun RepsWeightInputScreen(
                         sessionMachineId = "", // To be linked by caller
                         setNumber = setNumber,
                         reps = WearWorkoutLogic.clampReps(reps),
-                        weightKg = WearWorkoutLogic.clampWeight(weight),
+                        weightKg = WearWorkoutLogic.clampWeight(weightKg),
                         cadence = cadence,
                         setType = SetType.NORMAL
                     )

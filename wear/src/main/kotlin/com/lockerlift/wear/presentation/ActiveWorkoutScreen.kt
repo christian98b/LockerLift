@@ -21,6 +21,7 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.CompactButton
+import androidx.wear.compose.material3.CompactChip
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -413,6 +414,7 @@ fun ActiveWorkoutScreen(
     if (currentSubScreen == ActiveWorkoutSubScreen.CREATE_MACHINE) {
         var machineName by remember { mutableStateOf("") }
         var incrementKg by remember { mutableFloatStateOf(2.5f) }
+        var weightUnit by remember { mutableStateOf(WeightUnit.KG) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var selectedMuscleGroup by remember { mutableStateOf("") }
         val knownMuscleGroups = catalogMachines
@@ -531,6 +533,35 @@ fun ActiveWorkoutScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    listOf(
+                        WeightUnit.KG,
+                        WeightUnit.LBS
+                    ).forEach { unitOption ->
+                        val isSelected = weightUnit == unitOption
+                        CompactChip(
+                            label = {
+                                Text(
+                                    WeightConversion.unitSuffix(unitOption) +
+                                        if (isSelected) " ✓" else "",
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            onClick = {
+                                val currentKg = WeightConversion.toKg(incrementKg, weightUnit)
+                                weightUnit = unitOption
+                                incrementKg = WeightConversion.fromKg(currentKg, unitOption)
+                            },
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        )
+                    }
+                }
+            }
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Button(
                         onClick = { if (incrementKg > 1.25f) incrementKg -= 1.25f },
                         modifier = Modifier.size(32.dp)
@@ -539,7 +570,9 @@ fun ActiveWorkoutScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${WearWorkoutLogic.formatWeight(incrementKg)} kg",
+                        text = WeightConversion.formatWeightForUnit(
+                            incrementKg, weightUnit
+                        ) + " " + WeightConversion.unitSuffix(weightUnit),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -584,6 +617,7 @@ fun ActiveWorkoutScreen(
                                 viewModel.createMachine(
                                     name = machineName,
                                     incrementKg = incrementKg,
+                                    weightUnit = weightUnit,
                                     targetMuscleGroup = selectedMuscleGroup.ifBlank { fullBodyMuscleGroup },
                                     existingMachineNames = catalogMachines.map { it.name },
                                     mode = createMachineMode,
@@ -928,7 +962,7 @@ fun ActiveWorkoutScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "S${set.setNumber}: ${WearWorkoutLogic.formatWeight(set.weightKg)} kg × ${set.reps}",
+                                            text = "S${set.setNumber}: ${WeightConversion.formatWeightForUnit(set.weightKg, machine?.weightUnit ?: WeightUnit.KG)} ${WeightConversion.unitSuffix(machine?.weightUnit ?: WeightUnit.KG)} × ${set.reps}",
                                             fontSize = 11.sp
                                         )
                                         Text(

@@ -300,6 +300,8 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     // Double progression proposal for next set
                     val lastSet = sets.lastOrNull()
                     val showProgressionSuggestion = lastSet != null && WorkoutLogic.isProgressionProposed(lastSet.reps)
+                    val unit = machine?.weightUnit ?: WeightUnit.KG
+                    val unitSuffix = WeightConversion.unitSuffix(unit)
                     val increment = machine?.defaultIncrementKg ?: 2.5f
                     val overloadedWeight = if (lastSet != null) WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true) else 0f
 
@@ -412,7 +414,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         Text(
                                             text = stringResource(
                                                 R.string.progression_suggestion_format,
-                                                WorkoutLogic.formatWeight(overloadedWeight)
+                                                WeightConversion.formatWeightForUnit(overloadedWeight, unit) + " " + unitSuffix
                                             ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -473,7 +475,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             sets.forEachIndexed { setIdx, set ->
                                 val prevSet = lastHistSets.getOrNull(setIdx)
                                 val prevText = if (prevSet != null) {
-                                    "${WorkoutLogic.formatWeight(prevSet.weightKg)} × ${prevSet.reps}"
+                                    "${WeightConversion.formatWeightForUnit(prevSet.weightKg, unit)} $unitSuffix × ${prevSet.reps}"
                                 } else "—"
 
                                 Surface(
@@ -506,7 +508,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                             modifier = Modifier.weight(1f)
                                         )
                                         Text(
-                                            text = "${WorkoutLogic.formatWeight(set.weightKg)}",
+                                            text = "${WeightConversion.formatWeightForUnit(set.weightKg, unit)} $unitSuffix",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             modifier = Modifier.width(68.dp)
@@ -644,7 +646,9 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             )
         }
 
-        var weightInput by remember(prefillWeight) { mutableStateOf(WorkoutLogic.formatWeight(prefillWeight)) }
+        val unit = machine?.weightUnit ?: WeightUnit.KG
+        val unitSuffix = WeightConversion.unitSuffix(unit)
+        var weightInput by remember(prefillWeight) { mutableStateOf(WeightConversion.formatWeightForUnit(prefillWeight, unit)) }
         var repsInput by remember(prefillReps) { mutableStateOf(prefillReps.toString()) }
 
         val currentWeight = weightInput.toFloatOrNull() ?: 0f
@@ -673,7 +677,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 Text(
                                     text = stringResource(
                                         R.string.progression_suggestion_format,
-                                        WorkoutLogic.formatWeight(overloadedWeight)
+                                        WeightConversion.formatWeightForUnit(overloadedWeight, unit) + " " + unitSuffix
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -681,14 +685,14 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Button(
                                     onClick = {
-                                        weightInput = WorkoutLogic.formatWeight(overloadedWeight)
+                                        weightInput = WeightConversion.formatWeightForUnit(overloadedWeight, unit)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                                 ) {
                                     Text(
                                         text = stringResource(
                                             R.string.btn_apply_overload,
-                                            WorkoutLogic.formatWeight(increment)
+                                            WeightConversion.formatWeightForUnit(increment, unit)
                                         )
                                     )
                                 }
@@ -697,7 +701,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     }
 
                     // Weight Input & quick buttons
-                    Text(text = stringResource(R.string.weight_label), fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(R.string.weight_label_unit_format, unitSuffix),
+                        fontWeight = FontWeight.Bold
+                    )
                     OutlinedTextField(
                         value = weightInput,
                         onValueChange = { weightInput = it },
@@ -707,6 +714,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     WeightStepperControls(
                         weightInput = weightInput,
                         incrementKg = increment,
+                        unit = unit,
                         onWeightChanged = { weightInput = it }
                     )
 
@@ -727,7 +735,9 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        val finalWeight = WorkoutLogic.clampWeight(weightInput.toFloatOrNull() ?: 0f)
+                        val finalWeight = WorkoutLogic.clampWeight(
+                            WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
+                        )
                         val finalReps = WorkoutLogic.clampReps(repsInput.toIntOrNull() ?: 1)
 
                         val newSet = WorkoutSet(
@@ -766,10 +776,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val targetInstance = sessionInstances.find { it.id == currentEditingInstanceId }
         val machine = machines.find { it.id == targetInstance?.machineId }
         val machineName = machine?.name ?: ""
+        val editUnit = machine?.weightUnit ?: WeightUnit.KG
+        val editUnitSuffix = WeightConversion.unitSuffix(editUnit)
         val increment = machine?.defaultIncrementKg ?: 2.5f
 
         if (setToEdit != null) {
-            var editWeightInput by remember(setToEdit) { mutableStateOf(WorkoutLogic.formatWeight(setToEdit.weightKg)) }
+            var editWeightInput by remember(setToEdit) { mutableStateOf(WeightConversion.formatWeightForUnit(setToEdit.weightKg, editUnit)) }
             var editRepsInput by remember(setToEdit) { mutableStateOf(setToEdit.reps.toString()) }
 
             AlertDialog(
@@ -786,7 +798,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Weight input & quick steppers
-                        Text(text = stringResource(R.string.weight_label), fontWeight = FontWeight.Bold)
+                        Text(
+                            text = stringResource(R.string.weight_label_unit_format, editUnitSuffix),
+                            fontWeight = FontWeight.Bold
+                        )
                         OutlinedTextField(
                             value = editWeightInput,
                             onValueChange = { editWeightInput = it },
@@ -796,6 +811,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         WeightStepperControls(
                             weightInput = editWeightInput,
                             incrementKg = increment,
+                            unit = editUnit,
                             onWeightChanged = { editWeightInput = it }
                         )
 
@@ -831,7 +847,9 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 confirmButton = {
                     Button(
                         onClick = {
-                            val finalWeight = WorkoutLogic.clampWeight(editWeightInput.toFloatOrNull() ?: 0f)
+                            val finalWeight = WorkoutLogic.clampWeight(
+                                WeightConversion.toKg(editWeightInput.toFloatOrNull() ?: 0f, editUnit)
+                            )
                             val finalReps = WorkoutLogic.clampReps(editRepsInput.toIntOrNull() ?: 1)
 
                             viewModel.updateSet(
@@ -1141,6 +1159,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 private fun WeightStepperControls(
     weightInput: String,
     incrementKg: Float,
+    unit: WeightUnit,
     onWeightChanged: (String) -> Unit
 ) {
     val (minusSteps, plusSteps) = remember(incrementKg) {
@@ -1156,9 +1175,9 @@ private fun WeightStepperControls(
             minusSteps.forEach { delta ->
                 OutlinedButton(
                     onClick = {
-                        val current = weightInput.toFloatOrNull() ?: 0f
-                        val newW = WorkoutLogic.clampWeight(current + delta)
-                        onWeightChanged(WorkoutLogic.formatWeight(newW))
+                        val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
+                        val newW = WorkoutLogic.clampWeight(currentKg + delta)
+                        onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)
@@ -1182,9 +1201,9 @@ private fun WeightStepperControls(
             plusSteps.forEach { delta ->
                 OutlinedButton(
                     onClick = {
-                        val current = weightInput.toFloatOrNull() ?: 0f
-                        val newW = WorkoutLogic.clampWeight(current + delta)
-                        onWeightChanged(WorkoutLogic.formatWeight(newW))
+                        val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
+                        val newW = WorkoutLogic.clampWeight(currentKg + delta)
+                        onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)

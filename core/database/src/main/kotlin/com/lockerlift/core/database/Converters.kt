@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.lockerlift.core.model.QueueStatus
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.SyncStatus
+import com.lockerlift.core.model.WeightUnit
 
 class Converters {
     @TypeConverter
@@ -30,3 +31,11 @@ class Converters {
         QueueStatus.valueOf(value)
     }.getOrDefault(QueueStatus.PENDING)
 }
+
+    @TypeConverter
+    fun fromWeightUnit(value: WeightUnit): String = value.name
+
+    @TypeConverter
+    fun toWeightUnit(value: String): WeightUnit = runCatching {
+        WeightUnit.valueOf(value)
+    }.getOrDefault(WeightUnit.KG)

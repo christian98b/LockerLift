@@ -39,7 +39,7 @@
     <string name="add_machine">Maschine hinzufügen</string>
     <string name="muscle_group_format">Muskelgruppe: %1$s</string>
     <string name="setup_format">Setup: %1$s</string>
-    <string name="increment_format">Schrittweite: %1$s kg</string>
+    <string name="increment_format">Schrittweite: %1$s</string>
     <string name="dialog_new_machine_title">Neue Maschine anlegen</string>
     <string name="hint_machine_name">Name (z.B. Latzug)</string>
     <string name="hint_muscle_group">Zielmuskelgruppe (z.B. Rücken)</string>
@@ -144,9 +144,11 @@
     <string name="set_format">Satz %1$d: %2$s kg × %3$d</string>
     <string name="log_set_dialog_title">Satz %1$d eintragen • %2$s</string>
     <string name="weight_label">Gewicht (kg)</string>
+    <string name="weight_label_unit_format">Gewicht (%1$s)</string>
+    <string name="hint_increment_unit_format">Schrittweite in %1$s (z.B. 2.5)</string>
     <string name="reps_label">Wiederholungen</string>
-    <string name="progression_suggestion_format">Doppelte Progression: Ziel erreicht! Gewicht auf %1$s kg steigern?</string>
-    <string name="btn_apply_overload">+%1$s kg anwenden</string>
+    <string name="progression_suggestion_format">Doppelte Progression: Ziel erreicht! Gewicht auf %1$s steigern?</string>
+    <string name="btn_apply_overload">+%1$s anwenden</string>
     <string name="rest_timer_label">Satzpause</string>
     <string name="rest_timer_seconds_format">Pause: %1$02d:%2$02d</string>
     <string name="finish_workout_dialog_title">Training abschließen</string>
