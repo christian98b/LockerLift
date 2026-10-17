@@ -11,12 +11,16 @@ import com.lockerlift.core.database.security.DatabaseKeyManager
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import com.lockerlift.core.database.dao.ActiveSessionStateDao
+import com.lockerlift.core.database.dao.ActivityEntryDao
+import com.lockerlift.core.database.dao.ActivityTypeDao
 import com.lockerlift.core.database.dao.DeletedSessionDao
 import com.lockerlift.core.database.dao.MachineDao
 import com.lockerlift.core.database.dao.SyncQueueDao
 import com.lockerlift.core.database.dao.WorkoutSessionDao
 import com.lockerlift.core.database.dao.WorkoutTemplateDao
 import com.lockerlift.core.database.entity.ActiveSessionStateEntity
+import com.lockerlift.core.database.entity.ActivityEntryEntity
+import com.lockerlift.core.database.entity.ActivityTypeEntity
 import com.lockerlift.core.database.entity.DeletedSessionEntity
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
@@ -36,9 +40,11 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         WorkoutSetEntity::class,
         SyncQueueEntity::class,
         DeletedSessionEntity::class,
-        ActiveSessionStateEntity::class
+        ActiveSessionStateEntity::class,
+        ActivityTypeEntity::class,
+        ActivityEntryEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -50,9 +56,33 @@ abstract class LockerLiftDatabase : RoomDatabase() {
     abstract fun syncQueueDao(): SyncQueueDao
     abstract fun deletedSessionDao(): DeletedSessionDao
     abstract fun activeSessionStateDao(): ActiveSessionStateDao
+    abstract fun activityTypeDao(): ActivityTypeDao
+    abstract fun activityEntryDao(): ActivityEntryDao
 
     companion object {
         private const val DATABASE_NAME = "lockerlift.db"
+
+        private const val BUILTIN_RUNNING_ID = com.lockerlift.core.model.ActivityType.BUILTIN_RUNNING_ID
+        private const val BUILTIN_BOULDERING_ID = com.lockerlift.core.model.ActivityType.BUILTIN_BOULDERING_ID
+
+        /**
+         * Built-in Running type (Issue #50) seeds two fields: km and time,
+         * per the owner's customization comment on the issue.
+         */
+        private val BUILTIN_RUNNING_FIELDS = listOf(
+            com.lockerlift.core.model.ActivityFieldDefinition(
+                id = "field-builtin-running-km",
+                name = "km",
+                type = com.lockerlift.core.model.ActivityFieldType.NUMBER
+            ),
+            com.lockerlift.core.model.ActivityFieldDefinition(
+                id = "field-builtin-running-time",
+                name = "time",
+                type = com.lockerlift.core.model.ActivityFieldType.TEXT
+            )
+        )
+        private val BUILTIN_RUNNING_FIELDS_JSON =
+            com.lockerlift.core.model.ActivityType.fieldsToJson(BUILTIN_RUNNING_FIELDS)
 
         /**
          * v4 adds soft-delete flags (Issue #40): machines.is_deleted and
@@ -71,6 +101,62 @@ abstract class LockerLiftDatabase : RoomDatabase() {
          * selected weight means more load; the default keeps existing data
          * untouched.
          */
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `activity_types` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `fields_json` TEXT NOT NULL,
+                        `is_builtin` INTEGER NOT NULL,
+                        `created_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `activity_entries` (
+                        `id` TEXT NOT NULL,
+                        `activity_type_id` TEXT NOT NULL,
+                        `date` INTEGER NOT NULL,
+                        `field_values_json` TEXT NOT NULL,
+                        `notes` TEXT,
+                        `created_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`activity_type_id`) REFERENCES `activity_types`(`id`)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_activity_entries_activity_type_id` " +
+                        "ON `activity_entries` (`activity_type_id`)"
+                )
+                db.execSQL(
+                    "INSERT OR IGNORE INTO `activity_types` (`id`, `name`, `fields_json`, `is_builtin`, `created_at`) " +
+                        "VALUES (?, ?, ?, 1, ?)",
+                    arrayOf(
+                        BUILTIN_RUNNING_ID,
+                        "Running",
+                        BUILTIN_RUNNING_FIELDS_JSON,
+                        System.currentTimeMillis()
+                    )
+                )
+                db.execSQL(
+                    "INSERT OR IGNORE INTO `activity_types` (`id`, `name`, `fields_json`, `is_builtin`, `created_at`) " +
+                        "VALUES (?, ?, ?, 1, ?)",
+                    arrayOf(
+                        BUILTIN_BOULDERING_ID,
+                        "Bouldering",
+                        "[]",
+                        System.currentTimeMillis()
+                    )
+                )
+            }
+        }
+
         private val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE machines ADD COLUMN weight_direction TEXT NOT NULL DEFAULT 'NORMAL'")
@@ -144,7 +230,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
         }
 

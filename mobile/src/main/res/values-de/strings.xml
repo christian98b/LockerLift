@@ -9,6 +9,7 @@
     <string name="tab_settings">Einstellungen</string>
 
     <!-- Insights Dashboard -->
+    <string name="tab_activities">Aktivitäten</string>
     <string name="tab_insights">Auswertung</string>
     <string name="insights_title">Auswertung</string>
     <string name="insights_edit_dashboard">Dashboard bearbeiten</string>
@@ -220,4 +221,25 @@
     <string name="licenses_content_not_embedded">Vollständiger Lizenztext nicht eingebettet; stattdessen wird die Lizenz-URL angezeigt.</string>
     <string name="settings_licenses_section">Open-Source-Lizenzen</string>
     <string name="settings_btn_open_licenses">Open-Source-Lizenzen anzeigen</string>
+    <string name="activity_log_title">Aktivität erfassen</string>
+    <string name="activity_edit_title">Aktivität bearbeiten</string>
+    <string name="activity_manage_types_title">Aktivitätsarten</string>
+    <string name="activity_type_label">Aktivitätsart</string>
+    <string name="activity_notes_label">Notizen (optional)</string>
+    <string name="activity_btn_log">Erfassen</string>
+    <string name="activity_btn_save">Speichern</string>
+    <string name="activity_field_name_hint">Feldname (z. B. km, Zeit)</string>
+    <string name="activity_field_type_number">Zahl</string>
+    <string name="activity_field_type_text">Text</string>
+    <string name="activity_add_field">Feld hinzufügen</string>
+    <string name="activity_create_type">Aktivitätsart erstellen</string>
+    <string name="activity_type_name_hint">Name (z. B. Schwimmen)</string>
+    <string name="activity_empty">Noch keine Aktivitäten erfasst.</string>
+    <string name="activity_delete_dialog_title">Aktivität löschen?</string>
+    <string name="activity_delete_dialog_confirm">Dieser Aktivitätseintrag wird aus dem Journal entfernt.</string>
+    <string name="activity_type_builtin_badge">Standard</string>
+    <string name="activity_delete_type_dialog_title">Aktivitätsart löschen?</string>
+    <string name="activity_delete_type_dialog_confirm">Alle erfassten Einträge dieser Art werden ebenfalls gelöscht.</string>
+    <string name="activity_date_label">Datum</string>
+    <string name="activity_invalid_number">Bitte eine gültige Zahl eingeben.</string>
 </resources>

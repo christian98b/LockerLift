@@ -9,6 +9,7 @@
     <string name="tab_settings">Settings</string>
 
     <!-- Insights Dashboard -->
+    <string name="tab_activities">Activities</string>
     <string name="tab_insights">Insights</string>
     <string name="insights_title">Insights</string>
     <string name="insights_edit_dashboard">Edit dashboard</string>
@@ -220,4 +221,25 @@
     <string name="licenses_content_not_embedded">Full license text not embedded; the license URL is shown instead.</string>
     <string name="settings_licenses_section">Open-Source Licenses</string>
     <string name="settings_btn_open_licenses">Show Open-Source Licenses</string>
+    <string name="activity_log_title">Log Activity</string>
+    <string name="activity_edit_title">Edit Activity</string>
+    <string name="activity_manage_types_title">Activity Types</string>
+    <string name="activity_type_label">Activity type</string>
+    <string name="activity_notes_label">Notes (optional)</string>
+    <string name="activity_btn_log">Log</string>
+    <string name="activity_btn_save">Save</string>
+    <string name="activity_field_name_hint">Field name (e.g. km, time)</string>
+    <string name="activity_field_type_number">Number</string>
+    <string name="activity_field_type_text">Text</string>
+    <string name="activity_add_field">Add field</string>
+    <string name="activity_create_type">Create activity type</string>
+    <string name="activity_type_name_hint">Name (e.g. Swimming)</string>
+    <string name="activity_empty">No activities logged yet.</string>
+    <string name="activity_delete_dialog_title">Delete activity?</string>
+    <string name="activity_delete_dialog_confirm">This activity entry will be removed from the journal.</string>
+    <string name="activity_type_builtin_badge">Built-in</string>
+    <string name="activity_delete_type_dialog_title">Delete activity type?</string>
+    <string name="activity_delete_type_dialog_confirm">All logged entries of this type will be deleted too.</string>
+    <string name="activity_date_label">Date</string>
+    <string name="activity_invalid_number">Please enter a valid number.</string>
 </resources>

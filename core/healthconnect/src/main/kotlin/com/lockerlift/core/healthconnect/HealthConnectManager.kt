@@ -97,6 +97,27 @@ class HealthConnectManager(
         }.getOrDefault(false)
     }
 
+    suspend fun deleteActivityEntry(entryId: String): Boolean {
+        return deleteWorkoutSession(entryId)
+    }
+
+    suspend fun exportActivityEntry(
+        entry: com.lockerlift.core.model.ActivityEntry,
+        typeName: String
+    ): Boolean {
+        val client = healthConnectClient ?: return false
+        return runCatching {
+            val granted = client.permissionController.getGrantedPermissions()
+            if (!granted.contains(sessionPermission)) {
+                return false
+            }
+            client.insertRecords(
+                listOf(ActivityRecordBuilder.buildActivitySessionRecord(entry, typeName))
+            )
+            true
+        }.getOrDefault(false)
+    }
+
     suspend fun deleteWorkoutSession(sessionId: String): Boolean {
         val client = healthConnectClient ?: return false
         return runCatching {
