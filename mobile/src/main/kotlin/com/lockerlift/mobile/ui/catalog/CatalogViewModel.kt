@@ -147,12 +147,14 @@ class CatalogViewModel(
                 ),
                 weightUnit = weightUnit,
                 weightDirection = weightDirection,
-                weightStackValuesKg = if (current.weightStackValuesKg != null && stackValuesText.isBlank()) {
-                    current.weightStackValuesKg.let { WeightStack.scaleValuesFromJson(it) }
+                weightStackValuesKg = if (stackValuesText.isBlank()) {
+                    current.weightStackValuesKg
                 } else {
-                    WeightStack.scaleValuesToKg(
-                        WeightStack.parseScaleValues(stackValuesText),
-                        weightUnit
+                    WeightStack.scaleValuesToJson(
+                        WeightStack.scaleValuesToKg(
+                            WeightStack.parseScaleValues(stackValuesText),
+                            weightUnit
+                        )
                     )
                 },
                 updatedAt = System.currentTimeMillis()

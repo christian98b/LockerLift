@@ -660,9 +660,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val currentReps = repsInput.toIntOrNull() ?: 0
         val increment = machine?.defaultIncrementKg ?: 2.5f
         val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
-
+        val stackValuesKg = machine?.weightStackValuesKg ?: emptyList()
         val showProgressionSuggestion = WorkoutLogic.isProgressionProposed(currentReps)
-        val overloadedWeight = WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true, weightDirection = weightDirection)
+        val overloadedWeight = WeightConversion.toKg(currentWeight, unit).let { currentKg ->
+            WeightStack.nextProgressionWeight(currentKg, stackValuesKg, weightDirection)
+                ?: WorkoutLogic.calculateNextWeight(currentKg, increment, shouldProgress = true, weightDirection = weightDirection)
+        }
 
         AlertDialog(
             onDismissRequest = { selectedInstanceIndexForSet = -1 },
