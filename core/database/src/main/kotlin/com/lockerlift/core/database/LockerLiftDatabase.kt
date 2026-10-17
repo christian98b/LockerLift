@@ -44,7 +44,7 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         ActivityTypeEntity::class,
         ActivityEntryEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -101,6 +101,18 @@ abstract class LockerLiftDatabase : RoomDatabase() {
          * selected weight means more load; the default keeps existing data
          * untouched.
          */
+        /**
+         * v8 adds the optional weight stack scale (Issue #48):
+         * machines.weight_stack_values_kg (JSON array of cumulative pin
+         * positions in kg). Null default keeps existing machines on the
+         * previous increment-based behavior.
+         */
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE machines ADD COLUMN weight_stack_values_kg TEXT")
+            }
+        }
+
         private val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -230,7 +242,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
         }
 

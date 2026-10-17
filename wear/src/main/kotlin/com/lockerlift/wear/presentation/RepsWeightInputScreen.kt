@@ -24,6 +24,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightStack
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.SetType
 import com.lockerlift.core.model.WorkoutSet
@@ -46,6 +47,8 @@ fun RepsWeightInputScreen(
 ) {
     val unit = machine.weightUnit
     val unitSuffix = WeightConversion.unitSuffix(unit)
+    // Configured weight stack scale (Issue #48): pin positions as printed.
+    val stackValuesKg = machine.weightStackValuesKg
     var weightKg by remember(lastWeight) { mutableFloatStateOf(WearWorkoutLogic.clampWeight(lastWeight)) }
     var reps by remember(lastReps) { mutableIntStateOf(WearWorkoutLogic.clampReps(lastReps)) }
     val increment = machine.defaultIncrementKg
@@ -120,7 +123,9 @@ fun RepsWeightInputScreen(
             item {
                 Card(
                     onClick = {
-                        weightKg = WearWorkoutLogic.calculateNextWeight(
+                        weightKg = WeightStack.nextProgressionWeight(
+                            weightKg, stackValuesKg, machine.weightDirection
+                        ) ?: WearWorkoutLogic.calculateNextWeight(
                             weightKg, increment, true, machine.weightDirection
                         )
                     },
@@ -130,7 +135,10 @@ fun RepsWeightInputScreen(
                     Text(
                         text = stringResource(
                             R.string.progression_suggestion_format,
-                            WeightConversion.formatWeightForUnit(increment, unit)
+                            WeightStack.nextProgressionWeight(
+                                weightKg, stackValuesKg, machine.weightDirection
+                            )?.let { WeightConversion.formatWeightForUnit(it, unit) }
+                                ?: WeightConversion.formatWeightForUnit(increment, unit)
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer

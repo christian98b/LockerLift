@@ -304,7 +304,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     val unitSuffix = WeightConversion.unitSuffix(unit)
                     val increment = machine?.defaultIncrementKg ?: 2.5f
                     val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
-                    val overloadedWeight = if (lastSet != null) WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true, weightDirection = weightDirection) else 0f
+                    val stackValuesKg = machine?.weightStackValuesKg ?: emptyList()
+                    val overloadedWeight = if (lastSet != null) (
+                        WeightStack.nextProgressionWeight(lastSet.weightKg, stackValuesKg, weightDirection)
+                            ?: WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true, weightDirection = weightDirection)
+                        ) else 0f
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -656,9 +660,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val currentReps = repsInput.toIntOrNull() ?: 0
         val increment = machine?.defaultIncrementKg ?: 2.5f
         val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
-
+        val stackValuesKg = machine?.weightStackValuesKg ?: emptyList()
         val showProgressionSuggestion = WorkoutLogic.isProgressionProposed(currentReps)
-        val overloadedWeight = WorkoutLogic.calculateNextWeight(currentWeight, increment, shouldProgress = true, weightDirection = weightDirection)
+        val overloadedWeight = WeightConversion.toKg(currentWeight, unit).let { currentKg ->
+            WeightStack.nextProgressionWeight(currentKg, stackValuesKg, weightDirection)
+                ?: WorkoutLogic.calculateNextWeight(currentKg, increment, shouldProgress = true, weightDirection = weightDirection)
+        }
 
         AlertDialog(
             onDismissRequest = { selectedInstanceIndexForSet = -1 },
@@ -717,6 +724,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                         weightInput = weightInput,
                         incrementKg = increment,
                         unit = unit,
+                        stackValuesKg = stackValuesKg,
                         onWeightChanged = { weightInput = it }
                     )
 
@@ -814,6 +822,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                             weightInput = editWeightInput,
                             incrementKg = increment,
                             unit = editUnit,
+                            stackValuesKg = machine?.weightStackValuesKg ?: emptyList(),
                             onWeightChanged = { editWeightInput = it }
                         )
 
@@ -1162,30 +1171,52 @@ private fun WeightStepperControls(
     weightInput: String,
     incrementKg: Float,
     unit: WeightUnit,
+    stackValuesKg: List<Float> = emptyList(),
     onWeightChanged: (String) -> Unit
 ) {
-    val (minusSteps, plusSteps) = remember(incrementKg) {
-        WorkoutLogic.calculateWeightSteppers(incrementKg)
+    val hasStackScale = stackValuesKg.isNotEmpty()
+    val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
+    // On a configured scale (Issue #48) the steppers jump to the printed
+    // pin positions: -1/-2/-3 and +1/+2/+3 positions on the scale.
+    val minusSteps = if (hasStackScale) {
+        (1..3).mapNotNull { step ->
+            WeightStack.nextScaleValue(currentKg, stackValuesKg, up = false, steps = step)
+        }
+    } else {
+        WorkoutLogic.calculateWeightSteppers(incrementKg).first
     }
-
+    val plusSteps = if (hasStackScale) {
+        (1..3).mapNotNull { step ->
+            WeightStack.nextScaleValue(currentKg, stackValuesKg, up = true, steps = step)
+        }
+    } else {
+        WorkoutLogic.calculateWeightSteppers(incrementKg).second
+    }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Minus row: e.g. -5, -2.5, -1.25
+        // Minus row: e.g. -5, -2.5, -1.25 (or printed scale values)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            minusSteps.forEach { delta ->
+            minusSteps.forEach { target ->
                 OutlinedButton(
                     onClick = {
-                        val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
-                        val newW = WorkoutLogic.clampWeight(currentKg + delta)
-                        onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
+                        if (hasStackScale) {
+                            onWeightChanged(WeightConversion.formatWeightForUnit(target, unit))
+                        } else {
+                            val newW = WorkoutLogic.clampWeight(currentKg + target)
+                            onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
+                        }
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = WorkoutLogic.formatDelta(delta),
+                        text = if (hasStackScale) {
+                            WeightConversion.formatWeightForUnit(target, unit)
+                        } else {
+                            WorkoutLogic.formatDelta(target)
+                        },
                         fontSize = 13.sp,
                         maxLines = 1,
                         softWrap = false,
@@ -1194,24 +1225,30 @@ private fun WeightStepperControls(
                 }
             }
         }
-
-        // Plus row: e.g. +1.25, +2.5, +5
+        // Plus row: e.g. +1.25, +2.5, +5 (or printed scale values)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            plusSteps.forEach { delta ->
+            plusSteps.forEach { target ->
                 OutlinedButton(
                     onClick = {
-                        val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
-                        val newW = WorkoutLogic.clampWeight(currentKg + delta)
-                        onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
+                        if (hasStackScale) {
+                            onWeightChanged(WeightConversion.formatWeightForUnit(target, unit))
+                        } else {
+                            val newW = WorkoutLogic.clampWeight(currentKg + target)
+                            onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
+                        }
                     },
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = WorkoutLogic.formatDelta(delta),
+                        text = if (hasStackScale) {
+                            WeightConversion.formatWeightForUnit(target, unit)
+                        } else {
+                            WorkoutLogic.formatDelta(target)
+                        },
                         fontSize = 13.sp,
                         maxLines = 1,
                         softWrap = false,
@@ -1222,6 +1259,7 @@ private fun WeightStepperControls(
         }
     }
 }
+
 
 @Composable
 private fun RepsStepperControls(

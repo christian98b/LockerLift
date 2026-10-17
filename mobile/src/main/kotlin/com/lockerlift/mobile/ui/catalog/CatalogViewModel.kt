@@ -9,6 +9,7 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightStack
 import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.sync.SyncPayloadSerializer
@@ -76,6 +77,7 @@ class CatalogViewModel(
         incrementKgText: String,
         weightUnit: WeightUnit = WeightUnit.KG,
         weightDirection: WeightDirection = WeightDirection.NORMAL,
+        stackValuesText: String = "",
         onResult: (MachineEditResult) -> Unit
     ) {
         if (name.isBlank() || muscleGroup.isBlank()) {
@@ -97,7 +99,11 @@ class CatalogViewModel(
                     weightUnit
                 ),
                 weightUnit = weightUnit,
-                weightDirection = weightDirection
+                weightDirection = weightDirection,
+                weightStackValuesKg = WeightStack.scaleValuesToKg(
+                    WeightStack.parseScaleValues(stackValuesText),
+                    weightUnit
+                )
             )
             machineDao.insertMachine(newMachine.toEntity())
             syncCatalogToWear()
@@ -117,6 +123,7 @@ class CatalogViewModel(
         incrementKgText: String,
         weightUnit: WeightUnit = WeightUnit.KG,
         weightDirection: WeightDirection = WeightDirection.NORMAL,
+        stackValuesText: String = "",
         onResult: (MachineEditResult) -> Unit
     ) {
         if (name.isBlank() || muscleGroup.isBlank()) {
@@ -140,6 +147,16 @@ class CatalogViewModel(
                 ),
                 weightUnit = weightUnit,
                 weightDirection = weightDirection,
+                weightStackValuesKg = if (stackValuesText.isBlank()) {
+                    current.weightStackValuesKg
+                } else {
+                    WeightStack.scaleValuesToJson(
+                        WeightStack.scaleValuesToKg(
+                            WeightStack.parseScaleValues(stackValuesText),
+                            weightUnit
+                        )
+                    )
+                },
                 updatedAt = System.currentTimeMillis()
             )
             machineDao.updateMachine(updated)

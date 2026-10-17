@@ -22,5 +22,12 @@ data class Machine(
      * Assist-Chin) where less selected weight means more load.
      */
     val weightDirection: WeightDirection = WeightDirection.NORMAL,
+    /**
+     * Optional weight stack scale (Issue #48): the cumulative pin positions
+     * printed on the machine's plates, in kg (converted from the machine's
+     * unit at entry time). Empty means no scale configured and the machine
+     * behaves increment-based as before.
+     */
+    val weightStackValuesKg: List<Float> = emptyList(),
     val updatedAt: Long = System.currentTimeMillis()
 )

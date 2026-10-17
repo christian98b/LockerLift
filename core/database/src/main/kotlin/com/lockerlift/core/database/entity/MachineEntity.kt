@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.WeightDirection
+import com.lockerlift.core.model.WeightStack
 import com.lockerlift.core.model.WeightUnit
 
 @Entity(tableName = "machines")
@@ -50,7 +51,14 @@ data class MachineEntity(
      * workout sets remain readable (AK 2.2.2 semantics).
      */
     @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+    /**
+     * Optional weight stack scale (Issue #48): cumulative pin positions
+     * printed on the plates, stored in kg as JSON array. Null/empty means
+     * increment-based behavior as before.
+     */
+    @ColumnInfo(name = "weight_stack_values_kg")
+    val weightStackValuesKg: String? = null
 )
 
 fun MachineEntity.toDomainModel() = Machine(
@@ -62,7 +70,8 @@ fun MachineEntity.toDomainModel() = Machine(
     defaultCadence = defaultCadence,
     weightUnit = weightUnit,
     weightDirection = weightDirection,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    weightStackValuesKg = weightStackValuesKg?.let { WeightStack.scaleValuesFromJson(it) } ?: emptyList()
 )
 
 fun Machine.toEntity() = MachineEntity(
@@ -74,5 +83,10 @@ fun Machine.toEntity() = MachineEntity(
     defaultCadence = defaultCadence,
     weightUnit = weightUnit,
     weightDirection = weightDirection,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    weightStackValuesKg = if (weightStackValuesKg.isEmpty()) {
+        null
+    } else {
+        WeightStack.scaleValuesToJson(weightStackValuesKg)
+    }
 )

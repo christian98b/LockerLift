@@ -2,7 +2,9 @@ package com.lockerlift.core.database
 
 import com.lockerlift.core.database.entity.*
 import com.lockerlift.core.model.*
+import com.lockerlift.core.model.WeightStack
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -37,6 +39,30 @@ class EntityMappingTest {
 
         val mappedBack = entity.toDomainModel()
         assertEquals(domainMachine, mappedBack)
+    }
+
+    @Test
+    fun testMachineEntityMapping_weightStackScale() {
+        val domainMachine = Machine(
+            id = "mach-stack",
+            name = "Hammer Strength Chest Press",
+            targetMuscleGroup = "Brust",
+            weightUnit = WeightUnit.LBS,
+            weightStackValuesKg = listOf(4.535924f, 11.33981f, 18.1437f)
+        )
+        val entity = domainMachine.toEntity()
+        assertEquals(
+            domainMachine.weightStackValuesKg,
+            WeightStack.scaleValuesFromJson(entity.weightStackValuesKg!!)
+        )
+        val mappedBack = entity.toDomainModel()
+        assertEquals(domainMachine, mappedBack)
+
+        // Empty scale maps to null and back to empty list
+        val plain = Machine(id = "mach-plain", name = "Plain", targetMuscleGroup = "Brust")
+        val plainEntity = plain.toEntity()
+        assertNull(plainEntity.weightStackValuesKg)
+        assertTrue(plainEntity.toDomainModel().weightStackValuesKg.isEmpty())
     }
 
     @Test
