@@ -7,6 +7,19 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.13.0] - 2026-10-18
+
+### 🚀 Neue Features
+
+#### Smartphone (`:mobile`)
+
+- **Aktivitäten-Tracking:** Andere Sportarten (Laufen, Bouldern etc.) lassen sich mit anpassbaren Aktivitätstypen und selbst definierten Feldern protokollieren und erscheinen im Journal neben den Gym-Workouts; Export und synchronisierter Löschvorgang in Health Connect inklusive (Issue #50).
+- **Trainingsplan:** Wiederkehrender Wochentrainingsplan mit konfigurierbarer Mehrwochentransformation (1–8 Wochen); der Startbildschirm zeigt das für heute geplante Workout ("Up next") (Issue #51).
+- **Gewichtsstapel-Skala:** Frei editierbare Werteliste pro Maschine (z. B. lbs-Platten-Aufdrucke), die exakt für Steppers und Progressionsvorschläge verwendet wird (Issue #48).
+- **Assistierte Maschinen:** Das Richtungs-Flag lässt sich wieder zurück auf `NORMAL` setzen (Issue #49).
+
+---
+
 ## [1.12.0] - 2026-10-15
 
 ### 🚀 Neue Features
