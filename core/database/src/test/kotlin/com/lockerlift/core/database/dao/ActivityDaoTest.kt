@@ -55,11 +55,12 @@ class ActivityDaoTest {
 
     @Test
     fun testInsertAndReadActivityType_fieldsRoundTrip() = runTest {
-        database.activityTypeDao().insertActivityType(runningType().toEntity())
+        val expected = runningType()
+        database.activityTypeDao().insertActivityType(expected.toEntity())
 
         val loaded = database.activityTypeDao().getActivityTypeById("type-running")
         assertNotNull(loaded)
-        assertEquals(runningType(), loaded!!.toDomainModel())
+        assertEquals(expected, loaded!!.toDomainModel())
     }
 
     @Test

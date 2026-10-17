@@ -28,6 +28,7 @@ private enum class EditableFieldType(val modelType: ActivityFieldType, val label
  * Dialog for logging a new activity entry (Issue #50): pick a type,
  * set the date, and fill in the type's custom fields.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogActivityDialog(
     availableTypes: List<ActivityType>,
