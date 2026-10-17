@@ -52,7 +52,8 @@ class WorkoutPlanDaoTest {
     @Test
     fun testInsertPlanAndEntries_relationLoads() = runTest {
         val dao = database.workoutPlanDao()
-        dao.insertPlan(plan().toEntity())
+        val expected = plan()
+        dao.insertPlan(expected.toEntity())
         dao.insertEntries(
             listOf(
                 PlanEntry(
@@ -72,7 +73,7 @@ class WorkoutPlanDaoTest {
 
         val loaded = dao.getPlanWithEntriesById("plan-1")
         assertNotNull(loaded)
-        assertEquals(plan(), loaded!!.plan.toDomainModel())
+        assertEquals(expected, loaded!!.plan.toDomainModel())
         assertEquals(3, loaded.entries.size)
         assertEquals(setOf("e1", "e2", "e3"), loaded.entries.map { it.id }.toSet())
     }
