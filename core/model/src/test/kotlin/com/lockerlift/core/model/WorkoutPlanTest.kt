@@ -50,7 +50,7 @@ class WorkoutPlanTest {
     @Test
     fun testEntryFor_findsCurrentDay() {
         val plan = WorkoutPlan(id = "p1", name = "Plan", cycleLengthWeeks = 2, startDate = 0L)
-        // millis(7): 7 days elapsed = Monday of week 2 (week index 1)
+        // millis(11): epoch day 11 is a Monday, 11//7 = week index 1
         val mondayWeek2 = PlanEntry(
             id = "e1", planId = "p1", weekIndex = 1, dayOfWeek = 1,
             templateId = "t-upper"
@@ -59,7 +59,7 @@ class WorkoutPlanTest {
             id = "e2", planId = "p1", weekIndex = 0, dayOfWeek = 3,
             templateId = "t-lower"
         )
-        val found = WorkoutPlanLogic.entryFor(millis(7), plan, listOf(otherDay, mondayWeek2))
+        val found = WorkoutPlanLogic.entryFor(millis(11), plan, listOf(otherDay, mondayWeek2))
         assertEquals("e1", found?.id)
     }
 
