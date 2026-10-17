@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
@@ -35,6 +36,7 @@ import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
 import com.lockerlift.mobile.ui.insights.InsightsScreen
 import com.lockerlift.mobile.ui.licenses.OpenSourceLicensesScreen
+import com.lockerlift.mobile.ui.plan.WorkoutPlanScreen
 import com.lockerlift.mobile.ui.settings.SettingsScreen
 import com.lockerlift.mobile.ui.templates.TemplateListScreen
 import com.lockerlift.mobile.ui.theme.LockerLiftTheme
@@ -42,6 +44,7 @@ import com.lockerlift.mobile.ui.theme.LockerLiftTheme
 enum class MobileTab(@StringRes val labelRes: Int) {
     CATALOG(R.string.tab_catalog),
     TEMPLATES(R.string.tab_templates),
+    PLAN(R.string.plan_title),
     HISTORY(R.string.tab_history),
     TRACKING(R.string.tab_tracking)
 }
@@ -88,6 +91,12 @@ class MainActivity : ComponentActivity() {
                                 label = { Text(stringResource(MobileTab.TEMPLATES.labelRes)) }
                             )
                             NavigationBarItem(
+                                selected = selectedTab == MobileTab.PLAN,
+                                onClick = { showSettings = false; selectedTab = MobileTab.PLAN },
+                                icon = { Icon(Icons.Default.EventNote, contentDescription = null) },
+                                label = { Text(stringResource(MobileTab.PLAN.labelRes)) }
+                            )
+                            NavigationBarItem(
                                 selected = selectedTab == MobileTab.HISTORY,
                                 onClick = { showSettings = false; selectedTab = MobileTab.HISTORY },
                                 icon = { Icon(Icons.Default.History, contentDescription = null) },
@@ -118,6 +127,7 @@ class MainActivity : ComponentActivity() {
                             )
                             selectedTab == MobileTab.CATALOG -> CatalogScreen(app)
                             selectedTab == MobileTab.TEMPLATES -> TemplateListScreen(app)
+                            selectedTab == MobileTab.PLAN -> WorkoutPlanScreen(app.database)
                             selectedTab == MobileTab.TRACKING -> MobileTrackingScreen(app)
                             selectedTab == MobileTab.HISTORY -> Column(
                                 modifier = Modifier

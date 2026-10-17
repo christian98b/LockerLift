@@ -16,6 +16,7 @@ import com.lockerlift.core.database.dao.ActivityTypeDao
 import com.lockerlift.core.database.dao.DeletedSessionDao
 import com.lockerlift.core.database.dao.MachineDao
 import com.lockerlift.core.database.dao.SyncQueueDao
+import com.lockerlift.core.database.dao.WorkoutPlanDao
 import com.lockerlift.core.database.dao.WorkoutSessionDao
 import com.lockerlift.core.database.dao.WorkoutTemplateDao
 import com.lockerlift.core.database.entity.ActiveSessionStateEntity
@@ -26,6 +27,8 @@ import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
 import com.lockerlift.core.database.entity.SyncQueueEntity
 import com.lockerlift.core.database.entity.TemplateMachineCrossRefEntity
+import com.lockerlift.core.database.entity.PlanEntryEntity
+import com.lockerlift.core.database.entity.WorkoutPlanEntity
 import com.lockerlift.core.database.entity.WorkoutSessionEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.database.entity.WorkoutTemplateEntity
@@ -42,9 +45,11 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         DeletedSessionEntity::class,
         ActiveSessionStateEntity::class,
         ActivityTypeEntity::class,
-        ActivityEntryEntity::class
+        ActivityEntryEntity::class,
+        WorkoutPlanEntity::class,
+        PlanEntryEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -58,6 +63,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
     abstract fun activeSessionStateDao(): ActiveSessionStateDao
     abstract fun activityTypeDao(): ActivityTypeDao
     abstract fun activityEntryDao(): ActivityEntryDao
+    abstract fun workoutPlanDao(): WorkoutPlanDao
 
     companion object {
         private const val DATABASE_NAME = "lockerlift.db"
@@ -107,6 +113,55 @@ abstract class LockerLiftDatabase : RoomDatabase() {
          * positions in kg). Null default keeps existing machines on the
          * previous increment-based behavior.
          */
+        /**
+         * v9 adds the weekly workout plan (Issue #51): workout_plans and
+         * plan_entries (week index + day of week -> planned program), with
+         * a unique index per (plan, week, day) and cascade delete.
+         */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `workout_plans` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `cycle_length_weeks` INTEGER NOT NULL,
+                        `start_date` INTEGER NOT NULL,
+                        `created_at` INTEGER NOT NULL,
+                        `updated_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `plan_entries` (
+                        `id` TEXT NOT NULL,
+                        `plan_id` TEXT NOT NULL,
+                        `week_index` INTEGER NOT NULL,
+                        `day_of_week` INTEGER NOT NULL,
+                        `template_id` TEXT,
+                        `activity_type_id` TEXT,
+                        `label` TEXT,
+                        `created_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`plan_id`) REFERENCES `workout_plans`(`id`)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_plan_entries_plan_id` " +
+                        "ON `plan_entries` (`plan_id`)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                        "`index_plan_entries_plan_id_week_index_day_of_week` " +
+                        "ON `plan_entries` (`plan_id`, `week_index`, `day_of_week`)"
+                )
+            }
+        }
+
         private val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE machines ADD COLUMN weight_stack_values_kg TEXT")
@@ -242,7 +297,7 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .build()
         }
 

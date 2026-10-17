@@ -21,7 +21,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.WorkoutSetEntity
+import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.logic.WorkoutTrackingLogic
 import com.lockerlift.core.model.*
 import com.lockerlift.mobile.LockerLiftMobileApp
@@ -115,6 +117,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                item { UpNextPlanCard(app.database, templates) }
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -1288,6 +1291,54 @@ private fun RepsStepperControls(
                     overflow = TextOverflow.Clip
                 )
             }
+        }
+    }
+}
+
+
+/**
+ * "Up next today" card (Issue #51): resolves the planned program for the
+ * current day from the first workout plan, if any.
+ */
+@Composable
+private fun UpNextPlanCard(
+    database: LockerLiftDatabase,
+    templates: List<WorkoutTemplate>
+) {
+    val plansState by remember { database.workoutPlanDao().getAllPlansWithEntriesFlow() }
+        .collectAsState(initial = emptyList())
+    val activityTypesState by remember { database.activityTypeDao().getAllActivityTypesFlow() }
+        .collectAsState(initial = emptyList())
+    val now = remember { System.currentTimeMillis() }
+    val plannedLabel: String? = remember(plansState, templates, activityTypesState, now) {
+        val planWithEntries = plansState.firstOrNull() ?: return@remember null
+        val plan = planWithEntries.plan.toDomainModel()
+        val entry = WorkoutPlanLogic.entryFor(
+            now,
+            plan,
+            planWithEntries.entries.map { it.toDomainModel() }
+        ) ?: return@remember null
+        entry.templateId?.let { id -> templates.firstOrNull { it.id == id }?.name }
+            ?: entry.activityTypeId?.let { id ->
+                activityTypesState.firstOrNull { it.id == id }?.name
+            }
+            ?: entry.label
+    }
+    val upNextText = plannedLabel ?: stringResource(R.string.plan_up_next_none)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.plan_up_next),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = upNextText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

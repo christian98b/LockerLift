@@ -244,4 +244,16 @@
     <string name="activity_invalid_number">Bitte eine gültige Zahl eingeben.</string>
     <string name="hint_stack_values_unit_format">Gewichtsstapel-Skala (%1$s) — optional</string>
     <string name="hint_stack_values_hint">Kumulative Pin-Werte wie aufgedruckt, z. B. 5, 12, 20, 28, 36. Ersetzt die Inkrement-Stepper.</string>
+    <string name="plan_title">Trainingsplan</string>
+    <string name="plan_name_hint">Planname</string>
+    <string name="plan_cycle_weeks_label">Rotationslänge (Wochen)</string>
+    <string name="plan_week_label">Woche %1$d</string>
+    <string name="plan_save">Plan speichern</string>
+    <string name="plan_delete_dialog_title">Plan löschen?</string>
+    <string name="plan_delete_dialog_confirm">Der Plan und alle geplanten Tage werden entfernt.</string>
+    <string name="plan_empty">Noch kein Plan konfiguriert. Erstelle einen, um zu sehen, was als Nächstes ansteht.</string>
+    <string name="plan_create">Plan erstellen</string>
+    <string name="plan_up_next">Heute geplant</string>
+    <string name="plan_up_next_none">Für heute ist nichts geplant.</string>
+    <string name="plan_day_empty">—</string>
 </resources>
