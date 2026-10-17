@@ -492,7 +492,12 @@ private fun WeightDirectionSelector(
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = selected == WeightDirection.INVERSE,
-            onClick = { onSelected(WeightDirection.INVERSE) },
+            onClick = {
+                onSelected(
+                    if (selected == WeightDirection.INVERSE) WeightDirection.NORMAL
+                    else WeightDirection.INVERSE
+                )
+            },
             label = { Text(stringResource(R.string.assisted_machine_chip)) }
         )
     }
