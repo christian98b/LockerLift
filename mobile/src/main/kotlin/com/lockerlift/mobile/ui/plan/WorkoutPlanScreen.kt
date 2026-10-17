@@ -143,8 +143,8 @@ fun WorkoutPlanScreen(database: LockerLiftDatabase) {
     if (showEditor || editingPlan != null) {
         PlanEditorDialog(
             initial = editingPlan,
-            templates = templatesState,
-            activityTypes = activityTypesState,
+            templates = templatesState.value,
+            activityTypes = activityTypesState.value,
             onDismiss = {
                 showEditor = false
                 editingPlan = null
@@ -203,10 +203,10 @@ private fun PlanEditorDialog(
     var cycleWeeks by remember { mutableStateOf(initial?.plan?.cycleLengthWeeks ?: 1) }
     // (weekIndex, dayOfWeek) -> draft entry
     var drafts by remember {
-        mutableStateOf(
+        val initialDrafts: Map<Pair<Int, Int>, PlanEntry> =
             initial?.entries?.associateBy({ it.weekIndex to it.dayOfWeek }, { it.toDomainModel() })
                 ?: emptyMap()
-        )
+        mutableStateOf(initialDrafts)
     }
     var pickDay by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
@@ -298,7 +298,9 @@ private fun PlanEditorDialog(
         }
     )
 
-    pickDay?.let { (week, day) ->
+    pickDay?.let { picked ->
+        val week = picked.first
+        val day = picked.second
         DayAssignmentDialog(
             week = week,
             day = day,
