@@ -27,6 +27,7 @@ import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.WeightDirection
 import com.lockerlift.core.model.WeightUnit
 import com.lockerlift.core.model.WeightConversion
+import com.lockerlift.core.model.WeightStack
 import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
@@ -55,6 +56,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var incrementKgText by remember { mutableStateOf("2.5") }
     var addWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
     var addWeightDirection by remember { mutableStateOf(WeightDirection.NORMAL) }
+    var addStackValuesText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var deleteCandidate by remember { mutableStateOf<MachineEntity?>(null) }
@@ -68,6 +70,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
     var editIncrementKgText by remember { mutableStateOf("2.5") }
     var editWeightUnit by remember { mutableStateOf(WeightUnit.KG) }
     var editWeightDirection by remember { mutableStateOf(WeightDirection.NORMAL) }
+    var editStackValuesText by remember { mutableStateOf("") }
     var editErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val errorRequiredFields = stringResource(R.string.error_required_fields)
@@ -87,6 +90,7 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                 incrementKgText = "2.5"
                 addWeightUnit = WeightUnit.KG
                 addWeightDirection = WeightDirection.NORMAL
+                addStackValuesText = ""
                 errorMessage = null
                 showAddDialog = true
             }) {
@@ -147,6 +151,14 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             ).toString()
                             editWeightUnit = machineEntity.weightUnit
                             editWeightDirection = machineEntity.weightDirection
+                            editStackValuesText = WeightStack.formatScaleValues(
+                                WeightStack.scaleValuesFromKg(
+                                    machineEntity.weightStackValuesKg
+                                        ?.let { WeightStack.scaleValuesFromJson(it) }
+                                        ?: emptyList(),
+                                    machineEntity.weightUnit
+                                )
+                            )
                             editErrorMessage = null
                         },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -288,6 +300,22 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        OutlinedTextField(
+                            value = addStackValuesText,
+                            onValueChange = { addStackValuesText = it },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        R.string.hint_stack_values_unit_format,
+                                        WeightConversion.unitSuffix(addWeightUnit)
+                                    )
+                                )
+                            },
+                            supportingText = {
+                                Text(stringResource(R.string.hint_stack_values_hint))
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         val currentErrorMessage = errorMessage
                         if (currentErrorMessage != null) {
                             Text(text = currentErrorMessage, color = MaterialTheme.colorScheme.error)
@@ -302,7 +330,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             settingsNote = settingsNote,
                             incrementKgText = incrementKgText,
                             weightUnit = addWeightUnit,
-                            weightDirection = addWeightDirection
+                            weightDirection = addWeightDirection,
+                            stackValuesText = addStackValuesText
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> errorMessage = errorRequiredFields
@@ -387,6 +416,22 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        OutlinedTextField(
+                            value = editStackValuesText,
+                            onValueChange = { editStackValuesText = it },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        R.string.hint_stack_values_unit_format,
+                                        WeightConversion.unitSuffix(editWeightUnit)
+                                    )
+                                )
+                            },
+                            supportingText = {
+                                Text(stringResource(R.string.hint_stack_values_hint))
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         val currentEditErrorMessage = editErrorMessage
                         if (currentEditErrorMessage != null) {
                             Text(text = currentEditErrorMessage, color = MaterialTheme.colorScheme.error)
@@ -403,7 +448,8 @@ fun CatalogScreen(app: LockerLiftMobileApp) {
                             settingsNote = editSettingsNote,
                             incrementKgText = editIncrementKgText,
                             weightUnit = editWeightUnit,
-                            weightDirection = editWeightDirection
+                            weightDirection = editWeightDirection,
+                            stackValuesText = editStackValuesText
                         ) { result ->
                             when (result) {
                                 MachineEditResult.EMPTY_FIELDS -> editErrorMessage = errorRequiredFields

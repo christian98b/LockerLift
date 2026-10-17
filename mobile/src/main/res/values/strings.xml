@@ -242,4 +242,6 @@
     <string name="activity_delete_type_dialog_confirm">All logged entries of this type will be deleted too.</string>
     <string name="activity_date_label">Date</string>
     <string name="activity_invalid_number">Please enter a valid number.</string>
+    <string name="hint_stack_values_unit_format">Weight stack scale (%1$s) — optional</string>
+    <string name="hint_stack_values_hint">Cumulative pin values as printed on the plates, e.g. 5, 12, 20, 28, 36. Overrides increment steppers.</string>
 </resources>

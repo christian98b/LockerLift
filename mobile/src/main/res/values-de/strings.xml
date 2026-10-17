@@ -242,4 +242,6 @@
     <string name="activity_delete_type_dialog_confirm">Alle erfassten Einträge dieser Art werden ebenfalls gelöscht.</string>
     <string name="activity_date_label">Datum</string>
     <string name="activity_invalid_number">Bitte eine gültige Zahl eingeben.</string>
+    <string name="hint_stack_values_unit_format">Gewichtsstapel-Skala (%1$s) — optional</string>
+    <string name="hint_stack_values_hint">Kumulative Pin-Werte wie aufgedruckt, z. B. 5, 12, 20, 28, 36. Ersetzt die Inkrement-Stepper.</string>
 </resources>
