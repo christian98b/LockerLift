@@ -143,7 +143,7 @@ fun ActivitiesScreen(
                                 }
                             }
                             type?.let { t ->
-                                val values = ActivityEntry.valuesFromJsonSafe(item.entry.fieldValuesJson)
+                                val values = parseFieldValues(item.entry.fieldValuesJson)
                                 if (values.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(6.dp))
                                     t.fields.forEach { field ->
@@ -274,5 +274,5 @@ fun ActivitiesScreen(
     }
 }
 
-private fun ActivityEntry.valuesFromJsonSafe(json: String): Map<String, String> =
+private fun parseFieldValues(json: String): Map<String, String> =
     runCatching { ActivityEntry.valuesFromJson(json) }.getOrDefault(emptyMap())
