@@ -61,16 +61,16 @@ fun WorkoutPlanScreen(database: LockerLiftDatabase) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.plan_title)) },
-                actions = {
-                    IconButton(onClick = { showEditor = true }) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = stringResource(R.string.plan_create)
-                        )
-                    }
-                }
+                title = { Text(stringResource(R.string.plan_title)) }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showEditor = true }) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.plan_create)
+                )
+            }
         }
     ) { padding ->
         if (plansState.isEmpty()) {
