@@ -244,4 +244,16 @@
     <string name="activity_invalid_number">Please enter a valid number.</string>
     <string name="hint_stack_values_unit_format">Weight stack scale (%1$s) — optional</string>
     <string name="hint_stack_values_hint">Cumulative pin values as printed on the plates, e.g. 5, 12, 20, 28, 36. Overrides increment steppers.</string>
+    <string name="plan_title">Training Plan</string>
+    <string name="plan_name_hint">Plan name</string>
+    <string name="plan_cycle_weeks_label">Rotation length (weeks)</string>
+    <string name="plan_week_label">Week %1$d</string>
+    <string name="plan_save">Save plan</string>
+    <string name="plan_delete_dialog_title">Delete plan?</string>
+    <string name="plan_delete_dialog_confirm">The plan and all its scheduled days will be removed.</string>
+    <string name="plan_empty">No plan configured yet. Create one to see what's up next.</string>
+    <string name="plan_create">Create plan</string>
+    <string name="plan_up_next">Up next today</string>
+    <string name="plan_up_next_none">Nothing planned for today.</string>
+    <string name="plan_day_empty">—</string>
 </resources>
