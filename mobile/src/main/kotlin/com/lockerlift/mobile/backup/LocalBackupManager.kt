@@ -16,6 +16,7 @@ import com.lockerlift.core.sync.WorkoutTemplatePayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
@@ -37,14 +38,18 @@ import java.util.zip.GZIPOutputStream
  * @property machines       JSON-encoded [List<Machine>] via [SyncPayloadSerializer.encodeMachines].
  * @property templates      JSON-encoded [List<WorkoutTemplatePayload>] via [SyncPayloadSerializer.encodeTemplates].
  * @property sessions       One JSON string per session, encoded via [SyncPayloadSerializer.encodeSessionPayload].
+ * @property activityTypes  JSON-encoded [List<ActivityType>] (Issue #50). Absent in schema version 1 backups.
+ * @property activityEntries JSON-encoded [List<ActivityEntry>] (Issue #50). Absent in schema version 1 backups.
  */
 @Serializable
 data class BackupPayload(
-    val schemaVersion: Int = 1,
+    val schemaVersion: Int = 2,
     val createdAt: Long,
     val machines: String,
     val templates: String,
-    val sessions: List<String>
+    val sessions: List<String>,
+    val activityTypes: String = "[]",
+    val activityEntries: String = "[]"
 )
 
 // ---------------------------------------------------------------------------
@@ -102,11 +107,23 @@ class LocalBackupManager(
             val sessionPayloads = buildSessionPayloads(sessionDao)
 
             // -- Encode --
+            val activityTypeDao = database.activityTypeDao()
+            val activityEntryDao = database.activityEntryDao()
+            val activityTypeJson = Json.encodeToString(
+                ListSerializer(com.lockerlift.core.model.ActivityType.serializer()),
+                activityTypeDao.getAllActivityTypes().map { it.toDomainModel() }
+            )
+            val activityEntryJson = Json.encodeToString(
+                ListSerializer(com.lockerlift.core.model.ActivityEntry.serializer()),
+                activityEntryDao.getAllActivityEntries().map { it.toDomainModel() }
+            )
             val payload = BackupPayload(
                 createdAt = System.currentTimeMillis(),
                 machines = SyncPayloadSerializer.encodeMachines(machines),
                 templates = SyncPayloadSerializer.encodeTemplates(templatePayloads),
-                sessions = sessionPayloads.map { SyncPayloadSerializer.encodeSessionPayload(it) }
+                sessions = sessionPayloads.map { SyncPayloadSerializer.encodeSessionPayload(it) },
+                activityTypes = activityTypeJson,
+                activityEntries = activityEntryJson
             )
 
             val jsonBytes = json.encodeToString(BackupPayload.serializer(), payload)
@@ -151,9 +168,9 @@ class LocalBackupManager(
             val jsonString = ungzip(compressed).toString(Charsets.UTF_8)
             val payload = json.decodeFromString(BackupPayload.serializer(), jsonString)
 
-            if (payload.schemaVersion != 1) {
+            if (payload.schemaVersion !in 1..2) {
                 return@runCatching BackupResult.Error(
-                    "Unsupported backup schema version: ${payload.schemaVersion}. Expected 1."
+                    "Unsupported backup schema version: ${payload.schemaVersion}. Expected 1 or 2."
                 )
             }
 
@@ -193,6 +210,23 @@ class LocalBackupManager(
                         sets = sets
                     )
                 }
+                // -- Restore activity types & entries (Issue #50; schema version 2+) --
+                val activityTypes = runCatching {
+                    Json.decodeFromString(
+                        ListSerializer(com.lockerlift.core.model.ActivityType.serializer()),
+                        payload.activityTypes
+                    )
+                }.getOrDefault(emptyList())
+                val activityEntries = runCatching {
+                    Json.decodeFromString(
+                        ListSerializer(com.lockerlift.core.model.ActivityEntry.serializer()),
+                        payload.activityEntries
+                    )
+                }.getOrDefault(emptyList())
+                val activityTypeDao = database.activityTypeDao()
+                val activityEntryDao = database.activityEntryDao()
+                activityTypeDao.insertActivityTypes(activityTypes.map { it.toEntity() })
+                activityEntryDao.insertEntries(activityEntries.map { it.toEntity() })
             }
 
             BackupResult.Success("Restore complete")

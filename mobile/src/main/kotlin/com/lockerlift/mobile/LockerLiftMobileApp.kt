@@ -21,6 +21,7 @@ class LockerLiftMobileApp : Application() {
         SyncQueueWorker.enqueuePeriodic(this)
         // Recover orphaned PENDING_SYNC sessions that lost their queue entry (e.g. crash between write and queue insert)
         appScope.launch {
+            com.lockerlift.core.database.logic.ActivityTypeSeeder.seedIfMissing(database)
             val recovered = SyncIngestionEngine.recoverOrphanedSessions(database)
             if (recovered > 0) {
                 SyncQueueWorker.enqueue(this@LockerLiftMobileApp)

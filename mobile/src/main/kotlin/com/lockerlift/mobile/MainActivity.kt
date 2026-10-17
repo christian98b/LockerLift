@@ -27,8 +27,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.lockerlift.mobile.tracking.MobileTrackingScreen
+import com.lockerlift.mobile.ui.activities.ActivitiesScreen
 import com.lockerlift.mobile.ui.catalog.CatalogScreen
 import com.lockerlift.mobile.ui.history.HistoryScreen
 import com.lockerlift.mobile.ui.insights.InsightsScreen
@@ -46,6 +48,7 @@ enum class MobileTab(@StringRes val labelRes: Int) {
 
 private enum class HistorySubTab(@StringRes val labelRes: Int) {
     SESSIONS(R.string.tab_history),
+    ACTIVITIES(R.string.tab_activities),
     INSIGHTS(R.string.tab_insights)
 }
 
@@ -58,6 +61,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LockerLiftTheme {
+                val context = LocalContext.current
                 var selectedTab by remember { mutableStateOf(MobileTab.CATALOG) }
                 var historySubTab by remember { mutableStateOf(HistorySubTab.SESSIONS) }
                 var showSettings by remember { mutableStateOf(false) }
@@ -132,6 +136,21 @@ class MainActivity : ComponentActivity() {
                                 }
                                 when (historySubTab) {
                                     HistorySubTab.SESSIONS -> HistoryScreen(app)
+                                    HistorySubTab.ACTIVITIES -> ActivitiesScreen(
+                                        database = app.database,
+                                        onExportToHealthConnect = { entry, typeName ->
+                                            val manager = com.lockerlift.core.healthconnect.HealthConnectManager(context)
+                                            if (manager.isAvailable() && manager.hasPermissions()) {
+                                                manager.exportActivityEntry(entry, typeName)
+                                            }
+                                        },
+                                        onDeleteFromHealthConnect = { entryId ->
+                                            val manager = com.lockerlift.core.healthconnect.HealthConnectManager(context)
+                                            if (manager.isAvailable() && manager.hasPermissions()) {
+                                                manager.deleteActivityEntry(entryId)
+                                            }
+                                        }
+                                    )
                                     HistorySubTab.INSIGHTS -> InsightsScreen(app)
                                 }
                             }

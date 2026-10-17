@@ -57,3 +57,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 39 | Machine & Template Deletion with Soft-Delete (Issue #40) | [39-machine-template-deletion-soft-delete.md](39-machine-template-deletion-soft-delete.md) |
 | 40 | lbs-Gewichtsstapel: Einheit & Schrittweite pro Maschine (Issue #37) | [40-machine-weight-unit-lbs-stacks.md](40-machine-weight-unit-lbs-stacks.md) |
 | 41 | Assistierte Maschinen: inverse Gewichtsprogression (Issue #35) | [41-assisted-machines-inverse-progression.md](41-assisted-machines-inverse-progression.md) |
+| 42 | Activity Tracking: Log Other Sports (Issue #50) | [42-activity-tracking.md](42-activity-tracking.md) |
