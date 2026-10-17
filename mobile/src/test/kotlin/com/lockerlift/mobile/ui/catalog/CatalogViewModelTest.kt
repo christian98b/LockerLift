@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
+import com.lockerlift.core.model.WeightDirection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -185,6 +186,36 @@ class CatalogViewModelTest {
         // Assert
         assertEquals(MachineEditResult.DUPLICATE_NAME, result)
         assertEquals("Cable Row", database.machineDao().getMachineById("m-2")!!.name)
+    }
+
+    @Test
+    fun testUpdateMachine_whenSettingDirectionBackToNormal_persistsReset() = runTest(testDispatcher) {
+        // Arrange (Issue #49): machine was saved as assisted (INVERSE)
+        database.machineDao().insertMachine(
+            Machine(
+                id = "m-1",
+                name = "Assist Dip",
+                targetMuscleGroup = "Chest",
+                weightDirection = WeightDirection.INVERSE
+            ).toEntity()
+        )
+        val viewModel = createViewModel()
+        var result: MachineEditResult? = null
+
+        // Act: user disables the "Assisted Machine" toggle and saves
+        viewModel.updateMachine(
+            current = database.machineDao().getMachineById("m-1")!!,
+            name = "Assist Dip",
+            muscleGroup = "Chest",
+            settingsNote = "",
+            incrementKgText = "2.5",
+            weightDirection = WeightDirection.NORMAL
+        ) { result = it }
+        viewModel.awaitActions()
+
+        // Assert: the machine is a regular machine again
+        assertEquals(MachineEditResult.SUCCESS, result)
+        assertEquals(WeightDirection.NORMAL, database.machineDao().getMachineById("m-1")!!.weightDirection)
     }
 
     @Test
