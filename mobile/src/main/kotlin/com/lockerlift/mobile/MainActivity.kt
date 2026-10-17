@@ -44,7 +44,7 @@ import com.lockerlift.mobile.ui.theme.LockerLiftTheme
 enum class MobileTab(@StringRes val labelRes: Int) {
     CATALOG(R.string.tab_catalog),
     TEMPLATES(R.string.tab_templates),
-    PLAN(R.string.plan_title),
+    PLAN(R.string.tab_plan),
     HISTORY(R.string.tab_history),
     TRACKING(R.string.tab_tracking)
 }

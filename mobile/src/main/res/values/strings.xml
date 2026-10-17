@@ -4,6 +4,7 @@
     <!-- Navigation Tabs -->
     <string name="tab_catalog">Catalog</string>
     <string name="tab_templates">Templates</string>
+    <string name="tab_plan">Plan</string>
     <string name="tab_history">History</string>
     <string name="tab_tracking">Tracking</string>
     <string name="tab_settings">Settings</string>

@@ -4,6 +4,7 @@
     <!-- Navigation Tabs -->
     <string name="tab_catalog">Maschinen</string>
     <string name="tab_templates">Vorlagen</string>
+    <string name="tab_plan">Plan</string>
     <string name="tab_history">Historie</string>
     <string name="tab_tracking">Tracking</string>
     <string name="tab_settings">Einstellungen</string>
