@@ -186,7 +186,9 @@ class TrackingViewModel(
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(1000L)
-                _uiState.value = _uiState.value.deriveElapsedSeconds().tickRestTimer()
+                _uiState.value = _uiState.value
+                    .copy(elapsedSeconds = _uiState.value.deriveElapsedSeconds())
+                    .tickRestTimer()
             }
         }
     }
