@@ -29,6 +29,7 @@ import com.lockerlift.core.sync.WearableDataLayerManager
 import com.lockerlift.core.sync.WorkoutSessionPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,8 +54,35 @@ data class TrackingUiState(
     val initialMachineIds: List<String> = emptyList(),
     val instances: List<SessionMachineInstance> = emptyList(),
     val setsByInstance: Map<String, List<WorkoutSet>> = emptyMap(),
-    val resumedFromInterruption: Boolean = false
-)
+    val resumedFromInterruption: Boolean = false,
+    val elapsedSeconds: Int = 0,
+    val restTimerRemainingSeconds: Int = 0,
+    val isRestTimerRunning: Boolean = false
+) {
+
+    /**
+     * Elapsed workout seconds derived from the session start time. Keeps the
+     * value correct across configuration changes without a ticking counter.
+     */
+    fun deriveElapsedSeconds(nowMillis: Long = System.currentTimeMillis()): Int {
+        if (!isWorkoutActive || startTimeMillis <= 0L) return 0
+        return ((nowMillis - startTimeMillis) / 1000L).toInt().coerceAtLeast(0)
+    }
+
+    /**
+     * Ticks the rest countdown by one second and stops it when it reaches
+     * zero. Returns the next immutable state.
+     */
+    fun tickRestTimer(): TrackingUiState {
+        if (!isRestTimerRunning || restTimerRemainingSeconds <= 0) return this
+        val nextRemaining = restTimerRemainingSeconds - 1
+        return if (nextRemaining <= 0) {
+            copy(restTimerRemainingSeconds = 0, isRestTimerRunning = false)
+        } else {
+            copy(restTimerRemainingSeconds = nextRemaining)
+        }
+    }
+}
 
 /**
  * Owns the workout tracking state on the phone: start/recover, all session
@@ -76,9 +104,20 @@ class TrackingViewModel(
 
     private val persistMutex = Mutex()
     private var persistJob: Job? = null
+    private var timerJob: Job? = null
 
     private val _uiState = MutableStateFlow(TrackingUiState())
     val uiState: StateFlow<TrackingUiState> = _uiState.asStateFlow()
+
+    /**
+     * "Up next today" plan flows (Issue #51): exposed as UI state so the
+     * UpNextPlanCard renders without touching the database directly.
+     */
+    val workoutPlans = database.workoutPlanDao().getAllPlansWithEntriesFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val activityTypes = database.activityTypeDao().getAllActivityTypesFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val templates: StateFlow<List<WorkoutTemplate>> = templateDao.getAllActiveTemplatesWithMachinesFlow()
         .map { list -> list.map { it.template.toDomainModel() } }
@@ -102,6 +141,8 @@ class TrackingViewModel(
 
     fun startWorkout(template: WorkoutTemplate?) {
         startupJob = viewModelScope.launch {
+            stopTimers()
+            val now = System.currentTimeMillis()
             val sessionId = UUID.randomUUID().toString()
             val templateMachines = template?.let {
                 templateDao.getMachinesForTemplateOrdered(it.id).map { entity -> entity.toDomainModel() }
@@ -123,10 +164,62 @@ class TrackingViewModel(
                 startTimeMillis = System.currentTimeMillis(),
                 initialMachineIds = templateMachineIds,
                 instances = instances,
-                setsByInstance = instances.associate { it.id to emptyList<WorkoutSet>() }
+                setsByInstance = instances.associate { it.id to emptyList<WorkoutSet>() },
+                elapsedSeconds = 0
             )
+            startTimers()
             persist()
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // Timers (elapsed workout + rest countdown)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Starts the one-second UI tick that advances the elapsed workout timer
+     * and the rest countdown. Timers live in the ViewModel, so they survive
+     * configuration changes without restarting.
+     */
+    private fun startTimers() {
+        stopTimers()
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000L)
+                _uiState.value = _uiState.value.deriveElapsedSeconds().tickRestTimer()
+            }
+        }
+    }
+
+    private fun stopTimers() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
+    /** Starts the rest countdown after a completed set. */
+    fun startRestTimer(seconds: Int) {
+        if (!_uiState.value.isWorkoutActive || seconds <= 0) return
+        _uiState.value = _uiState.value.copy(
+            restTimerRemainingSeconds = seconds,
+            isRestTimerRunning = true
+        )
+    }
+
+    /** Adds extra seconds to a running rest countdown. */
+    fun addRestTimerSeconds(seconds: Int) {
+        val state = _uiState.value
+        if (!state.isRestTimerRunning) return
+        _uiState.value = state.copy(
+            restTimerRemainingSeconds = (state.restTimerRemainingSeconds + seconds).coerceAtLeast(1)
+        )
+    }
+
+    /** Stops and clears the rest countdown (skip). */
+    fun skipRestTimer() {
+        _uiState.value = _uiState.value.copy(
+            restTimerRemainingSeconds = 0,
+            isRestTimerRunning = false
+        )
     }
 
     private fun restoreFromSnapshot(snapshot: ActiveSessionSnapshot) {
@@ -141,6 +234,7 @@ class TrackingViewModel(
             setsByInstance = ActiveSessionSnapshotCodec.setsMapFromSnapshot(snapshot),
             resumedFromInterruption = true
         )
+        startTimers()
     }
 
     private fun currentSnapshot(): ActiveSessionSnapshot {
@@ -350,6 +444,7 @@ class TrackingViewModel(
                 WearableDataLayerManager(app).flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
             }
 
+            stopTimers()
             activeSessionRepository.clear()
             _uiState.value = TrackingUiState()
             withContext(Dispatchers.Main) {
@@ -363,6 +458,7 @@ class TrackingViewModel(
      */
     fun discardWorkout() {
         completionJob = viewModelScope.launch {
+            stopTimers()
             activeSessionRepository.clear()
             _uiState.value = TrackingUiState()
         }

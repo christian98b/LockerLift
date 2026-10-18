@@ -306,4 +306,68 @@ class TrackingViewModelTest {
         assertFalse(viewModel.uiState.value.isWorkoutActive)
         assertTrue(finished)
     }
+
+    @Test
+    fun testStartRestTimer_whenWorkoutActive_runsCountdown() = runTest(testDispatcher) {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.awaitPersistence()
+        viewModel.startWorkout(null)
+        viewModel.awaitPersistence()
+
+        // Act
+        viewModel.startRestTimer(90)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertTrue(state.isRestTimerRunning)
+        assertEquals(90, state.restTimerRemainingSeconds)
+    }
+
+    @Test
+    fun testAddRestTimerSeconds_extendsRunningCountdown() = runTest(testDispatcher) {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.awaitPersistence()
+        viewModel.startWorkout(null)
+        viewModel.awaitPersistence()
+        viewModel.startRestTimer(30)
+
+        // Act
+        viewModel.addRestTimerSeconds(15)
+
+        // Assert
+        assertEquals(45, viewModel.uiState.value.restTimerRemainingSeconds)
+    }
+
+    @Test
+    fun testSkipRestTimer_clearsCountdown() = runTest(testDispatcher) {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.awaitPersistence()
+        viewModel.startWorkout(null)
+        viewModel.awaitPersistence()
+        viewModel.startRestTimer(90)
+
+        // Act
+        viewModel.skipRestTimer()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.isRestTimerRunning)
+        assertEquals(0, state.restTimerRemainingSeconds)
+    }
+
+    @Test
+    fun testRestTimer_ignoredWhenNoWorkoutActive() = runTest(testDispatcher) {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.awaitPersistence()
+
+        // Act
+        viewModel.startRestTimer(90)
+
+        // Assert
+        assertFalse(viewModel.uiState.value.isRestTimerRunning)
+    }
 }
