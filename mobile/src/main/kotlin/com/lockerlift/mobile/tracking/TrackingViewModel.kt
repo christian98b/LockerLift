@@ -30,6 +30,7 @@ import com.lockerlift.core.sync.WorkoutSessionPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -183,8 +184,10 @@ class TrackingViewModel(
      */
     private fun startTimers() {
         stopTimers()
-        timerJob = viewModelScope.launch {
-            while (true) {
+        // Runs on Dispatchers.Default so the delay uses real time and the
+        // loop stays independent of the (virtual-time) Main test dispatcher.
+        timerJob = viewModelScope.launch(Dispatchers.Default) {
+            while (isActive && _uiState.value.isWorkoutActive) {
                 delay(1000L)
                 _uiState.value = _uiState.value
                     .copy(elapsedSeconds = _uiState.value.deriveElapsedSeconds())
@@ -464,6 +467,11 @@ class TrackingViewModel(
             activeSessionRepository.clear()
             _uiState.value = TrackingUiState()
         }
+    }
+
+    override fun onCleared() {
+        stopTimers()
+        super.onCleared()
     }
 
     private inline fun mutate(reducer: (TrackingUiState) -> TrackingUiState) {
