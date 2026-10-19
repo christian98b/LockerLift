@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -336,7 +338,6 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         LogSetDialog(
             instance = instance,
             machine = machines.find { it.id == instance.machineId },
-            machines = machines,
             existingSets = loggedSets[instance.id] ?: emptyList(),
             historicalSetsProvider = { machineId -> viewModel.getHistoricalSetsForMachine(machineId) },
             restTimerSeconds = REST_TIMER_SECONDS,
@@ -399,11 +400,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
         val instance = sessionInstances[editNoteIndex]
         var noteInput by remember(editNoteIndex) { mutableStateOf(instance.customSettingsNote ?: "") }
 
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { showEditNoteIndex = -1 },
             title = { Text(stringResource(R.string.hint_settings_note)) },
             text = {
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = noteInput,
                     onValueChange = { noteInput = it },
                     label = { Text(stringResource(R.string.hint_settings_note)) },

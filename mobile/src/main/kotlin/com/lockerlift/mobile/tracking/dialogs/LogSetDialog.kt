@@ -52,7 +52,6 @@ import com.lockerlift.mobile.tracking.components.WeightStepperControls
 fun LogSetDialog(
     instance: SessionMachineInstance,
     machine: Machine?,
-    machines: List<Machine>,
     existingSets: List<WorkoutSet>,
     historicalSetsProvider: suspend (String) -> List<WorkoutSetEntity>,
     restTimerSeconds: Int,
