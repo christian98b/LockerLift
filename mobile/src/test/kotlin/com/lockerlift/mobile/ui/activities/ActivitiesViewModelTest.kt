@@ -60,7 +60,7 @@ class ActivitiesViewModelTest {
             id = "a-1",
             activityTypeId = "t-1",
             date = 1000L,
-            fieldValuesJson = "{}",
+            fieldValues = emptyMap(),
             notes = null
         )
 
@@ -83,7 +83,7 @@ class ActivitiesViewModelTest {
             id = "a-1",
             activityTypeId = "t-1",
             date = 2000L,
-            fieldValuesJson = "{}",
+            fieldValues = emptyMap(),
             notes = "updated"
         )
 

@@ -11,7 +11,7 @@ import com.lockerlift.core.database.entity.SessionMachineInstanceEntity
 import com.lockerlift.core.database.entity.WorkoutSessionEntity
 import com.lockerlift.core.database.entity.WorkoutSetEntity
 import com.lockerlift.core.model.WorkoutSession
-import com.lockerlift.core.model.WorkoutSessionPayload
+import com.lockerlift.core.sync.WorkoutSessionPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
