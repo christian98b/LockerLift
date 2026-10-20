@@ -10,20 +10,21 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.database.model.ActivityEntryWithType
 import com.lockerlift.core.model.ActivityEntry
 import com.lockerlift.core.model.ActivityType
+import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,16 +37,20 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitiesScreen(
-    database: LockerLiftDatabase,
+    app: LockerLiftMobileApp,
     onExportToHealthConnect: suspend (ActivityEntry, String) -> Unit,
     onDeleteFromHealthConnect: suspend (String) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val activityTypeDao = remember { database.activityTypeDao() }
-    val activityEntryDao = remember { database.activityEntryDao() }
+    val activitiesViewModel: ActivitiesViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                ActivitiesViewModel(application = app, database = app.database)
+            }
+        }
+    )
 
-    val typesState by activityTypeDao.getAllActivityTypesFlow().collectAsState(initial = emptyList())
-    val entriesState by activityEntryDao.getAllEntriesWithTypeFlow().collectAsState(initial = emptyList())
+    val typesState by activitiesViewModel.types.collectAsState()
+    val entriesState by activitiesViewModel.entries.collectAsState()
 
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
 
@@ -175,14 +180,11 @@ fun ActivitiesScreen(
     // --- LOG ACTIVITY DIALOG ---
     if (showLogDialog) {
         LogActivityDialog(
-            availableTypes = typesState.map { it.toDomainModel() },
+            availableTypes = typesState,
             onDismiss = { showLogDialog = false },
             onSave = { entry, typeName ->
-                coroutineScope.launch {
-                    activityEntryDao.insertEntry(entry.toEntity())
-                    onExportToHealthConnect(entry, typeName)
-                    showLogDialog = false
-                }
+                activitiesViewModel.logEntry(entry, typeName, onExportToHealthConnect)
+                showLogDialog = false
             }
         )
     }
@@ -194,11 +196,8 @@ fun ActivitiesScreen(
             type = type,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry, typeName ->
-                coroutineScope.launch {
-                    activityEntryDao.updateEntry(updatedEntry.toEntity())
-                    onExportToHealthConnect(updatedEntry, typeName)
-                    editingEntry = null
-                }
+                activitiesViewModel.updateEntry(updatedEntry, typeName, onExportToHealthConnect)
+                editingEntry = null
             }
         )
     }
@@ -212,12 +211,8 @@ fun ActivitiesScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val entryId = target.entry.id
-                        coroutineScope.launch {
-                            activityEntryDao.deleteEntryById(entryId)
-                            onDeleteFromHealthConnect(entryId)
-                            entryToDelete = null
-                        }
+                        activitiesViewModel.deleteEntry(target.entry.id, onDeleteFromHealthConnect)
+                        entryToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -235,10 +230,10 @@ fun ActivitiesScreen(
     // --- MANAGE TYPES DIALOG ---
     if (showManageDialog) {
         ManageActivityTypesDialog(
-            types = typesState.map { it.toDomainModel() },
+            types = typesState,
             onDismiss = { showManageDialog = false },
             onCreateType = { type ->
-                coroutineScope.launch { activityTypeDao.insertActivityType(type.toEntity()) }
+                activitiesViewModel.createType(type)
             },
             onRequestDeleteType = { type -> typeToDelete = type }
         )
@@ -253,12 +248,8 @@ fun ActivitiesScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            val entries = activityEntryDao.getEntriesByTypeId(type.id)
-                            activityTypeDao.deleteActivityTypeById(type.id)
-                            entries.forEach { onDeleteFromHealthConnect(it.id) }
-                            typeToDelete = null
-                        }
+                        activitiesViewModel.deleteType(type, onDeleteFromHealthConnect)
+                        typeToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error

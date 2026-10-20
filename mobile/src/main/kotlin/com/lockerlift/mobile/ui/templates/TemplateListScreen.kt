@@ -22,9 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.core.database.entity.MachineEntity
 import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.database.model.WorkoutTemplateWithMachines
 import com.lockerlift.core.model.WorkoutTemplate
 import com.lockerlift.core.sync.PullRefreshSyncResult
@@ -35,16 +37,20 @@ import com.lockerlift.core.sync.WorkoutTemplatePayload
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
 import com.lockerlift.mobile.sync.MobileMasterDataSync
-import com.lockerlift.core.database.state.ActiveSessionStateRepository
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateListScreen(app: LockerLiftMobileApp) {
     val context = LocalContext.current
-    val templateDao = remember { app.database.workoutTemplateDao() }
-    val templatesState by templateDao.getAllActiveTemplatesWithMachinesFlow().collectAsState(initial = emptyList())
+    val templateListViewModel: TemplateListViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                TemplateListViewModel(application = app, database = app.database)
+            }
+        }
+    )
+    val templatesState by templateListViewModel.templates.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val dataLayerManager = remember { WearableDataLayerManager(context) }
     val syncCoordinator = remember { SyncPullRefreshCoordinator(dataLayerManager) }
@@ -56,20 +62,20 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
     var editingTemplate by remember { mutableStateOf<WorkoutTemplateWithMachines?>(null) }
     var editTemplateName by remember { mutableStateOf("") }
     var editTemplateDesc by remember { mutableStateOf("") }
-    var assignedMachines by remember { mutableStateOf<List<MachineEntity>>(emptyList()) }
     var showMachinePicker by remember { mutableStateOf(false) }
 
     var isRefreshing by remember { mutableStateOf(false) }
     var deleteTemplateCandidate by remember { mutableStateOf<WorkoutTemplateWithMachines?>(null) }
     var infoMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val activeSessionRepository = remember { ActiveSessionStateRepository(app.database.activeSessionStateDao()) }
+    val assignedMachines by templateListViewModel.assignedMachines.collectAsState()
+    val catalogMachines by templateListViewModel.catalogMachines.collectAsState()
 
     LaunchedEffect(editingTemplate) {
         editingTemplate?.let { item ->
             editTemplateName = item.template.name
             editTemplateDesc = item.template.description ?: ""
-            assignedMachines = templateDao.getMachinesForTemplateOrdered(item.template.id)
+            templateListViewModel.loadAssignedMachines(item.template.id)
         }
     }
 
@@ -217,14 +223,15 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                             val target = deleteTemplateCandidate
                             deleteTemplateCandidate = null
                             if (target != null) {
-                                coroutineScope.launch {
-                                    val activeTemplateId = activeSessionRepository.loadActiveTemplateId()
-                                    if (activeTemplateId == target.template.id) {
-                                        infoMessage = context.getString(R.string.template_delete_blocked_active_workout)
-                                    } else {
-                                        templateDao.softDeleteTemplateWithCrossRefs(target.template.id)
-                                        syncAllTemplatesToWear()
-                                        infoMessage = context.getString(R.string.template_deleted, target.template.name)
+                                templateListViewModel.deleteTemplate(
+                                    target.template.id,
+                                    target.template.name
+                                ) { result ->
+                                    infoMessage = when (result) {
+                                        is TemplateDeleteResult.Deleted ->
+                                            context.getString(R.string.template_deleted, result.templateName)
+                                        is TemplateDeleteResult.BlockedActiveWorkout ->
+                                            context.getString(R.string.template_delete_blocked_active_workout)
                                     }
                                 }
                             }
@@ -266,15 +273,11 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                 confirmButton = {
                     Button(onClick = {
                         if (newTemplateName.isNotBlank()) {
-                            coroutineScope.launch {
-                                val newTemplate = WorkoutTemplate(
-                                    name = newTemplateName.trim(),
-                                    description = newTemplateDesc.takeIf { it.isNotBlank() }
-                                )
-                                templateDao.insertTemplate(newTemplate.toEntity())
-                                syncAllTemplatesToWear()
-                                showNewDialog = false
-                            }
+                            templateListViewModel.createTemplate(
+                                name = newTemplateName,
+                                description = newTemplateDesc
+                            )
+                            showNewDialog = false
                         }
                     }) {
                         Text(stringResource(R.string.btn_create))
@@ -353,10 +356,9 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                                         IconButton(
                                             onClick = {
                                                 if (index > 0) {
-                                                    val list = assignedMachines.toMutableList()
-                                                    val item = list.removeAt(index)
-                                                    list.add(index - 1, item)
-                                                    assignedMachines = list
+                                                    templateListViewModel.setAssignedMachines(
+                                                        moveItem(assignedMachines, index, index - 1)
+                                                    )
                                                 }
                                             },
                                             enabled = index > 0
@@ -370,10 +372,9 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                                         IconButton(
                                             onClick = {
                                                 if (index < assignedMachines.size - 1) {
-                                                    val list = assignedMachines.toMutableList()
-                                                    val item = list.removeAt(index)
-                                                    list.add(index + 1, item)
-                                                    assignedMachines = list
+                                                    templateListViewModel.setAssignedMachines(
+                                                        moveItem(assignedMachines, index, index + 1)
+                                                    )
                                                 }
                                             },
                                             enabled = index < assignedMachines.size - 1
@@ -386,9 +387,9 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                                         // Remove Action (AK 2.2.2 - removes from template, leaves catalog intact)
                                         IconButton(
                                             onClick = {
-                                                val list = assignedMachines.toMutableList()
-                                                list.removeAt(index)
-                                                assignedMachines = list
+                                                templateListViewModel.setAssignedMachines(
+                                                    assignedMachines.filterIndexed { i, _ -> i != index }
+                                                )
                                             }
                                         ) {
                                             Icon(
@@ -416,20 +417,16 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                 confirmButton = {
                     Button(onClick = {
                         if (editTemplateName.isNotBlank()) {
-                            coroutineScope.launch {
-                                val current = editingTemplate?.template ?: return@launch
-                                val updated = current.copy(
-                                    name = editTemplateName.trim(),
-                                    description = editTemplateDesc.takeIf { it.isNotBlank() },
-                                    updatedAt = System.currentTimeMillis()
-                                )
-                                templateDao.saveTemplateWithMachines(
-                                    template = updated,
+                            val current = editingTemplate?.template
+                            if (current != null) {
+                                templateListViewModel.saveTemplate(
+                                    current = current,
+                                    name = editTemplateName,
+                                    description = editTemplateDesc,
                                     machineIdsInOrder = assignedMachines.map { it.id }
                                 )
-                                syncAllTemplatesToWear()
-                                editingTemplate = null
                             }
+                            editingTemplate = null
                         }
                     }) {
                         Text(stringResource(R.string.btn_save))
@@ -445,7 +442,6 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
 
         // Machine Picker Dialog to add a machine from catalog to template
         if (showMachinePicker) {
-            val catalogMachines by app.database.machineDao().getAllMachinesFlow().collectAsState(initial = emptyList())
             AlertDialog(
                 onDismissRequest = { showMachinePicker = false },
                 title = { Text(stringResource(R.string.dialog_select_machine_title)) },
@@ -464,7 +460,7 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            assignedMachines = assignedMachines + catMachine
+                                            templateListViewModel.addAssignedMachine(catMachine)
                                             showMachinePicker = false
                                         },
                                     colors = CardDefaults.cardColors(
@@ -496,4 +492,11 @@ fun TemplateListScreen(app: LockerLiftMobileApp) {
             )
         }
     }
+}
+
+private fun moveItem(list: List<MachineEntity>, fromIndex: Int, toIndex: Int): List<MachineEntity> {
+    val mutable = list.toMutableList()
+    val item = mutable.removeAt(fromIndex)
+    mutable.add(toIndex, item)
+    return mutable
 }

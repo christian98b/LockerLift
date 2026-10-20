@@ -10,25 +10,25 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.lockerlift.core.database.LockerLiftDatabase
 import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.database.model.WorkoutPlanWithEntries
 import com.lockerlift.core.model.ActivityType
 import com.lockerlift.core.model.PlanEntry
 import com.lockerlift.core.model.WorkoutPlan
 import com.lockerlift.core.model.WorkoutTemplate
 import com.lockerlift.mobile.R
-import kotlinx.coroutines.launch
+import java.util.UUID
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
-import java.util.UUID
 
 /**
  * Training plan screen (Issue #51): manage the weekly rotation plan
@@ -36,23 +36,18 @@ import java.util.UUID
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutPlanScreen(database: LockerLiftDatabase) {
-    val coroutineScope = rememberCoroutineScope()
-    val planDao = remember { database.workoutPlanDao() }
-    val templateDao = remember { database.workoutTemplateDao() }
-    val activityTypeDao = remember { database.activityTypeDao() }
+fun WorkoutPlanScreen(app: com.lockerlift.mobile.LockerLiftMobileApp) {
+    val planViewModel: WorkoutPlanViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                WorkoutPlanViewModel(application = app, database = app.database)
+            }
+        }
+    )
 
-    val plansState by planDao.getAllPlansWithEntriesFlow().collectAsState(initial = emptyList())
-    val templatesState = produceState<List<WorkoutTemplate>>(emptyList()) {
-        templateDao.getAllActiveTemplatesWithMachinesFlow().collect { list ->
-            value = list.map { it.template.toDomainModel() }
-        }
-    }
-    val activityTypesState = produceState<List<ActivityType>>(emptyList()) {
-        activityTypeDao.getAllActivityTypesFlow().collect { list ->
-            value = list.map { it.toDomainModel() }
-        }
-    }
+    val plansState by planViewModel.plans.collectAsState()
+    val templatesState by planViewModel.templates.collectAsState()
+    val activityTypesState by planViewModel.activityTypes.collectAsState()
 
     var showEditor by remember { mutableStateOf(false) }
     var editingPlan by remember { mutableStateOf<WorkoutPlanWithEntries?>(null) }
@@ -143,19 +138,16 @@ fun WorkoutPlanScreen(database: LockerLiftDatabase) {
     if (showEditor || editingPlan != null) {
         PlanEditorDialog(
             initial = editingPlan,
-            templates = templatesState.value,
-            activityTypes = activityTypesState.value,
+            templates = templatesState,
+            activityTypes = activityTypesState,
             onDismiss = {
                 showEditor = false
                 editingPlan = null
             },
             onSave = { plan, entries ->
-                coroutineScope.launch {
-                    planDao.insertPlan(plan.toEntity())
-                    planDao.replacePlanEntries(plan.id, entries.map { it.toEntity() })
-                    showEditor = false
-                    editingPlan = null
-                }
+                planViewModel.savePlan(plan, entries)
+                showEditor = false
+                editingPlan = null
             }
         )
     }
@@ -168,10 +160,8 @@ fun WorkoutPlanScreen(database: LockerLiftDatabase) {
             confirmButton = {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            planDao.deletePlanById(target.plan.id)
-                            planToDelete = null
-                        }
+                        planViewModel.deletePlan(target.plan.id)
+                        planToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
