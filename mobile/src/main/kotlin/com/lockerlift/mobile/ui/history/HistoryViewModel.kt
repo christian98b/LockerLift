@@ -13,7 +13,7 @@ import com.lockerlift.core.database.entity.toDomainModel
 import com.lockerlift.core.database.model.WorkoutSessionWithDetails
 import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.Machine
-import com.lockerlift.core.model.WorkoutSessionPayload
+import com.lockerlift.core.sync.WorkoutSessionPayload
 import com.lockerlift.core.sync.SyncConstants
 import com.lockerlift.core.sync.SyncIngestionEngine
 import com.lockerlift.core.sync.SyncPayloadSerializer

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,8 +46,8 @@ fun WorkoutPlanScreen(app: com.lockerlift.mobile.LockerLiftMobileApp) {
     )
 
     val plansState by planViewModel.plans.collectAsState()
-    val templatesState = planViewModel.templates
-    val activityTypesState = planViewModel.activityTypes
+    val templatesState by planViewModel.templates.collectAsState()
+    val activityTypesState by planViewModel.activityTypes.collectAsState()
 
     var showEditor by remember { mutableStateOf(false) }
     var editingPlan by remember { mutableStateOf<WorkoutPlanWithEntries?>(null) }

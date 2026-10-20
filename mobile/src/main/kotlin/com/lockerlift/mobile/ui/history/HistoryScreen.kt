@@ -33,6 +33,7 @@ import com.lockerlift.core.database.model.WorkoutSessionWithDetails
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
