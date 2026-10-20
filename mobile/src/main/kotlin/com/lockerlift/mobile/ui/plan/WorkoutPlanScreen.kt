@@ -139,7 +139,7 @@ fun WorkoutPlanScreen(app: com.lockerlift.mobile.LockerLiftMobileApp) {
         PlanEditorDialog(
             initial = editingPlan,
             templates = templatesState,
-            activityTypes = activityTypes,
+            activityTypes = activityTypesState,
             onDismiss = {
                 showEditor = false
                 editingPlan = null
