@@ -112,10 +112,10 @@ class HistoryViewModelTest {
 
         assertNull(database.workoutSessionDao().getSessionWithDetailsById("session-1"))
         assertNotNull(database.deletedSessionDao().getBySessionId("session-1"))
-        assertNull(database.syncQueueDao().getWorkoutQueueItemBySessionId("session-1"))
         val pending = database.syncQueueDao().getPendingQueueItems()
         assertEquals(1, pending.size)
         assertEquals("session-1", pending.first().sessionId)
+        assertEquals("DELETE", pending.first().payloadJson)
     }
 
     @Test

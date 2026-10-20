@@ -59,14 +59,18 @@ class WorkoutPlanViewModel(
      * Inserts or updates the plan and atomically replaces its entries.
      */
     fun savePlan(plan: WorkoutPlan, entries: List<PlanEntry>) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             planDao.insertPlan(plan.toEntity())
             planDao.replacePlanEntries(plan.id, entries.map { it.toEntity() })
         }
     }
 
     fun deletePlan(planId: String) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             planDao.deletePlanById(planId)
         }
     }

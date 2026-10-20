@@ -62,7 +62,9 @@ class HistoryViewModel(
      * removes the Health Connect record if it was exported before.
      */
     fun deleteSession(sessionId: String) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             SyncIngestionEngine.addDeletedSessionTombstone(
                 database, sessionId, originDevice = ORIGIN_DEVICE
             )
@@ -94,7 +96,9 @@ class HistoryViewModel(
         payload: WorkoutSessionPayload,
         templateName: String?
     ) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             sessionDao.upsertFullSession(session = session, instances = instances, sets = sets)
             val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
             syncQueueDao.deleteQueueItemBySessionId(session.id)

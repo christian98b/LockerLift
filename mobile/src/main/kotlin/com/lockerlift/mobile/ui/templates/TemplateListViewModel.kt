@@ -67,7 +67,9 @@ class TemplateListViewModel(
      * edited.
      */
     fun loadAssignedMachines(templateId: String) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             _assignedMachines.value = templateDao.getMachinesForTemplateOrdered(templateId)
         }
     }
@@ -89,7 +91,9 @@ class TemplateListViewModel(
     fun createTemplate(name: String, description: String?) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             templateDao.insertTemplate(
                 WorkoutTemplate(
                     name = trimmed,
@@ -112,7 +116,9 @@ class TemplateListViewModel(
     ) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             templateDao.saveTemplateWithMachines(
                 template = current.copy(
                     name = trimmed,
@@ -131,7 +137,9 @@ class TemplateListViewModel(
      * updated master data is pushed to the watch.
      */
     fun deleteTemplate(templateId: String, templateName: String, onResult: (TemplateDeleteResult) -> Unit) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             val activeTemplateId = activeSessionRepository.loadActiveTemplateId()
             if (activeTemplateId == templateId) {
                 onResult(TemplateDeleteResult.BlockedActiveWorkout)

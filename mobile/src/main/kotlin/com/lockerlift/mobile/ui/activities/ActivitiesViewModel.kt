@@ -28,6 +28,7 @@ class ActivitiesViewModel(
 ) : AndroidViewModel(application) {
 
     private val activityTypeDao = database.activityTypeDao()
+    private val activityEntryDao = database.activityEntryDao()
     private var actionJob: kotlinx.coroutines.Job? = null
 
     /**
@@ -37,7 +38,6 @@ class ActivitiesViewModel(
     internal suspend fun awaitActions() {
         actionJob?.join()
     }
-    private val activityEntryDao = database.activityEntryDao()
 
     val types: StateFlow<List<ActivityType>> =
         activityTypeDao.getAllActivityTypesFlow()
@@ -56,7 +56,9 @@ class ActivitiesViewModel(
         typeName: String,
         onExportToHealthConnect: suspend (ActivityEntry, String) -> Unit
     ) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             activityEntryDao.insertEntry(entry.toEntity())
             onExportToHealthConnect(entry, typeName)
         }
@@ -71,7 +73,9 @@ class ActivitiesViewModel(
         typeName: String,
         onExportToHealthConnect: suspend (ActivityEntry, String) -> Unit
     ) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             activityEntryDao.updateEntry(updatedEntry.toEntity())
             onExportToHealthConnect(updatedEntry, typeName)
         }
@@ -84,14 +88,20 @@ class ActivitiesViewModel(
         entryId: String,
         onDeleteFromHealthConnect: suspend (String) -> Unit
     ) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             activityEntryDao.deleteEntryById(entryId)
             onDeleteFromHealthConnect(entryId)
         }
     }
 
     fun createType(type: ActivityType) {
-        actionJob = viewModelScope.launch { activityTypeDao.insertActivityType(type.toEntity()) }
+        val previous = actionJob
+        actionJob = viewModelScope.launch {
+            previous?.join()
+            activityTypeDao.insertActivityType(type.toEntity())
+        }
     }
 
     /**
@@ -102,7 +112,9 @@ class ActivitiesViewModel(
         type: ActivityType,
         onDeleteFromHealthConnect: suspend (String) -> Unit
     ) {
+        val previous = actionJob
         actionJob = viewModelScope.launch {
+            previous?.join()
             val entries = activityEntryDao.getEntriesByTypeId(type.id)
             activityTypeDao.deleteActivityTypeById(type.id)
             entries.forEach { onDeleteFromHealthConnect(it.id) }

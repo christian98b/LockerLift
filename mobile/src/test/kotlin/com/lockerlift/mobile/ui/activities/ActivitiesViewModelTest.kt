@@ -54,6 +54,9 @@ class ActivitiesViewModelTest {
 
     @Test
     fun testLogEntry_insertsEntryAndDelegatesExport() = runTest(testDispatcher) {
+        database.activityTypeDao().insertActivityType(
+            ActivityTypeEntity(id = "t-1", name = "Running")
+        )
         var exportedEntry: ActivityEntry? = null
         var exportedTypeName: String? = null
         val entry = ActivityEntry(

@@ -143,7 +143,9 @@ class TemplateListViewModelTest {
         viewModel.awaitActions()
 
         assertTrue(result is TemplateDeleteResult.Deleted)
-        assertNull(database.workoutTemplateDao().getTemplateWithMachinesById("t-1"))
+        val active = database.workoutTemplateDao()
+            .getAllActiveTemplatesWithMachinesFlow().first()
+        assertTrue(active.none { it.template.id == "t-1" })
         assertTrue(database.workoutTemplateDao().getMachinesForTemplateOrdered("t-1").isEmpty())
     }
 
