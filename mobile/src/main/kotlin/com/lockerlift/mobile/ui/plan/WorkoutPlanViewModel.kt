@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -28,6 +29,15 @@ class WorkoutPlanViewModel(
 ) : AndroidViewModel(application) {
 
     private val planDao = database.workoutPlanDao()
+    private var actionJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Waits until all pending save/delete actions have been flushed to the
+     * DB. Intended for tests to make assertions deterministic.
+     */
+    internal suspend fun awaitActions() {
+        actionJob?.join()
+    }
     private val templateDao = database.workoutTemplateDao()
     private val activityTypeDao = database.activityTypeDao()
 
@@ -49,14 +59,14 @@ class WorkoutPlanViewModel(
      * Inserts or updates the plan and atomically replaces its entries.
      */
     fun savePlan(plan: WorkoutPlan, entries: List<PlanEntry>) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             planDao.insertPlan(plan.toEntity())
             planDao.replacePlanEntries(plan.id, entries.map { it.toEntity() })
         }
     }
 
     fun deletePlan(planId: String) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             planDao.deletePlanById(planId)
         }
     }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -105,7 +106,9 @@ class HistoryViewModelTest {
             )
         )
 
-        createViewModel().deleteSession("session-1")
+        val viewModel = createViewModel()
+        viewModel.deleteSession("session-1")
+        viewModel.awaitActions()
 
         assertNull(database.workoutSessionDao().getSessionWithDetailsById("session-1"))
         assertNotNull(database.deletedSessionDao().getBySessionId("session-1"))
@@ -127,7 +130,8 @@ class HistoryViewModelTest {
         )
         val session = WorkoutSession(id = "session-2", startTime = 1000L, endTime = 3000L)
 
-        createViewModel().saveSession(
+        val viewModel = createViewModel()
+        viewModel.saveSession(
             session = WorkoutSessionEntity(
                 id = "session-2",
                 startTime = 1000L,
@@ -159,6 +163,7 @@ class HistoryViewModelTest {
             ),
             templateName = null
         )
+        viewModel.awaitActions()
 
         val stored = database.workoutSessionDao().getSessionWithDetailsById("session-2")
         assertNotNull(stored)
@@ -172,7 +177,7 @@ class HistoryViewModelTest {
     fun testSessionsFlow_exposesSessions() = runTest(testDispatcher) {
         insertSession("session-3")
         val viewModel = createViewModel()
-        assertEquals(1, viewModel.sessions.value.size)
-        assertEquals(1, viewModel.machines.value.size)
+        assertEquals(1, viewModel.sessions.first { it.isNotEmpty() }.size)
+        assertEquals(1, viewModel.machines.first { it.isNotEmpty() }.size)
     }
 }

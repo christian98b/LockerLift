@@ -58,7 +58,9 @@ class WorkoutPlanViewModelTest {
             PlanEntry(id = "e-2", planId = "p-1", weekIndex = 1, dayOfWeek = 3, label = "Pull")
         )
 
-        createViewModel().savePlan(plan, entries)
+        val viewModel = createViewModel()
+        viewModel.savePlan(plan, entries)
+        viewModel.awaitActions()
 
         val stored = database.workoutPlanDao().getPlanWithEntriesById("p-1")
         assertEquals("Split", stored!!.plan.name)
@@ -73,6 +75,7 @@ class WorkoutPlanViewModelTest {
             WorkoutPlan(id = "p-1", name = "Split", cycleLengthWeeks = 1),
             listOf(PlanEntry(id = "e-1", planId = "p-1", weekIndex = 0, dayOfWeek = 1, label = "Push"))
         )
+        viewModel.awaitActions()
         viewModel.savePlan(
             WorkoutPlan(id = "p-1", name = "Split", cycleLengthWeeks = 1),
             listOf(
@@ -80,6 +83,7 @@ class WorkoutPlanViewModelTest {
                 PlanEntry(id = "e-3", planId = "p-1", weekIndex = 0, dayOfWeek = 4, label = "Legs")
             )
         )
+        viewModel.awaitActions()
 
         val stored = database.workoutPlanDao().getPlanWithEntriesById("p-1")
         assertEquals(setOf("e-2", "e-3"), stored!!.entries.map { it.id }.toSet())
@@ -94,6 +98,7 @@ class WorkoutPlanViewModelTest {
         )
 
         viewModel.deletePlan("p-1")
+        viewModel.awaitActions()
 
         assertNull(database.workoutPlanDao().getPlanById("p-1"))
         assertTrue(database.workoutPlanDao().getEntriesForPlan("p-1").isEmpty())

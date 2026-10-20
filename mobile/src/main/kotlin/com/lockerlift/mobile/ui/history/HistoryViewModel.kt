@@ -22,6 +22,7 @@ import com.lockerlift.core.sync.WearableDataLayerManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -61,7 +62,7 @@ class HistoryViewModel(
      * removes the Health Connect record if it was exported before.
      */
     fun deleteSession(sessionId: String) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             SyncIngestionEngine.addDeletedSessionTombstone(
                 database, sessionId, originDevice = ORIGIN_DEVICE
             )
@@ -93,7 +94,7 @@ class HistoryViewModel(
         payload: WorkoutSessionPayload,
         templateName: String?
     ) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             sessionDao.upsertFullSession(session = session, instances = instances, sets = sets)
             val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
             syncQueueDao.deleteQueueItemBySessionId(session.id)
@@ -112,6 +113,16 @@ class HistoryViewModel(
                 )
             }
         }
+    }
+
+    private var actionJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Waits until all pending delete/save actions have been flushed to the
+     * DB and the watch. Intended for tests to make assertions deterministic.
+     */
+    internal suspend fun awaitActions() {
+        actionJob?.join()
     }
 
     private suspend fun enqueueAndFlush() {

@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -56,13 +57,15 @@ class SettingsViewModelTest {
             SyncQueueEntity(id = "q-1", sessionId = "s-1", payloadJson = "{}")
         )
         val viewModel = createViewModel()
-        assertEquals(1, viewModel.pendingQueueCount.value)
+        assertEquals(1, viewModel.pendingQueueCount.first { it > 0 })
     }
 
     @Test
     fun testSyncWorkouts_reportsNoCompanionWithoutWatch() = runTest(testDispatcher) {
         var result: WorkoutSyncUiResult? = null
-        createViewModel().syncWorkouts { result = it }
+        val viewModel = createViewModel()
+        viewModel.syncWorkouts { result = it }
+        viewModel.awaitActions()
         assertTrue(
             "Expected NoCompanion or Error in the test environment, got $result",
             result is WorkoutSyncUiResult.NoCompanion || result is WorkoutSyncUiResult.Error
@@ -73,6 +76,7 @@ class SettingsViewModelTest {
     fun testSyncFlags_resetAfterSync() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.syncWorkouts { }
+        viewModel.awaitActions()
         assertFalse(viewModel.isSyncingWorkouts.value)
         assertFalse(viewModel.isSyncingMasterData.value)
     }

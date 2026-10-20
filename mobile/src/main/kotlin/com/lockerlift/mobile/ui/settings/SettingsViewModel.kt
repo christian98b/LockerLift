@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -71,8 +72,18 @@ class SettingsViewModel(
      * Re-reads the Wear companion connection state and the last sync
      * timestamp from the DataClient.
      */
+    private var syncJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Waits until all pending sync actions have finished. Intended for
+     * tests to make assertions deterministic.
+     */
+    internal suspend fun awaitActions() {
+        syncJob?.join()
+    }
+
     fun refreshCompanionStatus() {
-        viewModelScope.launch {
+        syncJob = viewModelScope.launch {
             _companionStatus.value = dataLayerManager.getWearCompanionStatus()
             _lastSyncTimestamp.value = dataLayerManager.getLastSyncTimestamp()
         }
@@ -86,7 +97,7 @@ class SettingsViewModel(
     fun syncMasterData(onResult: (Boolean) -> Unit) {
         if (_isSyncingMasterData.value) return
         _isSyncingMasterData.value = true
-        viewModelScope.launch {
+        syncJob = viewModelScope.launch {
             val catalogSuccess = dataLayerManager.syncEquipmentCatalog(catalogJson())
             val templatesSuccess = dataLayerManager.syncTemplates(templatesJson())
             _lastSyncTimestamp.value = dataLayerManager.getLastSyncTimestamp()
@@ -102,7 +113,7 @@ class SettingsViewModel(
     fun syncWorkouts(onResult: (WorkoutSyncUiResult) -> Unit) {
         if (_isSyncingWorkouts.value) return
         _isSyncingWorkouts.value = true
-        viewModelScope.launch {
+        syncJob = viewModelScope.launch {
             val result = dataLayerManager.flushPendingQueue(
                 syncQueueDao, SyncConstants.CAPABILITY_WEAR
             )
@@ -127,7 +138,7 @@ class SettingsViewModel(
      * Exports the full database to the user-picked SAF directory.
      */
     fun exportBackup(dirUri: Uri, onResult: (BackupResult) -> Unit) {
-        viewModelScope.launch {
+        syncJob = viewModelScope.launch {
             onResult(LocalBackupManager(getApplication(), database).exportToDirectory(dirUri))
         }
     }
@@ -136,7 +147,7 @@ class SettingsViewModel(
      * Restores the database from a user-picked backup file.
      */
     fun restoreBackup(uri: Uri, onResult: (BackupResult) -> Unit) {
-        viewModelScope.launch {
+        syncJob = viewModelScope.launch {
             onResult(LocalBackupManager(getApplication(), database).restoreFromFile(uri))
         }
     }

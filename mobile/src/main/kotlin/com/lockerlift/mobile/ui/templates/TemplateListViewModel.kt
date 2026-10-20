@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** Outcome of a template deletion attempt. */
@@ -38,6 +39,15 @@ class TemplateListViewModel(
 ) : AndroidViewModel(application) {
 
     private val templateDao = database.workoutTemplateDao()
+    private var actionJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Waits until all pending CRUD actions have been flushed to the DB.
+     * Intended for tests to make assertions deterministic.
+     */
+    internal suspend fun awaitActions() {
+        actionJob?.join()
+    }
     private val machineDao = database.machineDao()
     private val activeSessionRepository = ActiveSessionStateRepository(database.activeSessionStateDao())
 
@@ -57,7 +67,7 @@ class TemplateListViewModel(
      * edited.
      */
     fun loadAssignedMachines(templateId: String) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             _assignedMachines.value = templateDao.getMachinesForTemplateOrdered(templateId)
         }
     }
@@ -79,7 +89,7 @@ class TemplateListViewModel(
     fun createTemplate(name: String, description: String?) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             templateDao.insertTemplate(
                 WorkoutTemplate(
                     name = trimmed,
@@ -102,7 +112,7 @@ class TemplateListViewModel(
     ) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             templateDao.saveTemplateWithMachines(
                 template = current.copy(
                     name = trimmed,
@@ -121,7 +131,7 @@ class TemplateListViewModel(
      * updated master data is pushed to the watch.
      */
     fun deleteTemplate(templateId: String, templateName: String, onResult: (TemplateDeleteResult) -> Unit) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             val activeTemplateId = activeSessionRepository.loadActiveTemplateId()
             if (activeTemplateId == templateId) {
                 onResult(TemplateDeleteResult.BlockedActiveWorkout)

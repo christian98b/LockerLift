@@ -64,10 +64,12 @@ class ActivitiesViewModelTest {
             notes = null
         )
 
-        createViewModel().logEntry(entry, "Running") { e, name ->
+        val viewModel = createViewModel()
+        viewModel.logEntry(entry, "Running") { e, name ->
             exportedEntry = e
             exportedTypeName = name
         }
+        viewModel.awaitActions()
 
         assertEquals("a-1", database.activityEntryDao().getEntryById("a-1")!!.id)
         assertEquals("a-1", exportedEntry!!.id)
@@ -76,6 +78,9 @@ class ActivitiesViewModelTest {
 
     @Test
     fun testUpdateEntry_persistsNewValues() = runTest(testDispatcher) {
+        database.activityTypeDao().insertActivityType(
+            ActivityTypeEntity(id = "t-1", name = "Running")
+        )
         database.activityEntryDao().insertEntry(
             ActivityEntryEntity(id = "a-1", activityTypeId = "t-1", date = 1000L)
         )
@@ -87,7 +92,9 @@ class ActivitiesViewModelTest {
             notes = "updated"
         )
 
-        createViewModel().updateEntry(updated, "Running") { _, _ -> }
+        val viewModel = createViewModel()
+        viewModel.updateEntry(updated, "Running") { _, _ -> }
+        viewModel.awaitActions()
 
         val stored = database.activityEntryDao().getEntryById("a-1")
         assertEquals(2000L, stored!!.date)
@@ -96,12 +103,17 @@ class ActivitiesViewModelTest {
 
     @Test
     fun testDeleteEntry_removesEntryAndDelegatesHealthConnect() = runTest(testDispatcher) {
+        database.activityTypeDao().insertActivityType(
+            ActivityTypeEntity(id = "t-1", name = "Running")
+        )
         database.activityEntryDao().insertEntry(
             ActivityEntryEntity(id = "a-1", activityTypeId = "t-1", date = 1000L)
         )
         val deleted = mutableListOf<String>()
 
-        createViewModel().deleteEntry("a-1") { deleted.add(it) }
+        val viewModel = createViewModel()
+        viewModel.deleteEntry("a-1") { deleted.add(it) }
+        viewModel.awaitActions()
 
         assertTrue(deleted.contains("a-1"))
         assertEquals(null, database.activityEntryDao().getEntryById("a-1"))
@@ -120,7 +132,9 @@ class ActivitiesViewModelTest {
         )
         val deleted = mutableListOf<String>()
 
-        createViewModel().deleteType(ActivityType(id = "t-1", name = "Running")) { deleted.add(it) }
+        val viewModel = createViewModel()
+        viewModel.deleteType(ActivityType(id = "t-1", name = "Running")) { deleted.add(it) }
+        viewModel.awaitActions()
 
         assertEquals(setOf("a-1", "a-2"), deleted.toSet())
         assertEquals(null, database.activityTypeDao().getActivityTypeById("t-1"))
@@ -129,7 +143,9 @@ class ActivitiesViewModelTest {
 
     @Test
     fun testCreateType_insertsType() = runTest(testDispatcher) {
-        createViewModel().createType(ActivityType(id = "t-1", name = "Cycling"))
+        val viewModel = createViewModel()
+        viewModel.createType(ActivityType(id = "t-1", name = "Cycling"))
+        viewModel.awaitActions()
         assertEquals("Cycling", database.activityTypeDao().getActivityTypeById("t-1")!!.name)
     }
 }

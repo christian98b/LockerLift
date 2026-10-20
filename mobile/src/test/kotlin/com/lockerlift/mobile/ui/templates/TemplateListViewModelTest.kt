@@ -63,7 +63,9 @@ class TemplateListViewModelTest {
 
     @Test
     fun testCreateTemplate_persistsTemplate() = runTest(testDispatcher) {
-        createViewModel().createTemplate(name = "Push Day", description = "  ")
+        val viewModel = createViewModel()
+        viewModel.createTemplate(name = "Push Day", description = "  ")
+        viewModel.awaitActions()
 
         val active = database.workoutTemplateDao()
             .getAllActiveTemplatesWithMachinesFlow().first()
@@ -88,6 +90,7 @@ class TemplateListViewModelTest {
             description = "desc",
             machineIdsInOrder = listOf("m-2", "m-1")
         )
+        viewModel.awaitActions()
 
         val ordered = database.workoutTemplateDao().getMachinesForTemplateOrdered("t-1")
         assertEquals(listOf("m-2", "m-1"), ordered.map { it.id })
@@ -115,7 +118,9 @@ class TemplateListViewModelTest {
         )
 
         var result: TemplateDeleteResult? = null
-        createViewModel().deleteTemplate("t-active", "Active") { result = it }
+        val viewModel = createViewModel()
+        viewModel.deleteTemplate("t-active", "Active") { result = it }
+        viewModel.awaitActions()
 
         assertTrue(result is TemplateDeleteResult.BlockedActiveWorkout)
         assertNotNull(database.workoutTemplateDao().getTemplateWithMachinesById("t-active"))
@@ -133,7 +138,9 @@ class TemplateListViewModelTest {
         )
 
         var result: TemplateDeleteResult? = null
-        createViewModel().deleteTemplate("t-1", "Old") { result = it }
+        val viewModel = createViewModel()
+        viewModel.deleteTemplate("t-1", "Old") { result = it }
+        viewModel.awaitActions()
 
         assertTrue(result is TemplateDeleteResult.Deleted)
         assertNull(database.workoutTemplateDao().getTemplateWithMachinesById("t-1"))
@@ -146,6 +153,7 @@ class TemplateListViewModelTest {
         insertMachine("m-2", "Squat")
         val viewModel = createViewModel()
         viewModel.loadAssignedMachines("t-none")
+        viewModel.awaitActions()
         viewModel.setAssignedMachines(
             database.machineDao().getAllMachines()
         )

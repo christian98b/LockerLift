@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -88,7 +89,7 @@ class InsightsViewModelTest {
         val app = ApplicationProvider.getApplicationContext<Application>()
         val viewModel = InsightsViewModel(application = app, database = database)
 
-        val snapshots = viewModel.snapshots.value
+        val snapshots = viewModel.snapshots.first { it.isNotEmpty() }
         assertEquals(1, snapshots.size)
         assertEquals("s-1", snapshots.first().sessionId)
         assertEquals(600f, snapshots.first().machineInstances.sumOf { it.volumeKg.toDouble() }.toFloat(), 0.01f)

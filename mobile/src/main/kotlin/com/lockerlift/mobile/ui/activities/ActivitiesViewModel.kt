@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -27,6 +28,15 @@ class ActivitiesViewModel(
 ) : AndroidViewModel(application) {
 
     private val activityTypeDao = database.activityTypeDao()
+    private var actionJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Waits until all pending CRUD actions have been flushed to the DB.
+     * Intended for tests to make assertions deterministic.
+     */
+    internal suspend fun awaitActions() {
+        actionJob?.join()
+    }
     private val activityEntryDao = database.activityEntryDao()
 
     val types: StateFlow<List<ActivityType>> =
@@ -46,7 +56,7 @@ class ActivitiesViewModel(
         typeName: String,
         onExportToHealthConnect: suspend (ActivityEntry, String) -> Unit
     ) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             activityEntryDao.insertEntry(entry.toEntity())
             onExportToHealthConnect(entry, typeName)
         }
@@ -61,7 +71,7 @@ class ActivitiesViewModel(
         typeName: String,
         onExportToHealthConnect: suspend (ActivityEntry, String) -> Unit
     ) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             activityEntryDao.updateEntry(updatedEntry.toEntity())
             onExportToHealthConnect(updatedEntry, typeName)
         }
@@ -74,14 +84,14 @@ class ActivitiesViewModel(
         entryId: String,
         onDeleteFromHealthConnect: suspend (String) -> Unit
     ) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             activityEntryDao.deleteEntryById(entryId)
             onDeleteFromHealthConnect(entryId)
         }
     }
 
     fun createType(type: ActivityType) {
-        viewModelScope.launch { activityTypeDao.insertActivityType(type.toEntity()) }
+        actionJob = viewModelScope.launch { activityTypeDao.insertActivityType(type.toEntity()) }
     }
 
     /**
@@ -92,7 +102,7 @@ class ActivitiesViewModel(
         type: ActivityType,
         onDeleteFromHealthConnect: suspend (String) -> Unit
     ) {
-        viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             val entries = activityEntryDao.getEntriesByTypeId(type.id)
             activityTypeDao.deleteActivityTypeById(type.id)
             entries.forEach { onDeleteFromHealthConnect(it.id) }
