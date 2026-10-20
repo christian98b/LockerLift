@@ -7,6 +7,16 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.14.0] - 2026-10-20
+
+### 🏗️ Refactoring
+
+#### Smartphone (`:mobile`)
+
+- **Architektur-Refactoring (Issue #56):** Sämtlicher Datenzugriff der Bildschirme läuft nun über screen-level ViewModels statt über direkte DAO-Aufriffe in den Composables. Neu: `HistoryViewModel`, `TemplateListViewModel`, `WorkoutPlanViewModel`, `SettingsViewModel`, `InsightsViewModel` und `ActivitiesViewModel` (orientiert am bestehenden `TrackingViewModel`/`CatalogViewModel`-Muster). Der Kaskaden-Löschfluss der Trainingshistorie (Tombstone → Room-Löschung → Sync-Queue-Bereinigung → Wear-Sync → Health Connect) und der komplette Session-Edit-Fluss liegen jetzt im State Holder. Unit-Tests für alle sechs ViewModels; keine Schema-Änderungen, Verhalten und Lokalisierung unverändert.
+
+---
+
 ## [1.13.0] - 2026-10-18
 
 ### 🚀 Neue Features
