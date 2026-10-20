@@ -30,9 +30,10 @@ import com.lockerlift.core.database.entity.*
 import com.lockerlift.core.model.WorkoutLogic
 import com.lockerlift.core.model.WeightConversion
 import com.lockerlift.core.database.model.WorkoutSessionWithDetails
-import com.lockerlift.core.healthconnect.HealthConnectManager
 import com.lockerlift.core.model.*
 import com.lockerlift.core.sync.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
 import kotlinx.coroutines.launch
@@ -48,15 +49,19 @@ import java.util.UUID
 fun HistoryScreen(app: LockerLiftMobileApp) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val sessionDao = remember { app.database.workoutSessionDao() }
-    val machineDao = remember { app.database.machineDao() }
-    val syncQueueDao = remember { app.database.syncQueueDao() }
-    val healthConnectManager = remember { HealthConnectManager(context) }
+    val historyViewModel: HistoryViewModel = viewModel(
+        key = "history",
+        factory = viewModelFactory {
+            initializer {
+                HistoryViewModel(application = app, database = app.database)
+            }
+        }
+    )
     val dataLayerManager = remember { WearableDataLayerManager(context) }
     val syncCoordinator = remember { SyncPullRefreshCoordinator(dataLayerManager) }
 
-    val sessionsState by sessionDao.getAllSessionsWithDetailsFlow().collectAsState(initial = emptyList())
-    val allMachinesState by machineDao.getAllMachinesFlow().collectAsState(initial = emptyList())
+    val sessionsState by historyViewModel.sessions.collectAsState()
+    val allMachinesState by historyViewModel.machines.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
 
     var sessionToDelete by remember { mutableStateOf<WorkoutSessionWithDetails?>(null) }
@@ -222,38 +227,8 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        val sessionId = target.session.id
-                        coroutineScope.launch {
-                            // 0. Record tombstone BEFORE deletion to prevent zombie resurrection
-                            //    if the delete sync message is lost and the watch re-sends the session
-                            SyncIngestionEngine.addDeletedSessionTombstone(
-                                app.database, sessionId, originDevice = "MOBILE"
-                            )
-
-                            // 1. Delete session from Room (cascades to instances and sets)
-                            sessionDao.deleteSession(sessionId)
-
-                            // 2. Remove pending sync queue item
-                            syncQueueDao.deleteQueueItemBySessionId(sessionId)
-
-                            // 3. Queue deletion sync to Wear OS companion
-                            syncQueueDao.insertQueueItem(
-                                SyncQueueEntity(
-                                    id = UUID.randomUUID().toString(),
-                                    sessionId = sessionId,
-                                    payloadJson = SyncConstants.ACTION_DELETE
-                                )
-                            )
-                            SyncQueueWorker.enqueue(context)
-                            dataLayerManager.flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
-
-                            // 4. Delete Health Connect record if previously exported (AK 2.8)
-                            if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                                healthConnectManager.deleteWorkoutSession(sessionId)
-                            }
-
-                            sessionToDelete = null
-                        }
+                        historyViewModel.deleteSession(target.session.id)
+                        sessionToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -275,37 +250,14 @@ fun HistoryScreen(app: LockerLiftMobileApp) {
             availableMachines = allMachinesState.map { it.toDomainModel() },
             onDismiss = { editingSession = null },
             onSave = { updatedSessionEntity, finalInstances, finalSets, payload ->
-                coroutineScope.launch {
-                    // 1. Persist updated graph to Room DB
-                    sessionDao.upsertFullSession(
-                        session = updatedSessionEntity,
-                        instances = finalInstances,
-                        sets = finalSets
-                    )
-
-                    // 2. Queue updated session sync to Wear OS companion
-                    val payloadJson = SyncPayloadSerializer.encodeSessionPayload(payload)
-                    syncQueueDao.deleteQueueItemBySessionId(updatedSessionEntity.id)
-                    syncQueueDao.insertQueueItem(
-                        SyncQueueEntity(
-                            id = UUID.randomUUID().toString(),
-                            sessionId = updatedSessionEntity.id,
-                            payloadJson = payloadJson
-                        )
-                    )
-                    SyncQueueWorker.enqueue(context)
-                    dataLayerManager.flushPendingQueue(syncQueueDao, SyncConstants.CAPABILITY_WEAR)
-
-                    // 3. Update Health Connect if available
-                    if (healthConnectManager.isAvailable() && healthConnectManager.hasPermissions()) {
-                        healthConnectManager.exportWorkoutSession(
-                            session = updatedSessionEntity.toDomainModel(),
-                            templateName = targetSession.template?.name
-                        )
-                    }
-
-                    editingSession = null
-                }
+                historyViewModel.saveSession(
+                    session = updatedSessionEntity,
+                    instances = finalInstances,
+                    sets = finalSets,
+                    payload = payload,
+                    templateName = targetSession.template?.name
+                )
+                editingSession = null
             }
         )
     }

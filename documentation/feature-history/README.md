@@ -61,3 +61,4 @@ This directory is the authoritative, append-only history of everything that has 
 | 43 | Weight Stack Scale für lbs-Maschinen (Issue #48) | [43-weight-stack-scale.md](43-weight-stack-scale.md) |
 | 44 | Workout Plan: Weekly Training Schedule (Issue #51) | [44-workout-plan.md](44-workout-plan.md) |
 | 45 | MobileTrackingScreen Decomposition & Timer Logic in TrackingViewModel (Issue #57) | [45-tracking-screen-decomposition-timers.md](45-tracking-screen-decomposition-timers.md) |
+| 46 | Mobile UI Architecture: DAO Access behind ViewModels (Issue #56) | [46-mobile-dao-access-behind-viewmodels.md](46-mobile-dao-access-behind-viewmodels.md) |

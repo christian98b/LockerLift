@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +43,18 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val dataLayerManager = remember { WearableDataLayerManager(context) }
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                SettingsViewModel(application = app, database = app.database)
+            }
+        }
+    )
+    val companionStatus by settingsViewModel.companionStatus.collectAsState()
+    val pendingQueueCount by settingsViewModel.pendingQueueCount.collectAsState()
+    val isSyncingMasterData by settingsViewModel.isSyncingMasterData.collectAsState()
+    val isSyncingWorkouts by settingsViewModel.isSyncingWorkouts.collectAsState()
+    val lastSyncTimestamp by settingsViewModel.lastSyncTimestamp.collectAsState()
 
     // --- Shared Preferences ---
     val prefs = remember { context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE) }
@@ -49,18 +62,6 @@ fun SettingsScreen(
     var backupDirUriStr by remember { mutableStateOf(prefs.getString(PREF_BACKUP_DIR_URI, "") ?: "") }
     var backupSchedule by remember { mutableStateOf(prefs.getString(PREF_BACKUP_SCHEDULE, "disabled") ?: "disabled") }
     var keepCount by remember { mutableStateOf(prefs.getInt(PREF_BACKUP_KEEP_COUNT, 5)) }
-
-    // --- Companion & Sync State (US 5.3) ---
-    var companionStatus by remember { mutableStateOf<CompanionDeviceStatus?>(null) }
-    var lastSyncTimestamp by remember { mutableLongStateOf(dataLayerManager.getLastSyncTimestamp()) }
-    val pendingQueueCount by app.database.syncQueueDao().getPendingQueueCountFlow().collectAsState(initial = 0)
-    var isSyncingMasterData by remember { mutableStateOf(false) }
-    var isSyncingWorkouts by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        companionStatus = dataLayerManager.getWearCompanionStatus()
-        lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-    }
 
     // --- Snackbar ---
     val snackbarHostState = remember { SnackbarHostState() }
@@ -105,13 +106,12 @@ fun SettingsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            coroutineScope.launch {
-                val result = LocalBackupManager(context, app.database).restoreFromFile(uri)
+            settingsViewModel.restoreBackup(uri) { result ->
                 val msg = when (result) {
                     is BackupResult.Success -> strRestoreSuccess
                     is BackupResult.Error -> String.format(strRestoreError, result.message)
                 }
-                snackbarHostState.showSnackbar(msg)
+                coroutineScope.launch { snackbarHostState.showSnackbar(msg) }
             }
         }
     }
@@ -179,12 +179,7 @@ fun SettingsScreen(
                             }
                         }
                         IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    companionStatus = dataLayerManager.getWearCompanionStatus()
-                                    lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-                                }
-                            }
+                            onClick = { settingsViewModel.refreshCompanionStatus() }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -214,31 +209,11 @@ fun SettingsScreen(
 
                     Button(
                         onClick = {
-                            if (isSyncingMasterData) return@Button
-                            isSyncingMasterData = true
-                            coroutineScope.launch {
-                                val allMachines = app.database.machineDao().getAllMachines()
-                                val catalogJson = SyncPayloadSerializer.encodeMachines(allMachines.map { it.toDomainModel() })
-                                val catalogSuccess = dataLayerManager.syncEquipmentCatalog(catalogJson)
-
-                                val allActive = app.database.workoutTemplateDao().getAllActiveTemplatesWithMachinesFlow().first()
-                                val payloads = allActive.map { item ->
-                                    val orderedMachineIds = app.database.workoutTemplateDao().getCrossRefsForTemplate(item.template.id).map { it.machineId }
-                                    WorkoutTemplatePayload(
-                                        template = item.template.toDomainModel(),
-                                        machineIdsInOrder = orderedMachineIds
+                            settingsViewModel.syncMasterData { success ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        if (success) strMasterDataSuccess else strMasterDataError
                                     )
-                                }
-                                val templatesJson = SyncPayloadSerializer.encodeTemplates(payloads)
-                                val templatesSuccess = dataLayerManager.syncTemplates(templatesJson)
-
-                                lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-                                isSyncingMasterData = false
-
-                                if (catalogSuccess && templatesSuccess) {
-                                    snackbarHostState.showSnackbar(strMasterDataSuccess)
-                                } else {
-                                    snackbarHostState.showSnackbar(strMasterDataError)
                                 }
                             }
                         },
@@ -262,32 +237,16 @@ fun SettingsScreen(
 
                     OutlinedButton(
                         onClick = {
-                            if (isSyncingWorkouts) return@OutlinedButton
-                            isSyncingWorkouts = true
-                            coroutineScope.launch {
-                                val result = dataLayerManager.flushPendingQueue(
-                                    app.database.syncQueueDao(),
-                                    SyncConstants.CAPABILITY_WEAR
-                                )
-                                lastSyncTimestamp = dataLayerManager.getLastSyncTimestamp()
-                                isSyncingWorkouts = false
-
-                                when (result) {
-                                    is SyncResult.Success -> {
-                                        val msg = if (result.itemsSyncedCount > 0) {
-                                            String.format(strWorkoutsSyncSuccessFmt, result.itemsSyncedCount)
-                                        } else {
-                                            strWorkoutsSyncNoPending
-                                        }
-                                        snackbarHostState.showSnackbar(msg)
-                                    }
-                                    is SyncResult.NoCompanionFound -> {
-                                        snackbarHostState.showSnackbar(strSyncNoCompanion)
-                                    }
-                                    is SyncResult.Error -> {
-                                        snackbarHostState.showSnackbar(String.format(strSyncErrorFmt, result.message))
-                                    }
+                            settingsViewModel.syncWorkouts { result ->
+                                val msg = when (result) {
+                                    is WorkoutSyncUiResult.Success ->
+                                        String.format(strWorkoutsSyncSuccessFmt, result.itemsSyncedCount)
+                                    is WorkoutSyncUiResult.NoPending -> strWorkoutsSyncNoPending
+                                    is WorkoutSyncUiResult.NoCompanion -> strSyncNoCompanion
+                                    is WorkoutSyncUiResult.Error ->
+                                        String.format(strSyncErrorFmt, result.message)
                                 }
+                                coroutineScope.launch { snackbarHostState.showSnackbar(msg) }
                             }
                         },
                         enabled = !isSyncingWorkouts,
@@ -345,17 +304,15 @@ fun SettingsScreen(
                                 }
                                 return@Button
                             }
-                            coroutineScope.launch {
-                                val dirUri = Uri.parse(backupDirUriStr)
-                                val result = LocalBackupManager(context, app.database)
-                                    .exportToDirectory(dirUri)
+                            val dirUri = Uri.parse(backupDirUriStr)
+                            settingsViewModel.exportBackup(dirUri) { result ->
                                 val msg = when (result) {
                                     is BackupResult.Success ->
                                         String.format(strBackupSuccess, result.fileName)
                                     is BackupResult.Error ->
                                         String.format(strBackupError, result.message)
                                 }
-                                snackbarHostState.showSnackbar(msg)
+                                coroutineScope.launch { snackbarHostState.showSnackbar(msg) }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

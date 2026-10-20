@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
                             )
                             selectedTab == MobileTab.CATALOG -> CatalogScreen(app)
                             selectedTab == MobileTab.TEMPLATES -> TemplateListScreen(app)
-                            selectedTab == MobileTab.PLAN -> WorkoutPlanScreen(app.database)
+                            selectedTab == MobileTab.PLAN -> WorkoutPlanScreen(app)
                             selectedTab == MobileTab.TRACKING -> MobileTrackingScreen(app)
                             selectedTab == MobileTab.HISTORY -> Column(
                                 modifier = Modifier
@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity() {
                                 when (historySubTab) {
                                     HistorySubTab.SESSIONS -> HistoryScreen(app)
                                     HistorySubTab.ACTIVITIES -> ActivitiesScreen(
-                                        database = app.database,
+                                        app = app,
                                         onExportToHealthConnect = { entry, typeName ->
                                             val manager = com.lockerlift.core.healthconnect.HealthConnectManager(context)
                                             if (manager.isAvailable() && manager.hasPermissions()) {

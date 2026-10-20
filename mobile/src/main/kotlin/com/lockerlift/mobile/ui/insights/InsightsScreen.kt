@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -51,6 +53,13 @@ fun InsightsScreen(app: LockerLiftMobileApp) {
     val context = LocalContext.current
     val configStore = remember { DashboardConfigStore(context) }
     val zone = remember { ZoneId.systemDefault() }
+    val insightsViewModel: InsightsViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                InsightsViewModel(application = app, database = app.database)
+            }
+        }
+    )
 
     var widgetOrder by remember { mutableStateOf(configStore.loadOrder()) }
     var hiddenWidgets by remember { mutableStateOf(configStore.loadHidden()) }
@@ -58,10 +67,7 @@ fun InsightsScreen(app: LockerLiftMobileApp) {
     var selectedMachineId by remember { mutableStateOf<String?>(null) }
     var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
 
-    val sessions by app.database.workoutSessionDao()
-        .getAllSessionsWithDetailsFlow()
-        .collectAsState(initial = emptyList())
-    val snapshots = remember(sessions) { InsightsMapper.toSnapshots(sessions) }
+    val snapshots by insightsViewModel.snapshots.collectAsState()
     val today = remember { LocalDate.now() }
 
     fun persistOrder(newOrder: List<DashboardWidgetType>, newHidden: Set<DashboardWidgetType>) {
