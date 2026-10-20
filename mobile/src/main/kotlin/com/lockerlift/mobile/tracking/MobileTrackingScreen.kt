@@ -1,35 +1,69 @@
 package com.lockerlift.mobile.tracking
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.lockerlift.core.database.LockerLiftDatabase
-import com.lockerlift.core.database.entity.WorkoutSetEntity
-import com.lockerlift.core.database.entity.toDomainModel
-import com.lockerlift.core.database.logic.WorkoutTrackingLogic
-import com.lockerlift.core.model.*
+import com.lockerlift.core.model.WorkoutTemplate
 import com.lockerlift.mobile.LockerLiftMobileApp
 import com.lockerlift.mobile.R
-import kotlinx.coroutines.delay
+import com.lockerlift.mobile.tracking.components.StationCard
+import com.lockerlift.mobile.tracking.components.UpNextPlanCard
+import com.lockerlift.mobile.tracking.dialogs.AddExerciseDialog
+import com.lockerlift.mobile.tracking.dialogs.DiscardWorkoutDialog
+import com.lockerlift.mobile.tracking.dialogs.EditSetDialog
+import com.lockerlift.mobile.tracking.dialogs.FinishWorkoutDialog
+import com.lockerlift.mobile.tracking.dialogs.LogSetDialog
+import com.lockerlift.mobile.tracking.dialogs.SwapExerciseDialog
 
+private const val REST_TIMER_SECONDS = 90
+
+/**
+ * Entry point of the tracking tab. Start-workout overview when no session
+ * is active, active workout screen otherwise. All state lives in
+ * [TrackingViewModel]; this file only renders it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MobileTrackingScreen(app: LockerLiftMobileApp) {
@@ -50,13 +84,12 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
     // Active session state (owned by the ViewModel, durable across process death)
     val isWorkoutActive = state.isWorkoutActive
-    val currentSessionId = state.sessionId
     val currentTemplateId = state.templateId
     val currentTemplateName = state.templateName
-    val workoutStartTime = state.startTimeMillis
-    var elapsedSeconds by remember { mutableIntStateOf(0) }
+    val elapsedSeconds = state.elapsedSeconds
+    val restTimerRemainingSeconds = state.restTimerRemainingSeconds
+    val isRestTimerRunning = state.isRestTimerRunning
 
-    val initialMachineIds = state.initialMachineIds
     val sessionInstances = state.instances
     val loggedSets = state.setsByInstance
 
@@ -64,44 +97,11 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     var selectedInstanceIndexForSet by remember { mutableIntStateOf(-1) }
     var editingInstanceId by remember { mutableStateOf<String?>(null) }
     var editingSetIndex by remember { mutableIntStateOf(-1) }
-    var expandedMenuIndex by remember { mutableIntStateOf(-1) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var showSwapDialogIndex by remember { mutableIntStateOf(-1) }
     var showEditNoteIndex by remember { mutableIntStateOf(-1) }
     var showFinishDialog by remember { mutableStateOf(false) }
     var showDiscardConfirmDialog by remember { mutableStateOf(false) }
-
-    // Rest timer state
-    var restTimerRemainingSeconds by remember { mutableIntStateOf(0) }
-    var isRestTimerRunning by remember { mutableStateOf(false) }
-
-    // Elapsed workout timer
-    LaunchedEffect(isWorkoutActive) {
-        if (isWorkoutActive) {
-            while (true) {
-                delay(1000L)
-                elapsedSeconds = ((System.currentTimeMillis() - workoutStartTime) / 1000).toInt()
-            }
-        }
-    }
-
-    // Rest countdown timer
-    LaunchedEffect(isRestTimerRunning, restTimerRemainingSeconds) {
-        if (isRestTimerRunning && restTimerRemainingSeconds > 0) {
-            delay(1000L)
-            restTimerRemainingSeconds -= 1
-            if (restTimerRemainingSeconds <= 0) {
-                isRestTimerRunning = false
-            }
-        }
-    }
-
-    fun startWorkout(template: WorkoutTemplate?) {
-        elapsedSeconds = 0
-        isRestTimerRunning = false
-        restTimerRemainingSeconds = 0
-        viewModel.startWorkout(template)
-    }
 
     if (!isWorkoutActive) {
         // --- START WORKOUT SCREEN ---
@@ -117,12 +117,18 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { UpNextPlanCard(app.database, templates) }
+                item {
+                    UpNextPlanCard(
+                        plans = viewModel.workoutPlans,
+                        activityTypes = viewModel.activityTypes,
+                        templates = templates
+                    )
+                }
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        onClick = { startWorkout(null) }
+                        onClick = { viewModel.startWorkout(null) }
                     ) {
                         Row(
                             modifier = Modifier
@@ -175,7 +181,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                     itemsIndexed(templates) { _, template ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            onClick = { startWorkout(template) }
+                            onClick = { viewModel.startWorkout(template) }
                         ) {
                             Row(
                                 modifier = Modifier
@@ -198,7 +204,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                         )
                                     }
                                 }
-                                Button(onClick = { startWorkout(template) }) {
+                                Button(onClick = { viewModel.startWorkout(template) }) {
                                     Text(stringResource(R.string.btn_start))
                                 }
                             }
@@ -268,10 +274,10 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                                 )
                             }
                             Row {
-                                TextButton(onClick = { restTimerRemainingSeconds += 15 }) {
+                                TextButton(onClick = { viewModel.addRestTimerSeconds(15) }) {
                                     Text("+15s")
                                 }
-                                TextButton(onClick = { isRestTimerRunning = false; restTimerRemainingSeconds = 0 }) {
+                                TextButton(onClick = { viewModel.skipRestTimer() }) {
                                     Text(stringResource(R.string.btn_skip_rest))
                                 }
                             }
@@ -288,332 +294,26 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 itemsIndexed(sessionInstances) { index, instance ->
-                    val machine = machines.find { it.id == instance.machineId }
-                    val machineName = machine?.name ?: stringResource(R.string.hint_machine_name)
-                    val muscleGroup = machine?.targetMuscleGroup ?: ""
-                    val sets = loggedSets[instance.id] ?: emptyList()
-
-                    // Query historical sets for this machine
-                    var historicalSets by remember(instance.machineId) { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
-                    LaunchedEffect(instance.machineId) {
-                        historicalSets = viewModel.getHistoricalSetsForMachine(instance.machineId)
-                    }
-                    val lastHistSets = remember(historicalSets) { WorkoutTrackingLogic.extractLastSessionSets(historicalSets) }
-
-                    // Double progression proposal for next set
-                    val lastSet = sets.lastOrNull()
-                    val showProgressionSuggestion = lastSet != null && WorkoutLogic.isProgressionProposed(lastSet.reps)
-                    val unit = machine?.weightUnit ?: WeightUnit.KG
-                    val unitSuffix = WeightConversion.unitSuffix(unit)
-                    val increment = machine?.defaultIncrementKg ?: 2.5f
-                    val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
-                    val stackValuesKg = machine?.weightStackValuesKg ?: emptyList()
-                    val overloadedWeight = if (lastSet != null) (
-                        WeightStack.nextProgressionWeight(lastSet.weightKg, stackValuesKg, weightDirection)
-                            ?: WorkoutLogic.calculateNextWeight(lastSet.weightKg, increment, shouldProgress = true, weightDirection = weightDirection)
-                        ) else 0f
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // --- 1. Header: Name, Muscle, Note, 3-dots Menu ---
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "${index + 1}. $machineName",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        if (muscleGroup.isNotBlank()) {
-                                            Text(
-                                                text = muscleGroup,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        val noteText = instance.customSettingsNote ?: ""
-                                        if (noteText.isNotBlank()) {
-                                            Text(
-                                                text = "• ⚙️ $noteText",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // 3-dots Menu
-                                Box {
-                                    IconButton(onClick = { expandedMenuIndex = index }) {
-                                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                                    }
-                                    DropdownMenu(
-                                        expanded = expandedMenuIndex == index,
-                                        onDismissRequest = { expandedMenuIndex = -1 }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.menu_swap_exercise)) },
-                                            onClick = {
-                                                showSwapDialogIndex = index
-                                                expandedMenuIndex = -1
-                                            },
-                                            leadingIcon = { Icon(Icons.Default.SwapHoriz, null) }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.menu_edit_settings)) },
-                                            onClick = {
-                                                showEditNoteIndex = index
-                                                expandedMenuIndex = -1
-                                            },
-                                            leadingIcon = { Icon(Icons.Default.Settings, null) }
-                                        )
-                                        if (index > 0) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.menu_move_up)) },
-                                                onClick = {
-                                                    viewModel.reorderInstance(index, index - 1)
-                                                    expandedMenuIndex = -1
-                                                },
-                                                leadingIcon = { Icon(Icons.Default.ArrowUpward, null) }
-                                            )
-                                        }
-                                        if (index < sessionInstances.size - 1) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.menu_move_down)) },
-                                                onClick = {
-                                                    viewModel.reorderInstance(index, index + 1)
-                                                    expandedMenuIndex = -1
-                                                },
-                                                leadingIcon = { Icon(Icons.Default.ArrowDownward, null) }
-                                            )
-                                        }
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.menu_remove_exercise), color = MaterialTheme.colorScheme.error) },
-                                            onClick = {
-                                                viewModel.removeInstance(index)
-                                                expandedMenuIndex = -1
-                                            },
-                                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Progression suggestion banner
-                            if (showProgressionSuggestion) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-                                ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        Text(
-                                            text = stringResource(
-                                                R.string.progression_suggestion_format,
-                                                WeightConversion.formatWeightForUnit(overloadedWeight, unit) + " " + unitSuffix
-                                            ),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // --- 2. Set Table Header ---
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.table_header_set),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(36.dp)
-                                )
-                                Text(
-                                    text = stringResource(R.string.table_header_prev),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = stringResource(R.string.table_header_weight),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(68.dp)
-                                )
-                                Text(
-                                    text = stringResource(R.string.table_header_reps),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(44.dp)
-                                )
-                                Text(
-                                    text = stringResource(R.string.table_header_status),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(72.dp)
-                                )
-                            }
-
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-
-                            // --- 3. Completed Sets Table Rows ---
-                            sets.forEachIndexed { setIdx, set ->
-                                val prevSet = lastHistSets.getOrNull(setIdx)
-                                val prevText = if (prevSet != null) {
-                                    "${WeightConversion.formatWeightForUnit(prevSet.weightKg, unit)} $unitSuffix × ${prevSet.reps}"
-                                } else "—"
-
-                                Surface(
-                                    onClick = {
-                                        editingInstanceId = instance.id
-                                        editingSetIndex = setIdx
-                                    },
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 4.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "${setIdx + 1}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.width(36.dp)
-                                        )
-                                        Text(
-                                            text = prevText,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Text(
-                                            text = "${WeightConversion.formatWeightForUnit(set.weightKg, unit)} $unitSuffix",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            modifier = Modifier.width(68.dp)
-                                        )
-                                        Text(
-                                            text = "${set.reps}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            modifier = Modifier.width(44.dp)
-                                        )
-                                        // Status badge with checkmark (Clickable to edit)
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = MaterialTheme.shapes.extraSmall,
-                                            modifier = Modifier.width(72.dp)
-                                        ) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(vertical = 3.dp, horizontal = 4.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(13.dp),
-                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                                Spacer(modifier = Modifier.width(3.dp))
-                                                Text(
-                                                    text = stringResource(R.string.set_status_logged),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    fontSize = 11.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // --- 4. Add Set Button ---
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Button(
-                                onClick = { selectedInstanceIndexForSet = index },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(R.string.btn_add_set))
-                            }
-
-                            // --- 5. Next Station Suggestion ---
-                            if (sets.isNotEmpty()) {
-                                val nextStationIndex = WorkoutLogic.findNextUnfinishedStationIndex(index, sessionInstances, loggedSets)
-                                if (nextStationIndex != null && nextStationIndex in sessionInstances.indices) {
-                                    val nextInst = sessionInstances[nextStationIndex]
-                                    val nextMachine = machines.find { it.id == nextInst.machineId }
-                                    val nextMachineName = nextMachine?.name ?: "Station ${nextStationIndex + 1}"
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                                        ),
-                                        onClick = {
-                                            selectedInstanceIndexForSet = nextStationIndex
-                                        }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                                Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = stringResource(R.string.next_exercise_suggestion, nextMachineName),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                                )
-                                            }
-                                            Text(
-                                                text = stringResource(R.string.btn_jump_to_exercise),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    StationCard(
+                        index = index,
+                        instance = instance,
+                        machine = machines.find { it.id == instance.machineId },
+                        machines = machines,
+                        sessionInstances = sessionInstances,
+                        loggedSets = loggedSets[instance.id] ?: emptyList(),
+                        setsByInstance = loggedSets,
+                        historicalSetsProvider = { machineId -> viewModel.getHistoricalSetsForMachine(machineId) },
+                        onAddSet = { selectedInstanceIndexForSet = it },
+                        onEditSet = { instanceId, setIdx ->
+                            editingInstanceId = instanceId
+                            editingSetIndex = setIdx
+                        },
+                        onSwapExercise = { showSwapDialogIndex = it },
+                        onEditSettings = { showEditNoteIndex = it },
+                        onMove = { from, to -> viewModel.reorderInstance(from, to) },
+                        onRemove = { viewModel.removeInstance(it) },
+                        onJumpToStation = { selectedInstanceIndexForSet = it }
+                    )
                 }
 
                 item {
@@ -635,257 +335,37 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
     // --- LOG SET DIALOG ---
     if (selectedInstanceIndexForSet in sessionInstances.indices) {
         val instance = sessionInstances[selectedInstanceIndexForSet]
-        val machine = machines.find { it.id == instance.machineId }
-        val machineName = machine?.name ?: ""
-        val existingSets = loggedSets[instance.id] ?: emptyList()
-        val nextSetNumber = existingSets.size + 1
-
-        var historicalSets by remember { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
-        LaunchedEffect(instance.machineId) {
-            historicalSets = viewModel.getHistoricalSetsForMachine(instance.machineId)
-        }
-
-        val (prefillWeight, prefillReps) = remember(selectedInstanceIndexForSet, existingSets.size) {
-            WorkoutTrackingLogic.determinePrefillWeightAndReps(
-                currentSets = existingSets,
-                historicalSets = historicalSets,
-                defaultWeight = 60f,
-                defaultReps = 10
-            )
-        }
-
-        val unit = machine?.weightUnit ?: WeightUnit.KG
-        val unitSuffix = WeightConversion.unitSuffix(unit)
-        var weightInput by remember(prefillWeight) { mutableStateOf(WeightConversion.formatWeightForUnit(prefillWeight, unit)) }
-        var repsInput by remember(prefillReps) { mutableStateOf(prefillReps.toString()) }
-
-        val currentWeight = weightInput.toFloatOrNull() ?: 0f
-        val currentReps = repsInput.toIntOrNull() ?: 0
-        val increment = machine?.defaultIncrementKg ?: 2.5f
-        val weightDirection = machine?.weightDirection ?: WeightDirection.NORMAL
-        val stackValuesKg = machine?.weightStackValuesKg ?: emptyList()
-        val showProgressionSuggestion = WorkoutLogic.isProgressionProposed(currentReps)
-        val overloadedWeight = WeightConversion.toKg(currentWeight, unit).let { currentKg ->
-            WeightStack.nextProgressionWeight(currentKg, stackValuesKg, weightDirection)
-                ?: WorkoutLogic.calculateNextWeight(currentKg, increment, shouldProgress = true, weightDirection = weightDirection)
-        }
-
-        AlertDialog(
-            onDismissRequest = { selectedInstanceIndexForSet = -1 },
-            title = {
-                Text(stringResource(R.string.log_set_dialog_title, nextSetNumber, machineName))
-            },
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Double progression proposal banner
-                    if (showProgressionSuggestion) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.progression_suggestion_format,
-                                        WeightConversion.formatWeightForUnit(overloadedWeight, unit) + " " + unitSuffix
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Button(
-                                    onClick = {
-                                        weightInput = WeightConversion.formatWeightForUnit(overloadedWeight, unit)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                                ) {
-                                    Text(
-                                        text = stringResource(
-                                            R.string.btn_apply_overload,
-                                            WeightConversion.formatWeightForUnit(increment, unit)
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Weight Input & quick buttons
-                    Text(
-                        text = stringResource(R.string.weight_label_unit_format, unitSuffix),
-                        fontWeight = FontWeight.Bold
-                    )
-                    OutlinedTextField(
-                        value = weightInput,
-                        onValueChange = { weightInput = it },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    WeightStepperControls(
-                        weightInput = weightInput,
-                        incrementKg = increment,
-                        unit = unit,
-                        stackValuesKg = stackValuesKg,
-                        onWeightChanged = { weightInput = it }
-                    )
-
-                    // Reps Input & quick buttons
-                    Text(text = stringResource(R.string.reps_label), fontWeight = FontWeight.Bold)
-                    OutlinedTextField(
-                        value = repsInput,
-                        onValueChange = { repsInput = it },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    RepsStepperControls(
-                        repsInput = repsInput,
-                        onRepsChanged = { repsInput = it }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val finalWeight = WorkoutLogic.clampWeight(
-                            WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
-                        )
-                        val finalReps = WorkoutLogic.clampReps(repsInput.toIntOrNull() ?: 1)
-
-                        val newSet = WorkoutSet(
-                            sessionMachineId = instance.id,
-                            setNumber = nextSetNumber,
-                            reps = finalReps,
-                            weightKg = finalWeight,
-                            cadence = machine?.defaultCadence ?: "2-0-2-0",
-                            setType = SetType.NORMAL
-                        )
-
-                        viewModel.logSet(instanceId = instance.id, set = newSet)
-
-                        // Start rest timer
-                        restTimerRemainingSeconds = 90
-                        isRestTimerRunning = true
-                        selectedInstanceIndexForSet = -1
-                    }
-                ) {
-                    Text(stringResource(R.string.btn_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedInstanceIndexForSet = -1 }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+        LogSetDialog(
+            instance = instance,
+            machine = machines.find { it.id == instance.machineId },
+            existingSets = loggedSets[instance.id] ?: emptyList(),
+            historicalSetsProvider = { machineId -> viewModel.getHistoricalSetsForMachine(machineId) },
+            restTimerSeconds = REST_TIMER_SECONDS,
+            onLogSet = { instanceId, set -> viewModel.logSet(instanceId, set) },
+            onRestTimerStarted = { seconds -> viewModel.startRestTimer(seconds) },
+            onDismiss = { selectedInstanceIndexForSet = -1 }
         )
     }
 
     // --- EDIT EXISTING SET DIALOG ---
     val currentEditingInstanceId = editingInstanceId
     if (currentEditingInstanceId != null && editingSetIndex >= 0) {
-        val currentList = loggedSets[currentEditingInstanceId] ?: emptyList()
-        val setToEdit = currentList.getOrNull(editingSetIndex)
         val targetInstance = sessionInstances.find { it.id == currentEditingInstanceId }
         val machine = machines.find { it.id == targetInstance?.machineId }
-        val machineName = machine?.name ?: ""
-        val editUnit = machine?.weightUnit ?: WeightUnit.KG
-        val editUnitSuffix = WeightConversion.unitSuffix(editUnit)
-        val increment = machine?.defaultIncrementKg ?: 2.5f
-
-        if (setToEdit != null) {
-            var editWeightInput by remember(setToEdit) { mutableStateOf(WeightConversion.formatWeightForUnit(setToEdit.weightKg, editUnit)) }
-            var editRepsInput by remember(setToEdit) { mutableStateOf(setToEdit.reps.toString()) }
-
-            AlertDialog(
-                onDismissRequest = {
+        val currentList = loggedSets[currentEditingInstanceId] ?: emptyList()
+        if (currentList.getOrNull(editingSetIndex) != null) {
+            EditSetDialog(
+                instanceId = currentEditingInstanceId,
+                machine = machine,
+                sets = currentList,
+                setIndex = editingSetIndex,
+                onUpdateSet = { instanceId, setIdx, weightKg, reps ->
+                    viewModel.updateSet(instanceId, setIdx, weightKg, reps)
+                },
+                onDeleteSet = { instanceId, setIdx -> viewModel.deleteSet(instanceId, setIdx) },
+                onDismiss = {
                     editingInstanceId = null
                     editingSetIndex = -1
-                },
-                title = {
-                    Text(stringResource(R.string.edit_set_dialog_title, setToEdit.setNumber, machineName))
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Weight input & quick steppers
-                        Text(
-                            text = stringResource(R.string.weight_label_unit_format, editUnitSuffix),
-                            fontWeight = FontWeight.Bold
-                        )
-                        OutlinedTextField(
-                            value = editWeightInput,
-                            onValueChange = { editWeightInput = it },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        WeightStepperControls(
-                            weightInput = editWeightInput,
-                            incrementKg = increment,
-                            unit = editUnit,
-                            stackValuesKg = machine?.weightStackValuesKg ?: emptyList(),
-                            onWeightChanged = { editWeightInput = it }
-                        )
-
-                        // Reps input & quick steppers
-                        Text(text = stringResource(R.string.reps_label), fontWeight = FontWeight.Bold)
-                        OutlinedTextField(
-                            value = editRepsInput,
-                            onValueChange = { editRepsInput = it },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        RepsStepperControls(
-                            repsInput = editRepsInput,
-                            onRepsChanged = { editRepsInput = it }
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.deleteSet(currentEditingInstanceId, editingSetIndex)
-                                editingInstanceId = null
-                                editingSetIndex = -1
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.btn_delete_set))
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val finalWeight = WorkoutLogic.clampWeight(
-                                WeightConversion.toKg(editWeightInput.toFloatOrNull() ?: 0f, editUnit)
-                            )
-                            val finalReps = WorkoutLogic.clampReps(editRepsInput.toIntOrNull() ?: 1)
-
-                            viewModel.updateSet(
-                                instanceId = currentEditingInstanceId,
-                                targetIndex = editingSetIndex,
-                                weightKg = finalWeight,
-                                reps = finalReps
-                            )
-                            editingInstanceId = null
-                            editingSetIndex = -1
-                        }
-                    ) {
-                        Text(stringResource(R.string.btn_save))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        editingInstanceId = null
-                        editingSetIndex = -1
-                    }) {
-                        Text(stringResource(R.string.btn_cancel))
-                    }
                 }
             )
         } else {
@@ -896,157 +376,29 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
     // --- SWAP EXERCISE DIALOG (PRESERVING SETS) ---
     if (showSwapDialogIndex in sessionInstances.indices) {
-        AlertDialog(
-            onDismissRequest = { showSwapDialogIndex = -1 },
-            title = { Text(stringResource(R.string.dialog_swap_exercise_title)) },
-            text = {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(machines) { _, m ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                viewModel.swapMachine(showSwapDialogIndex, m)
-                                showSwapDialogIndex = -1
-                            }
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(text = m.name, fontWeight = FontWeight.Bold)
-                                Text(text = m.targetMuscleGroup, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showSwapDialogIndex = -1 }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+        val swapIndex = showSwapDialogIndex
+        SwapExerciseDialog(
+            machines = machines,
+            onSwapMachine = { m -> viewModel.swapMachine(swapIndex, m) },
+            onDismiss = { showSwapDialogIndex = -1 }
         )
     }
 
     // --- ADD EXERCISE DIALOG ---
     if (showAddExerciseDialog) {
-        var showNewMachineForm by remember { mutableStateOf(false) }
-        var newMachineName by remember { mutableStateOf("") }
-        var newMuscleGroup by remember { mutableStateOf("") }
-        var newSettingsNote by remember { mutableStateOf("") }
-        var newIncrement by remember { mutableStateOf("2.5") }
-        var errorMessage by remember { mutableStateOf<String?>(null) }
-
-        AlertDialog(
-            onDismissRequest = { showAddExerciseDialog = false },
-            title = {
-                Text(stringResource(if (showNewMachineForm) R.string.dialog_new_machine_title else R.string.dialog_select_machine_title))
-            },
-            text = {
-                if (showNewMachineForm) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = newMachineName,
-                            onValueChange = { newMachineName = it; errorMessage = null },
-                            label = { Text(stringResource(R.string.hint_machine_name)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = newMuscleGroup,
-                            onValueChange = { newMuscleGroup = it; errorMessage = null },
-                            label = { Text(stringResource(R.string.hint_muscle_group)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = newSettingsNote,
-                            onValueChange = { newSettingsNote = it },
-                            label = { Text(stringResource(R.string.hint_settings_note)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = newIncrement,
-                            onValueChange = { newIncrement = it },
-                            label = { Text(stringResource(R.string.hint_increment)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        val currentErrorMessage = errorMessage
-                        if (currentErrorMessage != null) {
-                            Text(text = currentErrorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        itemsIndexed(machines) { _, m ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = {
-                                    viewModel.appendMachine(m)
-                                    showAddExerciseDialog = false
-                                }
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(text = m.name, fontWeight = FontWeight.Bold)
-                                    Text(text = m.targetMuscleGroup, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                if (showNewMachineForm) {
-                    Button(
-                        onClick = {
-                            val validation = WorkoutLogic.validateNewMachine(newMachineName, machines.map { it.name })
-                            if (validation is ValidationResult.EmptyName) {
-                                errorMessage = "Name cannot be empty"
-                                return@Button
-                            }
-                            if (validation is ValidationResult.DuplicateName) {
-                                errorMessage = "Machine already exists"
-                                return@Button
-                            }
-
-                            viewModel.createMachineAndAppend(
-                                Machine(
-                                    name = newMachineName.trim(),
-                                    targetMuscleGroup = newMuscleGroup.trim().ifEmpty { "General" },
-                                    machineSettingsNote = newSettingsNote.trim(),
-                                    defaultIncrementKg = newIncrement.toFloatOrNull() ?: 2.5f
-                                )
-                            )
-                            showAddExerciseDialog = false
-                        }
-                    ) {
-                        Text(stringResource(R.string.btn_save))
-                    }
-                } else {
-                    Button(onClick = { showNewMachineForm = true }) {
-                        Text(stringResource(R.string.add_machine))
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddExerciseDialog = false }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+        AddExerciseDialog(
+            machines = machines,
+            onAppendMachine = { m -> viewModel.appendMachine(m) },
+            onCreateMachineAndAppend = { m -> viewModel.createMachineAndAppend(m) },
+            onDismiss = { showAddExerciseDialog = false }
         )
     }
 
     // --- EDIT NOTE DIALOG ---
     if (showEditNoteIndex in sessionInstances.indices) {
-        val instance = sessionInstances[showEditNoteIndex]
-        var noteInput by remember(showEditNoteIndex) { mutableStateOf(instance.customSettingsNote ?: "") }
+        val editNoteIndex = showEditNoteIndex
+        val instance = sessionInstances[editNoteIndex]
+        var noteInput by remember(editNoteIndex) { mutableStateOf(instance.customSettingsNote ?: "") }
 
         AlertDialog(
             onDismissRequest = { showEditNoteIndex = -1 },
@@ -1062,7 +414,7 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.saveStationNote(showEditNoteIndex, noteInput)
+                        viewModel.saveStationNote(editNoteIndex, noteInput)
                         showEditNoteIndex = -1
                     }
                 ) {
@@ -1079,266 +431,28 @@ fun MobileTrackingScreen(app: LockerLiftMobileApp) {
 
     // --- FINISH WORKOUT DIALOG ---
     if (showFinishDialog) {
-        var workoutNotes by remember { mutableStateOf("") }
-        var consolidateTemplate by remember { mutableStateOf(false) }
-
-        // Check if variations occurred from initial template
         val currentMachineIds = sessionInstances.filter { !it.isSkipped }.map { it.machineId }
-        val hasVariations = currentTemplateId != null && currentMachineIds != initialMachineIds
-
-        AlertDialog(
-            onDismissRequest = { showFinishDialog = false },
-            title = { Text(stringResource(R.string.finish_workout_dialog_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val totalSets = loggedSets.values.sumOf { it.size }
-                    Text(text = stringResource(R.string.sets_completed_format, totalSets))
-
-                    OutlinedTextField(
-                        value = workoutNotes,
-                        onValueChange = { workoutNotes = it },
-                        label = { Text(stringResource(R.string.workout_notes_hint)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (hasVariations) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Checkbox(
-                                checked = consolidateTemplate,
-                                onCheckedChange = { consolidateTemplate = it }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.consolidate_template_title),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
+        val hasVariations = currentTemplateId != null && currentMachineIds != state.initialMachineIds
+        FinishWorkoutDialog(
+            instances = sessionInstances,
+            setsByInstance = loggedSets,
+            hasVariations = hasVariations,
+            onFinish = { consolidate, notes ->
+                showFinishDialog = false
+                viewModel.finishWorkout(
+                    consolidateTemplate = consolidate,
+                    notes = notes
+                ) { }
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        // Local write, template consolidation, Health Connect
-                        // export and Store-and-Forward sync all run in the VM
-                        viewModel.finishWorkout(
-                            consolidateTemplate = consolidateTemplate,
-                            notes = workoutNotes
-                        ) {
-                            showFinishDialog = false
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.btn_save_and_finish))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showFinishDialog = false }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+            onDismiss = { showFinishDialog = false }
         )
     }
 
     // --- DISCARD WORKOUT CONFIRM DIALOG ---
     if (showDiscardConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showDiscardConfirmDialog = false },
-            title = { Text(stringResource(R.string.discard_workout)) },
-            text = { Text(stringResource(R.string.discard_workout_confirm)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.discardWorkout()
-                        showDiscardConfirmDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.discard_workout))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDiscardConfirmDialog = false }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+        DiscardWorkoutDialog(
+            onDiscard = { viewModel.discardWorkout() },
+            onDismiss = { showDiscardConfirmDialog = false }
         )
-    }
-}
-
-@Composable
-private fun WeightStepperControls(
-    weightInput: String,
-    incrementKg: Float,
-    unit: WeightUnit,
-    stackValuesKg: List<Float> = emptyList(),
-    onWeightChanged: (String) -> Unit
-) {
-    val hasStackScale = stackValuesKg.isNotEmpty()
-    val currentKg = WeightConversion.toKg(weightInput.toFloatOrNull() ?: 0f, unit)
-    // On a configured scale (Issue #48) the steppers jump to the printed
-    // pin positions: -1/-2/-3 and +1/+2/+3 positions on the scale.
-    val minusSteps = if (hasStackScale) {
-        (1..3).mapNotNull { step ->
-            WeightStack.nextScaleValue(currentKg, stackValuesKg, up = false, steps = step)
-        }
-    } else {
-        WorkoutLogic.calculateWeightSteppers(incrementKg).first
-    }
-    val plusSteps = if (hasStackScale) {
-        (1..3).mapNotNull { step ->
-            WeightStack.nextScaleValue(currentKg, stackValuesKg, up = true, steps = step)
-        }
-    } else {
-        WorkoutLogic.calculateWeightSteppers(incrementKg).second
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Minus row: e.g. -5, -2.5, -1.25 (or printed scale values)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            minusSteps.forEach { target ->
-                OutlinedButton(
-                    onClick = {
-                        if (hasStackScale) {
-                            onWeightChanged(WeightConversion.formatWeightForUnit(target, unit))
-                        } else {
-                            val newW = WorkoutLogic.clampWeight(currentKg + target)
-                            onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = if (hasStackScale) {
-                            WeightConversion.formatWeightForUnit(target, unit)
-                        } else {
-                            WorkoutLogic.formatDelta(target)
-                        },
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Clip
-                    )
-                }
-            }
-        }
-        // Plus row: e.g. +1.25, +2.5, +5 (or printed scale values)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            plusSteps.forEach { target ->
-                OutlinedButton(
-                    onClick = {
-                        if (hasStackScale) {
-                            onWeightChanged(WeightConversion.formatWeightForUnit(target, unit))
-                        } else {
-                            val newW = WorkoutLogic.clampWeight(currentKg + target)
-                            onWeightChanged(WeightConversion.formatWeightForUnit(newW, unit))
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = if (hasStackScale) {
-                            WeightConversion.formatWeightForUnit(target, unit)
-                        } else {
-                            WorkoutLogic.formatDelta(target)
-                        },
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Clip
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun RepsStepperControls(
-    repsInput: String,
-    onRepsChanged: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        listOf(-5, -1, 1, 5).forEach { delta ->
-            OutlinedButton(
-                onClick = {
-                    val current = repsInput.toIntOrNull() ?: 0
-                    val newR = WorkoutLogic.clampReps(current + delta)
-                    onRepsChanged(newR.toString())
-                },
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = if (delta > 0) "+$delta" else "$delta",
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip
-                )
-            }
-        }
-    }
-}
-
-
-/**
- * "Up next today" card (Issue #51): resolves the planned program for the
- * current day from the first workout plan, if any.
- */
-@Composable
-private fun UpNextPlanCard(
-    database: LockerLiftDatabase,
-    templates: List<WorkoutTemplate>
-) {
-    val plansState by remember { database.workoutPlanDao().getAllPlansWithEntriesFlow() }
-        .collectAsState(initial = emptyList())
-    val activityTypesState by remember { database.activityTypeDao().getAllActivityTypesFlow() }
-        .collectAsState(initial = emptyList())
-    val now = remember { System.currentTimeMillis() }
-    val plannedLabel: String? = remember(plansState, templates, activityTypesState, now) {
-        val planWithEntries = plansState.firstOrNull() ?: return@remember null
-        val plan = planWithEntries.plan.toDomainModel()
-        val entry = WorkoutPlanLogic.entryFor(
-            now,
-            plan,
-            planWithEntries.entries.map { it.toDomainModel() }
-        ) ?: return@remember null
-        entry.templateId?.let { id -> templates.firstOrNull { it.id == id }?.name }
-            ?: entry.activityTypeId?.let { id ->
-                activityTypesState.firstOrNull { it.id == id }?.name
-            }
-            ?: entry.label
-    }
-    val upNextText = plannedLabel ?: stringResource(R.string.plan_up_next_none)
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.plan_up_next),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = upNextText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
