@@ -248,6 +248,46 @@ class WearWorkoutLogicTest {
     }
 
     @Test
+    fun testDeterminePrefillWeightAndReps_nextSetNumberMatchesHistoricalSet() {
+        // Arrange: set 3 of the current session must prefill from historical set 3
+        val currentSets = listOf(
+            WorkoutSet(sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL),
+            WorkoutSet(sessionMachineId = "smi", setNumber = 2, reps = 10, weightKg = 80f, setType = SetType.NORMAL)
+        )
+        val historicalSets = listOf(
+            WorkoutSetEntity(id = "h1", sessionMachineId = "smi-hist", setNumber = 1, reps = 12, weightKg = 75f),
+            WorkoutSetEntity(id = "h2", sessionMachineId = "smi-hist", setNumber = 2, reps = 11, weightKg = 77.5f),
+            WorkoutSetEntity(id = "h3", sessionMachineId = "smi-hist", setNumber = 3, reps = 10, weightKg = 80f)
+        )
+
+        // Act
+        val (weight, reps) = WearWorkoutLogic.determinePrefillWeightAndReps(currentSets, historicalSets)
+
+        // Assert
+        assertEquals(80f, weight, 0.001f)
+        assertEquals(10, reps)
+    }
+
+    @Test
+    fun testDeterminePrefillWeightAndReps_moreCurrentSetsThanHistory_fallsBackToLastCurrentSet() {
+        // Arrange: historical session had only 2 sets, current set 3 falls back
+        val currentSets = listOf(
+            WorkoutSet(sessionMachineId = "smi", setNumber = 1, reps = 10, weightKg = 80f, setType = SetType.NORMAL),
+            WorkoutSet(sessionMachineId = "smi", setNumber = 2, reps = 9, weightKg = 82.5f, setType = SetType.NORMAL)
+        )
+        val historicalSets = listOf(
+            WorkoutSetEntity(id = "h1", sessionMachineId = "smi-hist", setNumber = 1, reps = 12, weightKg = 75f)
+        )
+
+        // Act
+        val (weight, reps) = WearWorkoutLogic.determinePrefillWeightAndReps(currentSets, historicalSets)
+
+        // Assert
+        assertEquals(82.5f, weight, 0.001f)
+        assertEquals(9, reps)
+    }
+
+    @Test
     fun testDeterminePrefillWeightAndReps_allEmpty() {
         // Arrange & Act
         val (weight, reps) = WearWorkoutLogic.determinePrefillWeightAndReps(emptyList(), emptyList(), defaultWeight = 50f, defaultReps = 12)

@@ -108,6 +108,63 @@ class WorkoutTrackingLogicTest {
     }
 
     @Test
+    fun testDeterminePrefillWeightAndReps_whenNextSetNumberExistsInHistory_prefillsFromMatchingHistoricalSet() {
+        val current = listOf(
+            WorkoutSet(
+                id = "cur-1",
+                sessionMachineId = "smi-cur",
+                setNumber = 1,
+                reps = 8,
+                weightKg = 85f
+            )
+        )
+        val historical = listOf(
+            entitySet("smi-2", 1, 10, 80f),
+            entitySet("smi-2", 2, 9, 82.5f)
+        )
+
+        val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
+            currentSets = current,
+            historicalSets = historical
+        )
+
+        assertEquals(82.5f, weight, 0.001f)
+        assertEquals(9, reps)
+    }
+
+    @Test
+    fun testDeterminePrefillWeightAndReps_whenHistoryExceeded_fallsBackToLastCurrentSet() {
+        val current = listOf(
+            WorkoutSet(
+                id = "cur-1",
+                sessionMachineId = "smi-cur",
+                setNumber = 1,
+                reps = 8,
+                weightKg = 85f
+            ),
+            WorkoutSet(
+                id = "cur-2",
+                sessionMachineId = "smi-cur",
+                setNumber = 2,
+                reps = 7,
+                weightKg = 90f
+            )
+        )
+        val historical = listOf(
+            entitySet("smi-2", 1, 10, 80f),
+            entitySet("smi-2", 2, 9, 82.5f)
+        )
+
+        val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
+            currentSets = current,
+            historicalSets = historical
+        )
+
+        assertEquals(90f, weight, 0.001f)
+        assertEquals(7, reps)
+    }
+
+    @Test
     fun testDeterminePrefillWeightAndReps_whenNoHistoryAtAll_returnsDefaults() {
         val (weight, reps) = WorkoutTrackingLogic.determinePrefillWeightAndReps(
             currentSets = emptyList(),

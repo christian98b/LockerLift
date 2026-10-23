@@ -67,7 +67,7 @@ fun LogSetDialog(
         historicalSets = historicalSetsProvider(instance.machineId)
     }
 
-    val (prefillWeight, prefillReps) = remember(instance.id, existingSets.size) {
+    val (prefillWeight, prefillReps) = remember(instance.id, existingSets.size, historicalSets) {
         WorkoutTrackingLogic.determinePrefillWeightAndReps(
             currentSets = existingSets,
             historicalSets = historicalSets,
