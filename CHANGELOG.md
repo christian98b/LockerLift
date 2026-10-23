@@ -7,6 +7,16 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.15.0] - 2026-10-23
+
+### 🚀 Neue Features
+
+#### Smartphone (`:mobile`) & Wear OS (`:wear`)
+
+- **Set-Prefill aus Historie (Issue #24):** Der nächste Satz wird automatisch mit Gewicht und Wiederholungen des Satzes mit derselben Satznummer aus der zuletzt abgeschlossenen Session vorausgefüllt. Werden mehr Sätze hinzugefügt als in der letzten Session existierten, wird der letzte Satz der aktuellen Session verwendet; ohne Historie gelten die Standardwerte. Zusätzlich wird ein Neuberechnungs-Fehler des LogSetDialogs behoben, bei dem der Prefill berechnet wurde, bevor die asynchron geladene Historie verfügbar war.
+
+---
+
 ## [1.14.0] - 2026-10-20
 
 ### 🏗️ Refactoring
