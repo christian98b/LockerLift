@@ -162,7 +162,13 @@ object WorkoutLogic {
     }
 
     /**
-     * Determines prefill weight and reps for input.
+     * Determines prefill weight and reps for the next set (issue #24).
+     *
+     * The next set (number [currentSets].size + 1) is prefilled with the values
+     * of the set with the same number from the most recent completed session.
+     * If that historical session has no set with this number, the values of the
+     * last set of the current session are used instead; without any history the
+     * defaults apply.
      */
     fun determinePrefillWeightAndReps(
         currentSets: List<WorkoutSet>,
@@ -170,15 +176,21 @@ object WorkoutLogic {
         defaultWeight: Float = 60f,
         defaultReps: Int = 10
     ): Pair<Float, Int> {
+        val nextSetNumber = currentSets.size + 1
+
+        val lastSessionSets = extractLastSessionSets(historicalSets)
+        val matchingHistoricalSet = lastSessionSets
+            .find { it.setNumber == nextSetNumber }
+            ?.let {
+                Pair(clampWeight(it.weightKg), clampReps(it.reps))
+            }
+        if (matchingHistoricalSet != null) {
+            return matchingHistoricalSet
+        }
+
         val lastCurrentSet = currentSets.lastOrNull()
         if (lastCurrentSet != null) {
             return Pair(clampWeight(lastCurrentSet.weightKg), clampReps(lastCurrentSet.reps))
-        }
-
-        val lastSessionSets = extractLastSessionSets(historicalSets)
-        val firstHistoricalSet = lastSessionSets.firstOrNull()
-        if (firstHistoricalSet != null) {
-            return Pair(clampWeight(firstHistoricalSet.weightKg), clampReps(firstHistoricalSet.reps))
         }
 
         return Pair(clampWeight(defaultWeight), clampReps(defaultReps))
