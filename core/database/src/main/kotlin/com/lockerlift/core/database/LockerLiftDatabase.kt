@@ -50,7 +50,7 @@ import com.lockerlift.core.database.entity.WorkoutTemplateEntity
         PlanEntryEntity::class
     ],
     version = 9,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class LockerLiftDatabase : RoomDatabase() {
@@ -297,9 +297,24 @@ abstract class LockerLiftDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(*migrations())
                 .build()
         }
+
+        /**
+         * Ordered Room migrations from the oldest shipped schema (v2) through
+         * the current version. Exposed for migration tests; production and
+         * tests must share this list.
+         */
+        internal fun migrations(): Array<Migration> = arrayOf(
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_6_7,
+            MIGRATION_7_8,
+            MIGRATION_8_9,
+        )
 
         private fun migratePlaintextIfNeeded(context: Context, passphrase: ByteArray) {
             val dbFile = context.getDatabasePath(DATABASE_NAME)

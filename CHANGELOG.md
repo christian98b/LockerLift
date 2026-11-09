@@ -270,8 +270,9 @@ Dieses Projekt verwendet [Semantic Versioning](https://semver.org/):
 
 ### Build-Nummern
 
-- **versionCode:** Inkrementiert bei jedem Release
-- **versionName:** Folgt dem Schema `MAJOR.MINOR.PATCH`
+- **versionName** und **versionCode** stehen nur in `gradle.properties` (`lockerlift.versionName`, `lockerlift.versionCode`). Beide Apps lesen sie von dort. Bump ausschließlich über `scripts/bump-version.sh`.
+- **versionCode** (Phone) wird bei jedem Release um 1 erhöht. Die Wear-OS-App nutzt `versionCode + lockerlift.wearVersionCodeOffset`, weil Play für dasselbe Paket pro Formfaktor einen eigenen Code verlangt.
+- **versionName:** Folgt dem Schema `MAJOR.MINOR.PATCH` und muss mit dem obersten `## [X.Y.Z]`-Eintrag und dem Git-Tag `vX.Y.Z` übereinstimmen (`scripts/check-version.sh`).
 
 ---
 

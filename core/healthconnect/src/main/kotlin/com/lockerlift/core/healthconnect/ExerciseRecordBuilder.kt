@@ -42,10 +42,7 @@ object ExerciseRecordBuilder {
             exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING,
             title = title,
             notes = session.notes,
-            metadata = Metadata(
-                clientRecordId = session.id,
-                recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY
-            )
+            metadata = Metadata.manualEntry(clientRecordId = session.id)
         )
     }
 
@@ -67,7 +64,7 @@ object ExerciseRecordBuilder {
             endTime = finalEndInstant,
             endZoneOffset = endOffset,
             energy = Energy.kilocalories(energyKcal),
-            metadata = Metadata(recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY)
+            metadata = Metadata.manualEntry()
         )
     }
 
@@ -109,7 +106,7 @@ object ExerciseRecordBuilder {
             endTime = endTime,
             endZoneOffset = endOffset,
             samples = heartRateSamples,
-            metadata = Metadata(recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY)
+            metadata = Metadata.manualEntry()
         )
     }
 }

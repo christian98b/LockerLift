@@ -6,10 +6,10 @@ plugins {
 
 android {
     namespace = "com.lockerlift.core.sync"
-    compileSdk = 35
+    compileSdk = providers.gradleProperty("lockerlift.compileSdk").get().toInt()
 
     defaultConfig {
-        minSdk = 28
+        minSdk = providers.gradleProperty("lockerlift.minSdk").get().toInt()
         consumerProguardFiles("consumer-rules.pro")
     }
 

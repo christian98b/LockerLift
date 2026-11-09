@@ -48,8 +48,11 @@ Before tagging a release, verify all mandatory gates pass:
    `Test & Build APKs` workflow (`build-and-test.yml`).
 3. **Automated Unit Tests Passing:** Zero test failures across all modules
    (`:core:*`, `:mobile`, `:wear`).
-4. **Version bump committed:** `versionCode`/`versionName` updated in both
-   `mobile/build.gradle.kts` and `wear/build.gradle.kts` (identical values).
+4. **Version bump committed:** `lockerlift.versionName` and `lockerlift.versionCode`
+   updated in `gradle.properties` (the only copy). Phone and watch share
+   `versionName`. The watch `versionCode` is the phone code plus
+   `lockerlift.wearVersionCodeOffset` so Play's per-form-factor uniqueness
+   rule holds. The top CHANGELOG heading must match `versionName`.
 
 ---
 
@@ -63,18 +66,20 @@ Consult [`.agents/skills/release-versioning-rules/SKILL.md`](../release-versioni
 * **MINOR (`x.Y.0`):** New user-facing features (Epics, User Stories, new screens, backward-compatible additions).
 * **PATCH (`x.y.Z`):** Bugfixes, performance optimizations, documentation updates, dependency bumps.
 
-### Step 2: Bump Version in Gradle Configuration
+### Step 2: Bump Version
 
-Ensure both `mobile/build.gradle.kts` and `wear/build.gradle.kts` share identical version
-strings and strictly incrementing version codes:
+`gradle.properties` is the only place `versionName` and the phone `versionCode` are
+defined. Bump them with the script (it also prepends `## [X.Y.Z]` to `CHANGELOG.md`):
 
-```kotlin
-// In mobile/build.gradle.kts & wear/build.gradle.kts:
-defaultConfig {
-    versionCode = CURRENT_CODE + 1 // Monotonically increasing integer (e.g., 15)
-    versionName = "X.Y.Z"           // SemVer string (e.g., "1.7.5")
-}
+```bash
+./scripts/bump-version.sh minor          # or major | patch | X.Y.Z
+# Edit the generated CHANGELOG section, then:
+./scripts/bump-version.sh --tag          # commits the two files and tags vX.Y.Z
 ```
+
+Do not write `versionCode` or `versionName` into the app `build.gradle.kts` files.
+The watch version code is derived (`versionCode + wearVersionCodeOffset`) so the
+two Play artifacts of package `com.lockerlift` never share a code.
 
 ### Step 3: Add a CHANGELOG Entry
 
@@ -99,12 +104,9 @@ Commit the version bump and changelog, then create and push the tag. **The tag p
 the sole release trigger** — `release.yml` runs only on `on.push.tags: ['v*']`:
 
 ```bash
-git add mobile/build.gradle.kts wear/build.gradle.kts CHANGELOG.md
-git commit -m "chore(project): bump version to vX.Y.Z (code N)"
+# Prefer scripts/bump-version.sh --tag, which commits gradle.properties + CHANGELOG.md
+# and creates the annotated tag on that commit. Then:
 git push origin main
-
-# Tag must point at the version-bump commit:
-git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
@@ -119,13 +121,17 @@ git push origin vX.Y.Z
 The workflow (`release.yml`) automatically:
 
 1. Checks out the tag.
-2. Sets up JDK 21, Android SDK 35 (manual `sdkmanager` setup — the
-   `android-actions/setup-android@v3` action is broken and must not be reintroduced),
-   and Gradle 8.10.2.
-2. Runs `gradle :mobile:assembleRelease :wear:assembleRelease` (uses the `gradle` binary;
-   the repo has no `gradlew` wrapper script).
-3. Renames the APKs to `mobile-release.apk` / `wear-release.apk`.
-4. Publishes a **non-draft** GitHub Release named "Release vX.Y.Z" with both APKs
+2. Sets up JDK 21 and the Android SDK platform from `lockerlift.compileSdk`
+   (`scripts/ci-install-android-sdk.sh`). Manual `sdkmanager` setup stays —
+   `android-actions/setup-android@v3` is broken and must not be reintroduced.
+   Builds use `./gradlew` (Gradle 9.6.0, declared in `gradle/wrapper/gradle-wrapper.properties`).
+3. Runs `./gradlew :mobile:assembleDebug :wear:assembleDebug`. The published
+   artifacts stay unsigned debug APKs until release signing (issue #16) is
+   configured. CI's `Test & Build APKs` workflow additionally runs
+   `:mobile:assemble` and `:wear:assemble`, which includes the minified
+   release variant.
+4. Renames the APKs to `mobile-release.apk` / `wear-release.apk`.
+5. Publishes a **non-draft** GitHub Release named "Release vX.Y.Z" with both APKs
    attached and the extracted CHANGELOG section as body.
 
 Monitor it:

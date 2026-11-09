@@ -23,29 +23,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Fetch release tags
+        run: git fetch --tags --force --quiet
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Set up Android SDK Environment
-        run: |
-          SDK_BIN=$(dirname $(find /usr/local/lib/android/sdk/cmdline-tools -name sdkmanager | head -n 1))
-          echo "$SDK_BIN" >> $GITHUB_PATH
-          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+      - name: Install Android SDK
+        run: ./scripts/ci-install-android-sdk.sh
 
-      - name: Install Android SDK 35
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Set up Gradle 8.10.2
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.6.0"
-          cache-read-only: false
+
+      - name: Check version consistency
+        run: ./scripts/check-version.sh
 
       - name: Run Unit Tests
         run: |
@@ -53,12 +47,21 @@ jobs:
             echo "=========================================================="
             echo "==> EXPLICIT TRIGGER: In-Memory E2E Sync Suite ACTIVE <== "
             echo "=========================================================="
-            gradle test -PrunE2eSync=true --no-daemon --stacktrace
+            ./gradlew test -PrunE2eSync=true --no-daemon --stacktrace
           else
             echo "=========================================================="
             echo "==> STANDARD RUN: In-Memory E2E Sync Suite SKIPPED <======"
             echo "=========================================================="
-            gradle test --no-daemon --stacktrace
+            ./gradlew test --no-daemon --stacktrace
+          fi
+
+      - name: Check Room schema export is committed
+        run: |
+          if [ -n "$(git status --porcelain -- core/database/schemas)" ]; then
+            echo "Room schema export drifted from the committed files"
+            git status --porcelain -- core/database/schemas
+            git diff -- core/database/schemas
+            exit 1
           fi
 
       - name: Upload Test Reports
@@ -85,25 +88,19 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Set up Android SDK Environment
-        run: |
-          SDK_BIN=$(dirname $(find /usr/local/lib/android/sdk/cmdline-tools -name sdkmanager | head -n 1))
-          echo "$SDK_BIN" >> $GITHUB_PATH
-          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+      - name: Install Android SDK
+        run: ./scripts/ci-install-android-sdk.sh
 
-      - name: Install Android SDK 35
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Set up Gradle 8.10.2
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.6.0"
 
       - name: Build Mobile & Wear OS APKs
-        run: gradle :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :mobile:assemble :wear:assemble --no-daemon --stacktrace
+
+      - name: Check minified release APKs
+        run: |
+          ./scripts/check-release-apk.sh "$(find mobile/build/outputs/apk/release -name '*.apk' | head -n 1)"
+          ./scripts/check-release-apk.sh "$(find wear/build/outputs/apk/release -name '*.apk' | head -n 1)"
 
       - name: Upload APKs for Download
         uses: actions/upload-artifact@v4

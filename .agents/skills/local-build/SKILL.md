@@ -1,6 +1,6 @@
 ---
 name: local-build
-description: Build and test LockerLift locally on the Mac (Android Studio, JDK 21, Gradle 9.6.0, Android SDK 35) and install debug APKs on the two local emulators (phone + Wear OS)
+description: Build and test LockerLift locally on the Mac (Android Studio, JDK 21, Gradle wrapper 9.6.0, Android SDK platform 36) and install debug APKs on the two local emulators (phone + Wear OS)
 ---
 
 # Local Build & Test on the Mac
@@ -12,22 +12,15 @@ LockerLift is built and tested locally on the Mac in Android Studio. Two emulato
 | Component | Version | Path |
 |---|---|---|
 | JDK | JetBrains Runtime 21 (`JAVA_HOME`) | `~/Library/Java/JavaVirtualMachines/jbr-21.0.11/Contents/Home` (bundled with Android Studio) |
-| Gradle | 9.6.0 (must match `gradle-wrapper.properties`; AGP 9.4.1 requires >= 9.6.0) | `~/.gradle/wrapper/dists/gradle-9.6.0-bin/<hash>/gradle-9.6.0` (populated by the first Android Studio Gradle sync) |
-| Android SDK | platforms + build-tools 35 | `~/Library/Android/sdk` |
+| Gradle | 9.6.0 via `./gradlew` (must match `gradle-wrapper.properties`; AGP 9.4.1 requires >= 9.6.0) | Downloaded by the wrapper into `~/.gradle/wrapper/dists/` |
+| Android SDK | platform `lockerlift.compileSdk` (36) + build-tools 36; targetSdk stays 35 | `~/Library/Android/sdk` |
 | ADB | platform-tools | `~/Library/Android/sdk/platform-tools` |
 
-There is **no** `gradlew` wrapper script in the repo. Use the `gradle` binary from the wrapper dists directory, or build directly from Android Studio:
+Invoke Gradle only through the wrapper (`./gradlew`). The first run downloads the distribution pinned in `gradle/wrapper/gradle-wrapper.properties`. Android Studio uses the same wrapper.
 
 ```sh
-GRADLE_BIN=$(ls -d ~/.gradle/wrapper/dists/gradle-9.6.0-bin/*/gradle-9.6.0/bin/gradle | head -1)
 JAVA_HOME=~/Library/Java/JavaVirtualMachines/jbr-21.0.11/Contents/Home
-```
-
-If the dist directory does not exist yet, either open the project once in Android Studio (its Gradle sync downloads it) or download it once:
-
-```sh
-curl -sL -o /tmp/gradle-9.6.0-bin.zip https://services.gradle.org/distributions/gradle-9.6.0-bin.zip
-unzip -q -o /tmp/gradle-9.6.0-bin.zip -d /tmp
+./gradlew test
 ```
 
 `local.properties` in the repo root points to the SDK: `sdk.dir=/Users/<user>/Library/Android/sdk`. Do not commit it.
@@ -42,19 +35,19 @@ The Mac has enough RAM — no memory throttling flags are needed. The project's 
 
 ```sh
 # Full unit-test suite across all modules (E2E sync suite is skipped by default, same as CI)
-"$GRADLE_BIN" test
+./gradlew test
 
 # Run the in-memory E2E sync test suite explicitly
-"$GRADLE_BIN" test -PrunE2eSync=true
+./gradlew test -PrunE2eSync=true
 
 # Compile a single module fast (first sanity check after edits)
-"$GRADLE_BIN" :wear:compileDebugKotlin
+./gradlew :wear:compileDebugKotlin
 
-# Build debug APKs (output in mobile/build/outputs/apk/debug/ and wear/build/outputs/apk/debug/)
-"$GRADLE_BIN" :mobile:assembleDebug :wear:assembleDebug
+# Build debug and release APKs
+./gradlew :mobile:assemble :wear:assemble
 
 # Clean (when gradle state seems stuck)
-"$GRADLE_BIN" clean
+./gradlew clean
 ```
 
 ## Emulators

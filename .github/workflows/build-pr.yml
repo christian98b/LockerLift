@@ -1,6 +1,6 @@
 name: Build PR
 
-# Workflow für Pull Requests - baut Debug APKs und führt Tests aus
+# Workflow für Pull Requests - baut Debug- und Release-APKs und führt Tests aus
 on:
   pull_request:
     branches: [ main, develop ]
@@ -12,35 +12,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Fetch release tags
+        run: git fetch --tags --force --quiet
       
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'gradle'
       
-      - name: Set up Android SDK Environment
-        run: |
-          SDK_BIN=$(dirname $(find /usr/local/lib/android/sdk/cmdline-tools -name sdkmanager | head -n 1))
-          echo "$SDK_BIN" >> $GITHUB_PATH
-          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-      - name: Install Android SDK 35
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Install Android SDK
+        run: ./scripts/ci-install-android-sdk.sh
       
-      - name: Gradle Cache
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: '9.6.0'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Check version consistency
+        run: ./scripts/check-version.sh
       
       - name: Run tests
-        run: gradle test --no-daemon --stacktrace
+        run: ./gradlew test --no-daemon --stacktrace
+
+      - name: Check Room schema export is committed
+        run: |
+          if [ -n "$(git status --porcelain -- core/database/schemas)" ]; then
+            echo "Room schema export drifted from the committed files"
+            git status --porcelain -- core/database/schemas
+            git diff -- core/database/schemas
+            exit 1
+          fi
       
-      - name: Build Debug APKs
-        run: gradle :mobile:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
+      - name: Build Debug and Release APKs
+        run: ./gradlew :mobile:assemble :wear:assemble --no-daemon --stacktrace
+
+      - name: Check minified release APKs
+        run: |
+          ./scripts/check-release-apk.sh "$(find mobile/build/outputs/apk/release -name '*.apk' | head -n 1)"
+          ./scripts/check-release-apk.sh "$(find wear/build/outputs/apk/release -name '*.apk' | head -n 1)"
       
       - name: Upload APKs
         uses: actions/upload-artifact@v4

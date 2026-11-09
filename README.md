@@ -46,18 +46,39 @@ Full system design, ER diagrams, and sync protocol: [ARCHITECTURE.md](ARCHITECTU
 
 ## Getting Started
 
-**Prerequisites:** JDK 21, Android SDK 35 (min SDK 28 mobile / 30 Wear OS), Gradle 8.10.2 (no `gradlew` wrapper; use the `gradle` binary)
+**Prerequisites:** JDK 21, Android SDK platform `lockerlift.compileSdk` (currently 36; min SDK 28 mobile / 30 Wear OS, target SDK 35). Use the Gradle wrapper (`./gradlew`, Gradle 9.6.0). Do not install a separate Gradle binary.
 
 ```bash
 # Run all unit tests
-gradle test
+./gradlew test
 
-# Build the smartphone APK
-gradle :mobile:assembleDebug
-
-# Build the Wear OS APK
-gradle :wear:assembleDebug
+# Build the smartphone and Wear OS APKs (debug and release)
+./gradlew :mobile:assemble :wear:assemble
 ```
+
+## Versioning
+
+`versionName`, the phone `versionCode`, and the SDK levels live in [`gradle.properties`](gradle.properties) (`lockerlift.*`). Both app modules read those properties. Do not hardcode them in `mobile/build.gradle.kts` or `wear/build.gradle.kts`.
+
+Phone and watch share `applicationId` `com.lockerlift` and the same `versionName`. Google Play requires a **unique `versionCode` per form factor** of one package ([Package and distribute Wear OS apps](https://developer.android.com/training/wearables/packaging)). The watch code is `lockerlift.versionCode + lockerlift.wearVersionCodeOffset` (100000). Dedicated Wear OS tracks compare codes only inside the track, and the watch manifest requires `android.hardware.type.watch`, so the higher watch code is not delivered to phones. Both sequences stay strictly increasing and cannot collide while the phone code stays below the offset. `scripts/check-version.sh` enforces that.
+
+`compileSdk` is 36 because Health Connect 1.1.0 and AboutLibraries need it. `targetSdk` stays 35 until a deliberate behaviour-change bump. CI installs `platforms;android-<compileSdk>` from the same property (`scripts/ci-install-android-sdk.sh`).
+
+Bump a release with the script so the gradle version, changelog, and tag stay together:
+
+```bash
+# Edit gradle.properties and prepend a CHANGELOG section (no commit, no tag)
+./scripts/bump-version.sh minor
+
+# After the changelog text is filled in, commit the two files and tag HEAD
+./scripts/bump-version.sh --tag
+git push origin main
+git push origin vX.Y.Z   # tag push runs release.yml
+```
+
+`./scripts/bump-version.sh minor --tag` commits `gradle.properties` and `CHANGELOG.md` and tags that commit in one step. The script does not push.
+
+`scripts/check-version.sh` fails CI when `versionName` and the top `## [X.Y.Z]` changelog entry differ, when the latest `v*` tag is newer than `versionName`, when HEAD itself is tagged with a different version, or when a tag-triggered release's tag does not match. A version that is ahead of the latest tag is allowed only while the next release is being prepared and has not been tagged yet. The release workflow runs the same check against the tag it is building.
 
 Setup and installation instructions: [Getting Started](documentation/getting-started.md)
 

@@ -21,7 +21,7 @@ Dieses Verzeichnis enthält GitHub Actions Workflows für automatisiertes Builde
 ### Was passiert?
 1. ✅ Checkout des Repositorys
 2. ✅ JDK 21 einrichten
-3. ✅ Android SDK 35 einrichten
+3. ✅ Android SDK (`lockerlift.compileSdk`, derzeit 36) einrichten
 4. ✅ Abhängigkeiten herunterladen
 5. ✅ **Mobile APK (Release) bauen**
 6. ✅ **Wear APK (Release) bauen**
