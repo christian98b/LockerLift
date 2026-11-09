@@ -31,6 +31,7 @@ Aligns the app version with the tagged 1.15.0 release and removes the build-conf
 
 - `LockerLiftMigrationTest` — migration chain 2→current, fresh database matches the exported schema, and a reconstructed v2 database (tag v1.9.1) migrates forward preserving a machine row and the built-in activity types.
 - Existing Health Connect builder tests cover `Metadata.manualEntry`.
+- `CatalogViewModelTest` waits on `StateFlow.first` after the write commits. `stateIn(SharingStarted.Lazily)` emits an empty seed before Room's query, and `awaitActions()` only joins the insert, so reading `.value` raced the invalidation tracker (`testMachinesFlow_emitsInsertedMachines` and the same pattern on `knownMuscleGroups`). Other ViewModel tests either update a `MutableStateFlow` inside the job they join, or already use `first`.
 
 ## Not done
 
