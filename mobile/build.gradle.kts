@@ -8,24 +8,26 @@ plugins {
 
 android {
     namespace = "com.lockerlift.mobile"
-    compileSdk = 36
+    compileSdk = providers.gradleProperty("lockerlift.compileSdk").get().toInt()
 
     defaultConfig {
         applicationId = "com.lockerlift"
-        minSdk = 28
-        targetSdk = 35
-        versionCode = 20
-        versionName = "1.12.0"
+        minSdk = providers.gradleProperty("lockerlift.minSdk").get().toInt()
+        targetSdk = providers.gradleProperty("lockerlift.targetSdk").get().toInt()
+        versionCode = providers.gradleProperty("lockerlift.versionCode").get().toInt()
+        versionName = providers.gradleProperty("lockerlift.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
+                rootProject.file("proguard/lockerlift-release.pro")
             )
         }
     }

@@ -8,24 +8,29 @@ plugins {
 
 android {
     namespace = "com.lockerlift.wear"
-    compileSdk = 36
+    compileSdk = providers.gradleProperty("lockerlift.compileSdk").get().toInt()
 
     defaultConfig {
         applicationId = "com.lockerlift"
-        minSdk = 30
-        targetSdk = 35
-        versionCode = 20
-        versionName = "1.12.0"
+        minSdk = providers.gradleProperty("lockerlift.wearMinSdk").get().toInt()
+        targetSdk = providers.gradleProperty("lockerlift.targetSdk").get().toInt()
+        // Play rejects two artifacts of package com.lockerlift with the same
+        // versionCode. The watch uses a stable offset above the phone code.
+        versionCode = providers.gradleProperty("lockerlift.versionCode").get().toInt() +
+            providers.gradleProperty("lockerlift.wearVersionCodeOffset").get().toInt()
+        versionName = providers.gradleProperty("lockerlift.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
+                rootProject.file("proguard/lockerlift-release.pro")
             )
         }
     }

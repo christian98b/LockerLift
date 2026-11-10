@@ -46,10 +46,7 @@ object ActivityRecordBuilder {
             exerciseType = resolveExerciseType(typeName),
             title = typeName,
             notes = entry.notes,
-            metadata = Metadata(
-                clientRecordId = entry.id,
-                recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY
-            )
+            metadata = Metadata.manualEntry(clientRecordId = entry.id)
         )
     }
 }

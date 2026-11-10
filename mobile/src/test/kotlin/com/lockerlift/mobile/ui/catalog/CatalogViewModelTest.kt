@@ -7,8 +7,8 @@ import com.lockerlift.core.database.entity.toEntity
 import com.lockerlift.core.model.Machine
 import com.lockerlift.core.model.WeightDirection
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -221,14 +221,17 @@ class CatalogViewModelTest {
     @Test
     fun testKnownMuscleGroupsFlow_emitsDistinctUsedGroups() = runTest(testDispatcher) {
         val viewModel = createViewModel()
-        backgroundScope.launch { viewModel.knownMuscleGroups.collect {} }
 
         viewModel.addMachine(name = "Bench Press", muscleGroup = "Chest", settingsNote = "", incrementKgText = "2.5") {}
         viewModel.addMachine(name = "Chest Fly", muscleGroup = "Chest", settingsNote = "", incrementKgText = "2.5") {}
         viewModel.addMachine(name = "Lat Pulldown", muscleGroup = "Back", settingsNote = "", incrementKgText = "2.5") {}
         viewModel.awaitActions()
 
-        assertEquals(listOf("Back", "Chest"), viewModel.knownMuscleGroups.value)
+        // Lazily-shared stateIn emits emptyList() before Room's query. Subscribe
+        // only after the writes commit and skip that seed; reading .value here
+        // raced the invalidation tracker.
+        val groups = viewModel.knownMuscleGroups.first { it.isNotEmpty() }
+        assertEquals(listOf("Back", "Chest"), groups)
     }
 
     @Test
@@ -250,15 +253,16 @@ class CatalogViewModelTest {
     fun testMachinesFlow_emitsInsertedMachines() = runTest(testDispatcher) {
         // Arrange
         val viewModel = createViewModel()
-        backgroundScope.launch { viewModel.machines.collect {} }
 
         // Act
         viewModel.addMachine(name = "Lat Pulldown", muscleGroup = "Back", settingsNote = "", incrementKgText = "2.5") {}
         viewModel.awaitActions()
 
-        // Assert
-        assertEquals(1, viewModel.machines.value.size)
-        assertEquals("Lat Pulldown", viewModel.machines.value.first().name)
-        assertNull(viewModel.machines.value.first().machineSettingsNote)
+        // Assert. Same seed-value race as knownMuscleGroups: awaitActions joins
+        // the insert, not the Room flow that fills the StateFlow.
+        val machines = viewModel.machines.first { it.isNotEmpty() }
+        assertEquals(1, machines.size)
+        assertEquals("Lat Pulldown", machines.first().name)
+        assertNull(machines.first().machineSettingsNote)
     }
 }

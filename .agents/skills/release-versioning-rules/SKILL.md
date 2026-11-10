@@ -20,9 +20,11 @@ $$\text{v}\mathbf{MAJOR}.\mathbf{MINOR}.\mathbf{PATCH}$$
 
 Example: `v1.2.0`
 
-In Android Gradle configuration (`mobile/build.gradle.kts` and `wear/build.gradle.kts`):
-* `versionName = "MAJOR.MINOR.PATCH"` (User-facing version string)
-* `versionCode = Integer` (Strictly monotonic increasing integer: `1, 2, 3, ...`, incremented on **every** release)
+Version identity lives only in `gradle.properties` (`lockerlift.versionName`, `lockerlift.versionCode`). Both app modules read those properties; do not hardcode them.
+
+* `lockerlift.versionName` = `MAJOR.MINOR.PATCH` (user-facing string, identical on phone and watch)
+* `lockerlift.versionCode` = phone `versionCode`, a strictly monotonic integer incremented by 1 on **every** release
+* Wear OS `versionCode` = `lockerlift.versionCode + lockerlift.wearVersionCodeOffset`. Play requires a unique version code per form factor for package `com.lockerlift`. The offset keeps the two sequences from ever colliding.
 
 ---
 
@@ -99,14 +101,11 @@ A **PATCH** release is triggered for backward-compatible bugfixes and internal e
 
 When executing a release:
 1. **Determine Version Bump:** Use the matrix above to decide if the release is Major, Minor, or Patch.
-2. **Update Gradle Configurations:**
-   * In `mobile/build.gradle.kts` and `wear/build.gradle.kts`:
-     * Increment `versionCode` by 1.
-     * Update `versionName` to `"X.Y.Z"`.
-3. **Verify All Unit Tests:** Ensure `gradle test` (Gradle 8.10.2, no wrapper script in the repo) passes 100%.
-4. **Tag the Release:**
+2. **Bump the version** with `scripts/bump-version.sh` (updates `gradle.properties` and prepends the CHANGELOG section). Do not edit `versionCode` / `versionName` in the app modules.
+3. **Verify All Unit Tests:** Ensure `./gradlew test` (Gradle wrapper 9.6.0) passes 100%.
+4. **Tag the Release** (the script refuses to tag if the changelog heading and `versionName` differ):
    ```bash
-   git tag -a vX.Y.Z -m "Release vX.Y.Z: <Summary of changes>"
+   ./scripts/bump-version.sh --tag
    git push origin vX.Y.Z
    ```
 5. **Update Tracking:** Document the release and version bump in a new file in `documentation/feature-history/` (see its README for conventions).

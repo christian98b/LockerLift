@@ -23,21 +23,12 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'gradle'
       
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-35
-            build-tools;35.0.0
-            platform-tools
-          accept-android-sdk-licenses: true
+      - name: Install Android SDK
+        run: ./scripts/ci-install-android-sdk.sh
       
-      - name: Gradle Cache
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: '9.6.0'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       
       - name: Download dependencies
         run: ./gradlew --no-daemon dependencies
