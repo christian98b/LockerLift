@@ -7,6 +7,19 @@ und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/spec/v
 
 ---
 
+## [1.15.1] - 2026-11-10
+
+### 🔧 Toolchain
+
+- **Eine Versionsquelle (PR #63):** `versionName` und `versionCode` stehen nur noch in `gradle.properties`. Phone und Watch teilen sich `1.15.1`; der Phone-`versionCode` ist 24, der Watch-`versionCode` ist 100024, damit Play für dasselbe Paket pro Formfaktor einen eigenen Code hat. `scripts/bump-version.sh` hebt Version, CHANGELOG und Tag gemeinsam an, `scripts/check-version.sh` bricht CI ab, wenn sie auseinanderlaufen.
+- **Gradle Wrapper 9.6.0:** `./gradlew` ist die einzige Gradle-Quelle. CI installiert `compileSdk` 36 (derzeit Android-36); `targetSdk` bleibt 35.
+- **Room-Schema:** Schema 9 wird exportiert und versioniert. Migrationstests führen ein nachgebautes v2-Schema bis zum exportierten Stand.
+- **Release-Minify:** R8 und Resource-Shrinking sind für Release-Builds aktiv, mit Keep-Regeln für Room, SQLCipher, kotlinx.serialization, Wearable Data Layer und Health Connect. Signierung ist unverändert.
+- **Health Connect 1.1.0:** stabil statt `1.1.0-alpha10`. Metadaten entstehen über `Metadata.manualEntry`.
+- **Katalog-Tests:** `CatalogViewModelTest` wartet auf die StateFlow-Emission nach dem Schreiben, statt den leeren Startwert von `stateIn(SharingStarted.Lazily)` zu lesen.
+
+---
+
 ## [1.15.0] - 2026-10-23
 
 ### 🚀 Neue Features
