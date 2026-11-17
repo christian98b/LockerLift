@@ -70,7 +70,7 @@ Before writing any code, verify that the design complies with the non-negotiable
 
 ### Step 7: Update Implementation Tracking
 * Create a new history file in [documentation/feature-history/](../../../documentation/feature-history/README.md) following its naming convention and content rules.
-* Update Section 2/3 (**Nachverfolgung von Implementierungen / Progress & Tracking**):
+* Update Section 4 (**Implementation Progress & Tracking**) of [AGENTS.md](../../../AGENTS.md):
   * Check off completed features (`[x]`).
   * Document created/modified files.
   * Document newly added unit tests.

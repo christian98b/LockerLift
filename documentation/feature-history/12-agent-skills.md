@@ -10,3 +10,5 @@
   - `issue-creation-guide`: Standards, templates, and best practices for authoring and filing high-quality GitHub issues.
   - `issue-closing-and-commenting-guide`: Standards, quality gates, and structured Markdown templates for verifying, commenting on, and closing GitHub issues.
   - `wear-os-adb-guide`: Standard operating procedures, diagnostic recipes, display management, and deployment workflows for Wear OS smartwatches via ADB.
+  - `local-build`: Local build and test workflow on the Mac (JDK 21, Gradle, Android SDK 35) plus debug APK installation on the phone and Wear OS emulators.
+  - `multi-agent-orchestration`: Multi-agent hierarchy (Main AI Orchestrator, Implementation Agents, DevOps Engineer Agent), task decomposition, spawn/handoff contracts, and the CI watch-and-fix loop.
