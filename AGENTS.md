@@ -1,6 +1,6 @@
 # LockerLift – AI Agent & Developer Guidelines (`AGENTS.md`)
 
-This document serves as the authoritative handbook and progress tracking log for developers and AI assistants (e.g., Antigravity, Claude, Copilot) working on **LockerLift**. It defines guidelines, architectural mandates, testing requirements, and current implementation progress.
+This document serves as the authoritative handbook for developers and AI assistants (e.g., Antigravity, Claude, Copilot) working on **LockerLift**. It defines guidelines, architectural mandates, testing requirements, and conventions. Implementation history is tracked separately in [`documentation/feature-history/`](documentation/feature-history/README.md).
 
 ---
 
@@ -18,38 +18,12 @@ LockerLift is a **privacy-first, local, open-source strength training tracker** 
 
 ---
 
-## 2. Multi-Agent Orchestration & Workflow Model
+## 2. Agent Workflow
 
-LockerLift development is executed via an **autonomous multi-agent hierarchy**:
+The multi-agent orchestration model (Main AI Orchestrator, Implementation Agents, DevOps Engineer Agent, CI watch-and-fix loop) is **not** part of this file. It lives in the [`multi-agent-orchestration`](.agents/skills/multi-agent-orchestration/SKILL.md) skill and is loaded only when a task actually spans multiple modules, needs parallel subagents, or requires CI monitoring.
 
-```mermaid
-flowchart TD
-    User["User / Product Owner"] --> Orchestrator["Main AI Orchestrator"]
-    Orchestrator -->|"Decomposes tasks & spawns"| Impl["Implementation Agents (Domain / UI / Sync)"]
-    Impl -->|"Delivers code + unit tests"| Orchestrator
-    Orchestrator -->|"Collects implementations & pushes"| DevOps["DevOps Engineer Agent"]
-    DevOps -->|"Monitors & watches"| CI["GitHub Actions CI Pipeline"]
-    CI -- "Build/Test Failure" --> DevOps
-    DevOps -- "Diagnoses & fixes errors" --> CI
-    DevOps -->|"Reports green pipeline & APKs"| Orchestrator
-```
-
-### 2.1 Agent Roles & Responsibilities
-
-1. **Main AI Orchestrator:**
-   * Acts as the primary interface to the user and overall project architect.
-   * Analyzes user requests, maintains architectural invariants, and decomposes goals into modular implementation tasks.
-   * Spawns specialized **Implementation Agents** as needed across modules (`:core:*`, `:mobile`, `:wear`).
-   * Collects and integrates deliverables from all implementation agents once their work is completed.
-2. **Implementation Agents:**
-   * Autonomous subagents assigned to specific domain logic, screens, DAOs, or sync features.
-   * Adhere strictly to the unit testing mandate: write tests concurrently with code (`AAA` pattern).
-   * Report diffs, files created/modified, and test outcomes back to the Main AI Orchestrator.
-3. **DevOps Engineer Agent:**
-   * Spawned by the Main AI Orchestrator after implementations are consolidated and pushed to the repository.
-   * Monitors and watches GitHub Actions CI/CD workflows (`gh run list`, `gh run watch`).
-   * Inspects runner logs, diagnoses build, compilation, classpath, or test failures on GitHub, and fixes them autonomously.
-   * Ensures the entire CI pipeline turns green and downloadable APK artifacts are produced.
+> [!NOTE]
+> The invariants in this file apply to **every** agent, regardless of role. Orchestration changes *who* does the work, never *what* the rules are.
 
 ---
 
